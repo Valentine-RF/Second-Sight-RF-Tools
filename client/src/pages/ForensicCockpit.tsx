@@ -615,7 +615,8 @@ export default function ForensicCockpit() {
                   <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-h-[400px]">
+                    {/* Digital Modulations */}
                     <SelectItem value="BPSK">BPSK</SelectItem>
                     <SelectItem value="QPSK">QPSK</SelectItem>
                     <SelectItem value="8PSK">8PSK</SelectItem>
@@ -624,6 +625,60 @@ export default function ForensicCockpit() {
                     <SelectItem value="FSK">FSK</SelectItem>
                     <SelectItem value="GMSK">GMSK</SelectItem>
                     <SelectItem value="OOK">OOK</SelectItem>
+                    
+                    {/* RTTY Variants */}
+                    <SelectItem value="RTTY-45">RTTY 45.45 Baud</SelectItem>
+                    <SelectItem value="RTTY-50">RTTY 50 Baud</SelectItem>
+                    <SelectItem value="RTTY-75">RTTY 75 Baud</SelectItem>
+                    <SelectItem value="RTTY-100">RTTY 100 Baud</SelectItem>
+                    
+                    {/* Maritime/Commercial */}
+                    <SelectItem value="SITOR-A">SITOR-A</SelectItem>
+                    <SelectItem value="SITOR-B">SITOR-B</SelectItem>
+                    <SelectItem value="NAVTEX">NAVTEX</SelectItem>
+                    <SelectItem value="AMTOR">AMTOR</SelectItem>
+                    
+                    {/* Packet Radio */}
+                    <SelectItem value="PACTOR-I">PACTOR-I</SelectItem>
+                    <SelectItem value="PACTOR-II">PACTOR-II</SelectItem>
+                    <SelectItem value="PACTOR-III">PACTOR-III</SelectItem>
+                    <SelectItem value="PACTOR-IV">PACTOR-IV</SelectItem>
+                    <SelectItem value="CLOVER-2000">CLOVER-2000</SelectItem>
+                    <SelectItem value="G-TOR">G-TOR</SelectItem>
+                    
+                    {/* PSK Modes */}
+                    <SelectItem value="PSK31">PSK31</SelectItem>
+                    <SelectItem value="PSK63">PSK63</SelectItem>
+                    <SelectItem value="PSK125">PSK125</SelectItem>
+                    
+                    {/* MFSK Modes */}
+                    <SelectItem value="MFSK16">MFSK16</SelectItem>
+                    <SelectItem value="MFSK32">MFSK32</SelectItem>
+                    <SelectItem value="Olivia">Olivia</SelectItem>
+                    <SelectItem value="Contestia">Contestia</SelectItem>
+                    <SelectItem value="DominoEX">DominoEX</SelectItem>
+                    <SelectItem value="THROB">THROB</SelectItem>
+                    <SelectItem value="MT63">MT63</SelectItem>
+                    
+                    {/* Weak Signal Modes */}
+                    <SelectItem value="FT8">FT8</SelectItem>
+                    <SelectItem value="FT4">FT4</SelectItem>
+                    <SelectItem value="JT65">JT65</SelectItem>
+                    <SelectItem value="JT9">JT9</SelectItem>
+                    <SelectItem value="WSPR">WSPR</SelectItem>
+                    <SelectItem value="ROS">ROS</SelectItem>
+                    
+                    {/* Military/Government */}
+                    <SelectItem value="STANAG-4285">STANAG 4285</SelectItem>
+                    <SelectItem value="MIL-188-110A">MIL-STD-188-110A</SelectItem>
+                    <SelectItem value="MIL-188-110B">MIL-STD-188-110B</SelectItem>
+                    <SelectItem value="ALE">ALE (Auto Link Est.)</SelectItem>
+                    
+                    {/* Legacy Modes */}
+                    <SelectItem value="CW">CW (Morse Code)</SelectItem>
+                    <SelectItem value="Hellschreiber">Hellschreiber</SelectItem>
+                    <SelectItem value="CHIP64">CHIP64</SelectItem>
+                    <SelectItem value="CHIP128">CHIP128</SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground mt-1">
@@ -673,6 +728,66 @@ export default function ForensicCockpit() {
                       </span>
                     </div>
                   </div>
+                  
+                  {/* Teletype-specific parameters */}
+                  {modulationType.includes('RTTY') && measurementsData.teletype && (
+                    <>
+                      <div className="border-t border-border pt-3 mt-3">
+                        <div className="technical-label text-xs mb-2">RTTY Parameters</div>
+                      </div>
+                      <div>
+                        <div className="technical-label">Baud Rate</div>
+                        <div className="flex items-baseline gap-2">
+                          <span className="metric-value text-sm">
+                            {measurementsData.teletype.baudRate?.toFixed(1) || 'N/A'}
+                          </span>
+                          <span className="metric-unit">Bd</span>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="technical-label">Shift</div>
+                        <div className="flex items-baseline gap-2">
+                          <span className="metric-value text-sm">
+                            {measurementsData.teletype.shift?.toFixed(0) || 'N/A'}
+                          </span>
+                          <span className="metric-unit">Hz</span>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="technical-label">Mark/Space</div>
+                        <div className="font-mono text-xs">
+                          {measurementsData.teletype.markFreq?.toFixed(0) || '0'} / {measurementsData.teletype.spaceFreq?.toFixed(0) || '0'} Hz
+                        </div>
+                      </div>
+                    </>
+                  )}
+                  
+                  {(modulationType.includes('PSK') || modulationType.includes('FT8') || modulationType === 'CW') && measurementsData.teletype && (
+                    <>
+                      <div className="border-t border-border pt-3 mt-3">
+                        <div className="technical-label text-xs mb-2">Digital Mode Info</div>
+                      </div>
+                      {measurementsData.teletype.bandwidth && (
+                        <div>
+                          <div className="technical-label">Bandwidth</div>
+                          <div className="flex items-baseline gap-2">
+                            <span className="metric-value text-sm">
+                              {measurementsData.teletype.bandwidth}
+                            </span>
+                            <span className="metric-unit">Hz</span>
+                          </div>
+                        </div>
+                      )}
+                      {measurementsData.teletype.toneCount && (
+                        <div>
+                          <div className="technical-label">Tone Count</div>
+                          <div className="metric-value text-sm">
+                            {measurementsData.teletype.toneCount}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               ) : (
                 <div className="text-sm text-muted-foreground">

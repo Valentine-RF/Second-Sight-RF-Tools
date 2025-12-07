@@ -312,3 +312,176 @@ export function classifyModulation(samples: Complex[]): {
   
   return results;
 }
+
+/**
+ * Detect RTTY baud rate using autocorrelation
+ */
+export function detectRTTYBaudRate(samples: Complex[], sampleRate: number): {
+  baudRate: number;
+  confidence: number;
+} {
+  // Common RTTY baud rates
+  const baudRates = [45.45, 50, 75, 100, 110];
+  
+  // Convert to magnitude signal
+  const mags = samples.map(magnitude);
+  const N = Math.min(mags.length, 8192);
+  
+  // Autocorrelation for each baud rate
+  const scores: { baudRate: number; score: number }[] = [];
+  
+  for (const baud of baudRates) {
+    const samplesPerBit = sampleRate / baud;
+    const lag = Math.round(samplesPerBit);
+    
+    if (lag >= N) continue;
+    
+    // Compute autocorrelation at this lag
+    let sum = 0;
+    for (let i = 0; i < N - lag; i++) {
+      sum += mags[i] * mags[i + lag];
+    }
+    const autocorr = sum / (N - lag);
+    
+    scores.push({ baudRate: baud, score: autocorr });
+  }
+  
+  // Find maximum
+  scores.sort((a, b) => b.score - a.score);
+  
+  return {
+    baudRate: scores[0]?.baudRate || 50,
+    confidence: scores[0] ? Math.min(scores[0].score * 100, 100) : 0,
+  };
+}
+
+/**
+ * Detect RTTY shift (mark-space frequency separation)
+ */
+export function detectRTTYShift(samples: Complex[], sampleRate: number): {
+  shift: number;
+  markFreq: number;
+  spaceFreq: number;
+} {
+  // Common RTTY shifts: 85, 170, 200, 425, 850 Hz
+  const N = Math.min(samples.length, 4096);
+  const fftResult = fft(samples.slice(0, N));
+  const psd = fftResult.map(c => power(c));
+  
+  // Find two strongest peaks
+  const peaks: { index: number; power: number }[] = [];
+  for (let i = 1; i < psd.length / 2 - 1; i++) {
+    if (psd[i] > psd[i - 1] && psd[i] > psd[i + 1]) {
+      peaks.push({ index: i, power: psd[i] });
+    }
+  }
+  peaks.sort((a, b) => b.power - a.power);
+  
+  if (peaks.length < 2) {
+    return { shift: 170, markFreq: 0, spaceFreq: 0 }; // Default
+  }
+  
+  const freq1 = (peaks[0].index * sampleRate) / N;
+  const freq2 = (peaks[1].index * sampleRate) / N;
+  const shift = Math.abs(freq1 - freq2);
+  
+  return {
+    shift,
+    markFreq: Math.max(freq1, freq2),
+    spaceFreq: Math.min(freq1, freq2),
+  };
+}
+
+/**
+ * Classify teletype and HF digital modes
+ */
+export function classifyTeletypeMode(samples: Complex[], sampleRate: number): {
+  mode: string;
+  confidence: number;
+  parameters: Record<string, any>;
+}[] {
+  const results: { mode: string; confidence: number; parameters: Record<string, any> }[] = [];
+  
+  // Detect RTTY characteristics
+  const baudDetection = detectRTTYBaudRate(samples, sampleRate);
+  const shiftDetection = detectRTTYShift(samples, sampleRate);
+  
+  // RTTY variants
+  if (baudDetection.confidence > 50) {
+    const baudRate = baudDetection.baudRate;
+    results.push({
+      mode: `RTTY-${Math.round(baudRate)}`,
+      confidence: baudDetection.confidence,
+      parameters: {
+        baudRate,
+        shift: shiftDetection.shift,
+        markFreq: shiftDetection.markFreq,
+        spaceFreq: shiftDetection.spaceFreq,
+      },
+    });
+  }
+  
+  // PSK31/63/125 detection (narrow bandwidth, phase modulation)
+  const phases = samples.map(c => Math.atan2(c.im, c.re));
+  const phaseDiffs = phases.slice(1).map((p, i) => {
+    let diff = p - phases[i];
+    while (diff > Math.PI) diff -= 2 * Math.PI;
+    while (diff < -Math.PI) diff += 2 * Math.PI;
+    return diff;
+  });
+  const avgPhaseDiff = phaseDiffs.reduce((a, b) => a + Math.abs(b), 0) / phaseDiffs.length;
+  
+  if (avgPhaseDiff < 0.5) {
+    results.push({
+      mode: 'PSK31',
+      confidence: 60,
+      parameters: { avgPhaseDiff, bandwidth: 31 },
+    });
+  }
+  
+  // CW (Morse code) detection - on/off keying pattern
+  const magnitudes = samples.map(magnitude);
+  const avgMag = magnitudes.reduce((a, b) => a + b, 0) / magnitudes.length;
+  const onOffRatio = magnitudes.filter(m => m > avgMag * 0.5).length / magnitudes.length;
+  
+  if (onOffRatio > 0.3 && onOffRatio < 0.7) {
+    results.push({
+      mode: 'CW',
+      confidence: 55,
+      parameters: { onOffRatio, avgMagnitude: avgMag },
+    });
+  }
+  
+  // FT8 detection (8-FSK with 6.25 Hz tones, 15-second transmissions)
+  // Simplified: check for multi-tone structure
+  const N = Math.min(samples.length, 4096);
+  const fftResult = fft(samples.slice(0, N));
+  const psd = fftResult.map(c => power(c));
+  
+  // Count peaks (tones)
+  let peakCount = 0;
+  for (let i = 1; i < psd.length / 2 - 1; i++) {
+    if (psd[i] > psd[i - 1] && psd[i] > psd[i + 1] && psd[i] > avgMag * 2) {
+      peakCount++;
+    }
+  }
+  
+  if (peakCount >= 6 && peakCount <= 10) {
+    results.push({
+      mode: 'FT8',
+      confidence: 50,
+      parameters: { toneCount: peakCount },
+    });
+  }
+  
+  // Normalize confidences
+  const totalConf = results.reduce((sum, r) => sum + r.confidence, 0);
+  if (totalConf > 0) {
+    results.forEach(r => r.confidence = (r.confidence / totalConf) * 100);
+  }
+  
+  // Sort by confidence
+  results.sort((a, b) => b.confidence - a.confidence);
+  
+  return results;
+}

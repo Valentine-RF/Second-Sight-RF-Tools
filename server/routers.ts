@@ -437,6 +437,36 @@ export const appRouter = router({
             }
           );
 
+          // Add teletype mode detection if applicable
+          const isTeletypeMode = input.modulationType?.includes('RTTY') || 
+                                  input.modulationType?.includes('PSK') ||
+                                  input.modulationType?.includes('FT8') ||
+                                  input.modulationType === 'CW';
+          
+          if (isTeletypeMode) {
+            // Convert to complex samples for teletype detection
+            const { classifyTeletypeMode, detectRTTYBaudRate, detectRTTYShift } = await import('./dsp');
+            const complexSamples = Array.from(iqReal).map((re, i) => ({ re, im: iqImag[i] }));
+            
+            if (input.modulationType?.includes('RTTY')) {
+              const baudDetection = detectRTTYBaudRate(complexSamples, capture.sampleRate);
+              const shiftDetection = detectRTTYShift(complexSamples, capture.sampleRate);
+              
+              result.teletype = {
+                baudRate: baudDetection.baudRate,
+                shift: shiftDetection.shift,
+                markFreq: shiftDetection.markFreq,
+                spaceFreq: shiftDetection.spaceFreq,
+              };
+            } else {
+              // General teletype classification
+              const teletypeResults = classifyTeletypeMode(complexSamples, capture.sampleRate);
+              if (teletypeResults.length > 0) {
+                result.teletype = teletypeResults[0].parameters;
+              }
+            }
+          }
+
           return result;
         } catch (pythonError) {
           console.warn('Python SNR/CFO estimation failed:', pythonError);

@@ -510,3 +510,40 @@
 - [x] Support exporting all annotations for selected captures
 - [x] Generate downloadable .sigmf-meta file with annotations
 - [x] Add success/error toast notifications for export
+
+## Shortwave/Longwave Teletype Mode Support
+- [x] Add RTTY (Radioteletype) - 45.45, 50, 75, 100 baud variants
+- [x] Add SITOR-A/B (Simplex Telex Over Radio)
+- [x] Add NAVTEX (518 kHz, 490 kHz maritime safety)
+- [x] Add PACTOR-I/II/III/IV (packet radio)
+- [x] Add AMTOR (Amateur Teleprinting Over Radio)
+- [x] Add PSK31/63/125 (Phase Shift Keying teletype)
+- [x] Add MFSK16/32 (Multi-Frequency Shift Keying)
+- [x] Add Olivia (MFSK with FEC)
+- [x] Add Contestia (MFSK variant)
+- [x] Add DominoEX (incremental FEC MFSK)
+- [x] Add THROB (multi-tone MFSK)
+- [x] Add MT63 (multi-tone 64-carrier)
+- [x] Add Hellschreiber/Feld-Hell (facsimile)
+- [x] Add CW (Morse code detection)
+- [x] Add FT8/FT4 (WSJT-X weak signal modes)
+- [x] Add JT65/JT9 (weak signal modes)
+- [x] Add WSPR (Weak Signal Propagation Reporter)
+- [x] Add STANAG 4285 (NATO standard)
+- [x] Add MIL-STD-188-110A/B/C (military standards)
+- [x] Add ALE (Automatic Link Establishment)
+- [x] Add CLOVER-2000 (multi-carrier)
+- [x] Add G-TOR (Golay FEC variant)
+- [x] Add CHIP64/128 (chirp modulation)
+- [x] Add ROS (Random Ocean Software mode)
+- [x] Add THROB variants (1, 2, 4)
+- [x] Add baud rate detection for RTTY (45, 50, 75, 100, 110 baud)
+- [x] Add shift detection for RTTY (85, 170, 200, 425, 850 Hz)
+- [x] Add mark/space frequency detection
+- [ ] Add bit inversion detection (normal/reverse)
+- [ ] Add stop bit detection (1, 1.5, 2 bits)
+- [x] Implement autocorrelation-based baud rate estimation
+- [x] Implement FFT-based shift detection
+- [x] Add teletype mode classifier to DSP library
+- [x] Update modulation selector UI with teletype category
+- [x] Add teletype-specific measurements panel

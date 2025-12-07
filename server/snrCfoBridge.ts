@@ -29,6 +29,15 @@ export interface CFOResult {
 export interface SNRCFOEstimationResult {
   snr: SNRResult;
   cfo: CFOResult | null;
+  teletype?: {
+    baudRate?: number;
+    shift?: number;
+    markFreq?: number;
+    spaceFreq?: number;
+    bandwidth?: number;
+    toneCount?: number;
+    [key: string]: any;
+  };
 }
 
 export async function runSNRCFOEstimation(
