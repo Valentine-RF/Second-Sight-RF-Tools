@@ -710,3 +710,16 @@
 - [x] Add SNR threshold slider filter
 - [ ] Add time range filter with start/end inputs
 - [ ] Wire filters to annotation list display
+
+## Python SoapySDR Bridge Implementation (Current Sprint)
+- [x] Create python/soapy_bridge.py module
+- [x] Implement device enumeration with SoapySDR.Device.enumerate()
+- [x] Add device configuration (frequency, sample rate, gain, antenna)
+- [x] Implement IQ sample capture with streaming
+- [x] Add FFT computation using NumPy
+- [x] Create HTTP client to push FFT data to server
+- [x] Add error handling and device cleanup
+- [x] Create requirements.txt with SoapySDR dependencies
+- [x] Add installation script for SoapySDR library
+- [x] Create comprehensive README with usage examples
+- [ ] Test with RTL-SDR, HackRF, and USRP devices
