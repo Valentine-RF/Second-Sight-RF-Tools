@@ -1010,3 +1010,36 @@
 - [ ] Add multi-file batch upload support
 - [ ] Design signal preview during upload
 - [ ] Test with various signal file formats in browser
+
+## Signal Preview Thumbnail
+- [x] Create SignalPreviewGenerator class
+- [x] Implement file chunk reading (first 1-2 MB)
+- [x] Add FFT computation for preview (Cooley-Tukey algorithm)
+- [x] Create 256×128px canvas renderer
+- [x] Implement colormap application (Viridis)
+- [x] Add signal quality metrics (SNR estimate, peak power, avg power, dynamic range)
+- [x] Integrate into SmartFileUpload component
+- [x] Add loading state during preview generation
+- [x] Support all datatypes (cf32_le, ci16_le, ci8, cu8, cu16_le)
+- [x] Implement Hamming window for FFT
+- [x] Add bit-reversal permutation for FFT
+- [x] Create comprehensive test suite (16/16 tests passing)
+- [ ] Test with various file formats and sizes in browser
+
+## Metadata Learning System
+- [x] Create MetadataLearningDB class with localStorage
+- [x] Implement pattern tracking (filename → metadata)
+- [x] Add correction recording (auto-detected → user-corrected)
+- [x] Create confidence boost algorithm (up to +20% based on pattern confidence)
+- [x] Implement pattern matching for similar filenames
+- [x] Add pattern extraction (dates, timestamps, frequencies to regex)
+- [x] Implement LRU pattern storage (max 1000 patterns)
+- [x] Add correction history (max 500 corrections)
+- [x] Integrate into SmartFileUpload component
+- [x] Record corrections on upload
+- [x] Boost confidence for matching patterns
+- [x] Add export/import learning data
+- [x] Create comprehensive test suite (16/16 tests passing)
+- [ ] Add learning statistics dashboard UI
+- [ ] Add privacy controls UI (clear learning data button)
+- [ ] Test learning accuracy improvement over time with real uploads

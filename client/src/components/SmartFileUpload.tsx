@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SignalFormatDetector, type DetectedMetadata } from '@/lib/signalFormatDetector';
+import { SignalPreviewGenerator, type SignalPreview } from '@/lib/signalPreviewGenerator';
+import { MetadataLearningDB } from '@/lib/metadataLearningDB';
 import { toast } from 'sonner';
 
 /**
@@ -30,8 +32,11 @@ export const SmartFileUpload: React.FC<SmartFileUploadProps> = ({
 }) => {
   const [file, setFile] = useState<File | null>(null);
   const [metadata, setMetadata] = useState<DetectedMetadata | null>(null);
+  const [originalMetadata, setOriginalMetadata] = useState<DetectedMetadata | null>(null);
+  const [preview, setPreview] = useState<SignalPreview | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
 
   /**
    * Handle file selection
@@ -43,21 +48,65 @@ export const SmartFileUpload: React.FC<SmartFileUploadProps> = ({
     try {
       // Auto-detect metadata
       const detected = await SignalFormatDetector.detect(selectedFile);
-      setMetadata(detected);
+      
+      // Apply learning system boost
+      const { metadata: boostedPartial, boosted, learnedPattern } = 
+        MetadataLearningDB.boostConfidence(selectedFile.name, {
+          sampleRate: detected.sampleRate ?? undefined,
+          centerFrequency: detected.centerFrequency ?? undefined,
+          datatype: detected.datatype,
+          hardware: detected.hardware ?? undefined,
+          confidence: detected.confidence,
+        });
+      
+      // Merge boosted metadata with original detected metadata
+      const boostedMetadata = {
+        ...detected,
+        ...boostedPartial,
+      } as DetectedMetadata;
+      
+      setMetadata(boostedMetadata);
+      setOriginalMetadata(detected);
 
       // Show confidence feedback
-      if (detected.confidence >= 80) {
-        toast.success(`Auto-detected: ${detected.detectionMethod}`, {
-          description: `Confidence: ${detected.confidence}%`,
+      if (boosted) {
+        toast.success(`Learned from previous uploads!`, {
+          description: `Confidence boosted to ${boostedMetadata.confidence}%`,
         });
-      } else if (detected.confidence >= 50) {
+      } else if (boostedMetadata.confidence >= 80) {
+        toast.success(`Auto-detected: ${detected.detectionMethod}`, {
+          description: `Confidence: ${boostedMetadata.confidence}%`,
+        });
+      } else if (boostedMetadata.confidence >= 50) {
         toast.info(`Partially detected: ${detected.detectionMethod}`, {
-          description: `Confidence: ${detected.confidence}%. Please verify fields.`,
+          description: `Confidence: ${boostedMetadata.confidence}%. Please verify fields.`,
         });
       } else {
         toast.warning('Low confidence detection', {
           description: 'Please manually verify all fields before uploading.',
         });
+      }
+      
+      // Generate preview thumbnail (async, non-blocking)
+      if (boostedMetadata.sampleRate && boostedMetadata.datatype && boostedMetadata.datatype !== 'unknown') {
+        setIsGeneratingPreview(true);
+        try {
+          const signalPreview = await SignalPreviewGenerator.generate(
+            selectedFile,
+            boostedMetadata.datatype,
+            boostedMetadata.sampleRate
+          );
+          setPreview(signalPreview);
+          
+          toast.success('Signal preview generated', {
+            description: `SNR: ${signalPreview.metrics.snrEstimate.toFixed(1)} dB, Peak: ${signalPreview.metrics.peakPower.toFixed(1)} dB`,
+          });
+        } catch (previewError) {
+          console.error('[SmartFileUpload] Preview generation failed:', previewError);
+          // Don't block upload if preview fails
+        } finally {
+          setIsGeneratingPreview(false);
+        }
       }
     } catch (error) {
       console.error('[SmartFileUpload] Detection failed:', error);
@@ -131,9 +180,36 @@ export const SmartFileUpload: React.FC<SmartFileUploadProps> = ({
     try {
       await onUpload(file, metadata);
       
+      // Record correction if user edited metadata
+      if (originalMetadata && (
+        metadata.sampleRate !== originalMetadata.sampleRate ||
+        metadata.centerFrequency !== originalMetadata.centerFrequency ||
+        metadata.datatype !== originalMetadata.datatype ||
+        metadata.hardware !== originalMetadata.hardware
+      )) {
+        MetadataLearningDB.recordCorrection(
+          file.name,
+          {
+            sampleRate: originalMetadata.sampleRate ?? undefined,
+            centerFrequency: originalMetadata.centerFrequency ?? undefined,
+            datatype: originalMetadata.datatype,
+            hardware: originalMetadata.hardware ?? undefined,
+          },
+          {
+            sampleRate: metadata.sampleRate ?? undefined,
+            centerFrequency: metadata.centerFrequency ?? undefined,
+            datatype: metadata.datatype,
+            hardware: metadata.hardware ?? undefined,
+          }
+        );
+        console.log('[SmartFileUpload] Recorded metadata correction for learning');
+      }
+      
       // Reset form
       setFile(null);
       setMetadata(null);
+      setOriginalMetadata(null);
+      setPreview(null);
     } catch (error) {
       // Error handled by parent
     }
@@ -257,6 +333,50 @@ export const SmartFileUpload: React.FC<SmartFileUploadProps> = ({
               </p>
             </div>
           </div>
+
+          {/* Signal Preview Thumbnail */}
+          {isGeneratingPreview && (
+            <div className="flex items-center justify-center p-4 bg-muted/30 rounded-lg">
+              <Loader2 className="w-5 h-5 animate-spin text-primary mr-2" />
+              <p className="text-sm">Generating signal preview...</p>
+            </div>
+          )}
+          
+          {preview && (
+            <div className="p-4 bg-muted/30 rounded-lg">
+              <p className="text-sm font-medium mb-2">Signal Preview</p>
+              <div className="flex gap-4">
+                <img
+                  src={preview.imageDataUrl}
+                  alt="Signal preview spectrogram"
+                  className="rounded border border-border"
+                  style={{ width: preview.width, height: preview.height }}
+                />
+                <div className="flex-1 text-xs space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">SNR Estimate:</span>
+                    <span className="font-mono">{preview.metrics.snrEstimate.toFixed(1)} dB</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Peak Power:</span>
+                    <span className="font-mono">{preview.metrics.peakPower.toFixed(1)} dB</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Avg Power:</span>
+                    <span className="font-mono">{preview.metrics.avgPower.toFixed(1)} dB</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Dynamic Range:</span>
+                    <span className="font-mono">{preview.metrics.dynamicRange.toFixed(1)} dB</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Samples:</span>
+                    <span className="font-mono">{preview.sampleCount.toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Editable Fields */}
           <div className="grid gap-4">
