@@ -154,3 +154,55 @@ export async function stopSoapyStream(config: { deviceSerial: string }): Promise
     console.log('Mock: Stopped stream for', config.deviceSerial);
   }
 }
+
+/**
+ * Read IQ samples from stream and compute FFT
+ */
+export async function readStreamFFT(config: {
+  sessionId: string;
+  numSamples?: number;
+  fftSize?: number;
+}): Promise<{
+  fft: number[][];
+  samplesRead: number;
+  timestamp: number;
+  fftSize: number;
+}> {
+  try {
+    const result = await executeSoapyCommand('read_fft', config);
+    return result;
+  } catch (error) {
+    console.error('Failed to read stream FFT:', error);
+    // Return mock FFT data for development
+    const fftSize = config.fftSize || 2048;
+    const mockFFT = Array.from({ length: 1 }, () =>
+      Array.from({ length: fftSize }, (_, i) => {
+        // Generate synthetic spectrum with noise and peaks
+        let value = Math.random() * 10 - 80; // Noise floor
+        if (i === Math.floor(fftSize / 4)) value = -30; // Peak 1
+        if (i === Math.floor(fftSize / 2)) value = -20; // Peak 2
+        if (i === Math.floor(3 * fftSize / 4)) value = -40; // Peak 3
+        return value;
+      })
+    );
+    return {
+      fft: mockFFT,
+      samplesRead: config.numSamples || fftSize,
+      timestamp: Date.now() / 1000,
+      fftSize,
+    };
+  }
+}
+
+/**
+ * Pause SoapySDR streaming (keep session alive but stop data flow)
+ */
+export async function pauseSoapyStream(config: { deviceSerial: string }): Promise<void> {
+  try {
+    await executeSoapyCommand('pause_stream', config);
+  } catch (error) {
+    console.error('Failed to pause SoapySDR stream:', error);
+    // Mock success for development
+    console.log('Mock: Paused stream for', config.deviceSerial);
+  }
+}

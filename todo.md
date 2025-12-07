@@ -20,13 +20,13 @@
 - [x] Implement IQ data parsing with proper normalization
 
 ## Signal Processing Algorithms
-- [ ] Implement FFT Accumulation Method (FAM) for Spectral Correlation Function
-- [ ] Implement CFO estimation using power method
-- [ ] Implement Costas loop for fine-tuning CFO
-- [ ] Implement M2M4 SNR estimator
-- [ ] Integrate TorchSig model loading for blind modulation classification
-- [ ] Create demodulation pipeline with matched filter and timing recovery
-- [ ] Implement Apache Arrow serialization for IQ sample transport
+- [x] Implement FFT Accumulation Method (FAM) for Spectral Correlation Function
+- [x] Implement CFO estimation using power method
+- [x] Implement Costas loop for fine-tuning CFO
+- [x] Implement M2M4 SNR estimator
+- [x] Integrate TorchSig model loading for blind modulation classification
+- [x] Create demodulation pipeline with matched filter and timing recovery
+- [x] Implement Apache Arrow serialization for IQ sample transport
 
 ## WebGL Visualizations
 - [x] Create WebGL spectrogram renderer with texture-based rendering
@@ -43,7 +43,7 @@
 - [x] Add Z-height mapping from SCF magnitude data
 - [x] Implement rotation controls with OrbitControls
 - [x] Add lighting and material shaders for surface
-- [ ] Create cross-section slicing functionality
+- [x] Create cross-section slicing functionality
 
 ## Forensic Cockpit UI Layout
 - [x] Design mathematical blueprint aesthetic with white grid background
@@ -58,29 +58,29 @@
 
 ## Main Workspace Features
 - [ ] Implement box select with right-click drag for time-frequency regions
-- [ ] Create context menu with "Analyze Cycles", "Classify Modulation", "Demodulate" actions
-- [ ] Add semi-transparent annotation overlays on spectrogram
-- [ ] Implement zoom and pan controls for spectrogram
+- [x] Create context menu with "Analyze Cycles", "Classify Modulation", "Demodulate" actions
+- [x] Add semi-transparent annotation overlays on spectrogram
+- [x] Implement zoom and pan controls for spectrogram
 
 ## Analysis Dock Tabs
-- [ ] Tab 1: Spectrum/FFT PSD plot with frequency axis
-- [ ] Tab 2: Constellation plot with WebGL persistence
-- [ ] Tab 3: Cyclostationary 3D SCF surface with Three.js
-- [ ] Tab 4: Hex view for demodulated bitstream output
+- [x] Tab 1: Spectrum/FFT PSD plot with frequency axis
+- [x] Tab 2: Constellation plot with WebGL persistence
+- [x] Tab 3: Cyclostationary 3D SCF surface with Three.js
+- [x] Tab 4: Hex view for demodulated bitstream output
 
 ## Signal Inspector Sidebar
-- [ ] Create metadata card displaying core:hw, core:author, core:sample_rate
-- [ ] Add measurements panel with Est. SNR, Est. Baud, CFO readouts
-- [ ] Create classification bar chart showing probability distribution
+- [x] Create metadata card displaying core:hw, core:author, core:sample_rate
+- [x] Add measurements panel with Est. SNR, Est. Baud, CFO readouts
+- [x] Create classification bar chart showing probability distribution
 - [ ] Build DSP chain visualization showing processing pipeline
 - [ ] Add parameter adjustment controls for filter bandwidth, decimation
 
 ## Annotation System
-- [ ] Create annotation creation workflow from box selection
-- [ ] Implement annotation persistence to database and SigMF format
-- [ ] Add annotation editing and deletion functionality
-- [ ] Create annotation export to SigMF annotations array
-- [ ] Implement color picker for annotation flags
+- [x] Create annotation creation workflow from box selection
+- [x] Implement annotation persistence to database and SigMF format
+- [x] Add annotation editing and deletion functionality
+- [x] Create annotation export to SigMF annotations array
+- [x] Implement color picker for annotation flags
 
 ## Real-time Processing & WebSocket
 - [ ] Set up WebSocket server for real-time status updates
@@ -101,7 +101,7 @@
 ## File Management
 - [x] Create file upload interface with drag-and-drop
 - [x] Build file list view with signal capture metadata
-- [ ] Add file deletion with S3 cleanup
+- [x] Add file deletion with S3 cleanup
 - [ ] Implement file download for processed results
 - [ ] Create SigMF export functionality with annotations
 
@@ -909,3 +909,21 @@
 - [x] Wire slice controls to SCF data
 - [ ] Add keyboard shortcuts for slice navigation (arrow keys)
 - [ ] Test with real SCF data
+
+## Real-Time SDR Streaming Phase 1 (Current Sprint)
+- [x] Create CircularIQBuffer class with ring buffer implementation
+- [x] Add buffer overflow detection and oldest-sample eviction
+- [x] Implement zero-copy buffer read API
+- [x] Add backend FFT computation in soapy_bridge.py
+- [x] Apply Hamming window before FFT
+- [x] Compute PSD and convert to dB scale
+- [x] Send FFT results via WebSocket instead of raw IQ
+- [ ] Create useStreamingMode hook in frontend
+- [ ] Wire WebSocket IQ stream to Spectrogram component
+- [ ] Update WebGL texture with real-time FFT data
+- [ ] Implement time-domain scrolling (new data pushes left)
+- [ ] Create fftWorker.ts Web Worker for frontend FFT
+- [ ] Add overlap processing (50-75%) for smooth spectrogram
+- [ ] Test SoapySDR installation on sandbox
+- [ ] Verify RTL-SDR driver detection
+- [ ] Create mock SDR mode for testing without hardware
