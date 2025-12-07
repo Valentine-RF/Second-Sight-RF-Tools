@@ -14,8 +14,10 @@ import {
   ProcessingJob,
   chatMessages,
   InsertChatMessage,
-  ChatMessage
-} from "../drizzle/schema";
+  ChatMessage,
+  comparisonSessions,
+  InsertComparisonSession,
+} from '../drizzle/schema';
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -333,4 +335,51 @@ export async function getChatHistory(userId: number, captureId?: number, limit: 
     .orderBy(chatMessages.createdAt)
     .limit(limit);
   return messages;
+}
+
+// Comparison Sessions
+export async function createComparisonSession(session: InsertComparisonSession) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  
+  const result = await db.insert(comparisonSessions).values(session);
+  return result;
+}
+
+export async function updateComparisonSession(id: number, updates: Partial<InsertComparisonSession>) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  
+  await db.update(comparisonSessions)
+    .set({ ...updates, updatedAt: new Date() })
+    .where(eq(comparisonSessions.id, id));
+}
+
+export async function getComparisonSession(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  
+  const result = await db.select()
+    .from(comparisonSessions)
+    .where(eq(comparisonSessions.id, id))
+    .limit(1);
+  
+  return result[0];
+}
+
+export async function getUserComparisonSessions(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db.select()
+    .from(comparisonSessions)
+    .where(eq(comparisonSessions.userId, userId))
+    .orderBy(desc(comparisonSessions.updatedAt));
+}
+
+export async function deleteComparisonSession(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  
+  await db.delete(comparisonSessions).where(eq(comparisonSessions.id, id));
 }

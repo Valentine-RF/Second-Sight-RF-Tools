@@ -167,3 +167,14 @@
 - [x] Implement PDF export button for comparison reports
 - [x] Generate PDF with side-by-side screenshots and metadata table
 - [x] Add analysis notes field for PDF export
+
+## Annotation Notes & Waterfall Mode
+- [x] Create database table for comparison session notes
+- [x] Add backend tRPC procedures for notes CRUD operations
+- [x] Implement annotation notes textarea in comparison UI
+- [x] Add auto-save functionality with debouncing
+- [x] Integrate notes into PDF export
+- [x] Create waterfall display component with WebGL
+- [x] Add waterfall/spectrogram toggle button
+- [x] Implement time-domain signal evolution visualization
+- [x] Add color-coded amplitude mapping for waterfall

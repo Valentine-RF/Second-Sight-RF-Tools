@@ -4,6 +4,7 @@ import { trpc } from '@/lib/trpc';
 import { Spectrogram } from '@/components/Spectrogram';
 import { WebGLErrorBoundary } from '@/components/WebGLErrorBoundary';
 import { DifferenceHeatmap } from '@/components/DifferenceHeatmap';
+import { WaterfallDisplay } from '@/components/WaterfallDisplay';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -15,6 +16,7 @@ import {
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { Textarea } from '@/components/ui/textarea';
 
 interface ComparisonCapture {
   id: number;
@@ -50,8 +52,15 @@ export default function ComparisonMode() {
   const [selectedCaptures, setSelectedCaptures] = useState<ComparisonCapture[]>([]);
   const [isSynced, setIsSynced] = useState(true);
   const [showDifference, setShowDifference] = useState(false);
+  const [showWaterfall, setShowWaterfall] = useState(false);
   const [analysisNotes, setAnalysisNotes] = useState('');
   const [isExporting, setIsExporting] = useState(false);
+  const [currentSessionId, setCurrentSessionId] = useState<number | null>(null);
+  const notesTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Create or update session mutation
+  const createSessionMutation = trpc.comparisonSessions.create.useMutation();
+  const updateSessionMutation = trpc.comparisonSessions.update.useMutation();
   const [syncState, setSyncState] = useState<SyncState>({
     zoom: 1.0,
     timeOffset: 0,
@@ -147,6 +156,56 @@ export default function ComparisonMode() {
   const handleRemoveCapture = (id: number) => {
     setSelectedCaptures(selectedCaptures.filter(c => c.id !== id));
   };
+
+  // Auto-save notes with debouncing
+  const handleNotesChange = (value: string) => {
+    setAnalysisNotes(value);
+
+    // Clear existing timeout
+    if (notesTimeoutRef.current) {
+      clearTimeout(notesTimeoutRef.current);
+    }
+
+    // Set new timeout for auto-save (2 seconds after user stops typing)
+    notesTimeoutRef.current = setTimeout(async () => {
+      if (selectedCaptures.length === 0) return;
+
+      try {
+        if (currentSessionId) {
+          // Update existing session
+          await updateSessionMutation.mutateAsync({
+            id: currentSessionId,
+            notes: value,
+            settings: syncState,
+          });
+        } else {
+          // Create new session
+          const result = await createSessionMutation.mutateAsync({
+            name: `Comparison ${new Date().toLocaleString()}`,
+            notes: value,
+            captureIds: selectedCaptures.map(c => c.id),
+            settings: syncState,
+          });
+          if (result.id) {
+            setCurrentSessionId(result.id);
+          }
+        }
+        toast.success('Notes saved');
+      } catch (error) {
+        console.error('Failed to save notes:', error);
+        toast.error('Failed to save notes');
+      }
+    }, 2000);
+  };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (notesTimeoutRef.current) {
+        clearTimeout(notesTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleExportPDF = async () => {
     if (selectedCaptures.length === 0) {
@@ -285,6 +344,15 @@ export default function ComparisonMode() {
           
           <div className="flex items-center gap-2">
             <Button
+              variant={showWaterfall ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setShowWaterfall(!showWaterfall)}
+              className="gap-2"
+            >
+              <Radio className="w-4 h-4" />
+              {showWaterfall ? 'Waterfall' : 'Spectrogram'}
+            </Button>
+            <Button
               variant={showDifference ? 'default' : 'outline'}
               size="sm"
               onClick={() => {
@@ -368,6 +436,19 @@ export default function ComparisonMode() {
                 <ArrowLeftRight className="w-4 h-4" />
               </Button>
             </div>
+          </div>
+        )}
+
+        {/* Annotation Notes */}
+        {selectedCaptures.length > 0 && (
+          <div className="mt-3 p-3 bg-card/50 rounded-lg border border-border">
+            <label className="technical-label text-xs mb-2 block">Analysis Notes (auto-saved)</label>
+            <Textarea
+              value={analysisNotes}
+              onChange={(e) => handleNotesChange(e.target.value)}
+              placeholder="Document your findings, observations, and analysis here..."
+              className="min-h-[80px] font-mono text-sm"
+            />
           </div>
         )}
       </div>
@@ -480,6 +561,12 @@ export default function ComparisonMode() {
                           height={spectrogramRefs.current[index]?.clientHeight || 300}
                           capture1Name={selectedCaptures[0].name}
                           capture2Name={selectedCaptures[1].name}
+                        />
+                      ) : showWaterfall ? (
+                        <WaterfallDisplay
+                          width={spectrogramRefs.current[index]?.clientWidth || 400}
+                          height={spectrogramRefs.current[index]?.clientHeight || 300}
+                          colormap="viridis"
                         />
                       ) : (
                         <Spectrogram

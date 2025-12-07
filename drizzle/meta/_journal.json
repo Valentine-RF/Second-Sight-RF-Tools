@@ -15,6 +15,13 @@
       "when": 1765103234391,
       "tag": "0001_absurd_slipstream",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1765105790353,
+      "tag": "0002_flat_iron_fist",
+      "breakpoints": true
     }
   ]
 }

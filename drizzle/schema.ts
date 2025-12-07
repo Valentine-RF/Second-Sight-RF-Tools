@@ -118,6 +118,23 @@ export type ProcessingJob = typeof processingJobs.$inferSelect;
 export type InsertProcessingJob = typeof processingJobs.$inferInsert;
 
 /**
+ * Comparison sessions table for storing analyst notes and settings
+ */
+export const comparisonSessions = mysqlTable("comparison_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  name: varchar("name", { length: 255 }),
+  notes: text("notes"),
+  captureIds: text("captureIds").notNull(), // JSON array of capture IDs
+  settings: text("settings"), // JSON object for sync state, zoom, etc.
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ComparisonSession = typeof comparisonSessions.$inferSelect;
+export type InsertComparisonSession = typeof comparisonSessions.$inferInsert;
+
+/**
  * Chat messages for natural language interface.
  * Stores conversation history for signal analysis queries.
  */

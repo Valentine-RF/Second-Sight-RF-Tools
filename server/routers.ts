@@ -19,6 +19,11 @@ import {
   getProcessingJobById,
   createChatMessage,
   getChatHistory,
+  createComparisonSession,
+  updateComparisonSession,
+  getComparisonSession,
+  getUserComparisonSessions,
+  deleteComparisonSession,
 } from "./db";
 import { parseSigMFMetadata, annotationToSigMF, generateSigMFMetadata } from "./sigmf";
 import { storagePut, storageGet } from "./storage";
@@ -436,6 +441,69 @@ export const appRouter = router({
       }))
       .query(async ({ ctx, input }) => {
         return getChatHistory(ctx.user.id, input.captureId, input.limit);
+      }),
+  }),
+
+  comparisonSessions: router({
+    create: protectedProcedure
+      .input(z.object({
+        name: z.string().optional(),
+        notes: z.string().optional(),
+        captureIds: z.array(z.number()),
+        settings: z.any().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const result = await createComparisonSession({
+          userId: ctx.user.id,
+          name: input.name,
+          notes: input.notes,
+          captureIds: JSON.stringify(input.captureIds),
+          settings: input.settings ? JSON.stringify(input.settings) : undefined,
+        });
+        return { success: true, id: result[0]?.insertId };
+      }),
+    
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        notes: z.string().optional(),
+        settings: z.any().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        await updateComparisonSession(input.id, {
+          notes: input.notes,
+          settings: input.settings ? JSON.stringify(input.settings) : undefined,
+        });
+        return { success: true };
+      }),
+    
+    get: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        const session = await getComparisonSession(input.id);
+        if (!session) return null;
+        return {
+          ...session,
+          captureIds: JSON.parse(session.captureIds),
+          settings: session.settings ? JSON.parse(session.settings) : null,
+        };
+      }),
+    
+    list: protectedProcedure
+      .query(async ({ ctx }) => {
+        const sessions = await getUserComparisonSessions(ctx.user.id);
+        return sessions.map(s => ({
+          ...s,
+          captureIds: JSON.parse(s.captureIds),
+          settings: s.settings ? JSON.parse(s.settings) : null,
+        }));
+      }),
+    
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await deleteComparisonSession(input.id);
+        return { success: true };
       }),
   }),
 });
