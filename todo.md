@@ -484,3 +484,12 @@
 - [x] Implement Apache Arrow serialization for IQ sample transport
 - [x] Add tRPC procedure for SNR/CFO estimation
 - [x] Write and pass tests for SNR/CFO estimation
+
+## SNR/CFO Panel Integration
+- [x] Add automatic SNR/CFO estimation trigger on box selection
+- [x] Update Measurements panel to display real SNR/CFO results
+- [x] Add loading spinner while estimation is running
+- [x] Display error messages if estimation fails
+- [x] Show SNR in dB, signal/noise power, M2M4 ratio
+- [x] Show CFO in Hz and normalized by sample rate
+- [ ] Add modulation type hint selector for better SNR accuracy

@@ -83,6 +83,43 @@ export default function ForensicCockpit() {
     },
   });
   
+  const [measurementsData, setMeasurementsData] = useState<any>(null);
+  const estimateSNRCFOMutation = trpc.captures.estimateSNRCFO.useMutation({
+    onSuccess: (data) => {
+      setMeasurementsData(data);
+      console.log('SNR/CFO estimation complete:', data);
+    },
+    onError: (error) => {
+      console.error('SNR/CFO estimation failed:', error);
+      toast.error(`Measurement failed: ${error.message}`);
+      setMeasurementsData(null);
+    },
+  });
+  
+  // Auto-trigger SNR/CFO estimation when selection changes
+  useEffect(() => {
+    if (selection && currentCapture) {
+      const sampleStart = selection.sampleStart;
+      const sampleEnd = selection.sampleEnd;
+      const sampleCount = sampleEnd - sampleStart;
+      
+      if (sampleCount > 0 && sampleCount < 1e6) { // Limit to 1M samples
+        estimateSNRCFOMutation.mutate({
+          captureId: currentCapture.id,
+          sampleStart,
+          sampleCount,
+          modulationType: 'QPSK', // TODO: Get from classification result
+        });
+      } else if (sampleCount >= 1e6) {
+        toast.error('Selection too large for measurement (max 1M samples)');
+        setMeasurementsData(null);
+      } else {
+        // Clear measurements when selection is cleared
+        setMeasurementsData(null);
+      }
+    }
+  }, [selection, currentCapture]);
+  
   // Refs for capturing visualizations
   const mainSpectrogramRef = useRef<{ captureCanvas: () => string }>(null);
   const constellationPlotRef = useRef<{ captureCanvas: () => string }>(null);
@@ -561,30 +598,61 @@ export default function ForensicCockpit() {
 
             {/* Measurements */}
             <Card className="p-4 data-panel">
-              <h4 className="font-black mb-3">Measurements</h4>
-              <div className="space-y-3">
-                <div>
-                  <div className="technical-label">Est. SNR</div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="metric-value">12.4</span>
-                    <span className="metric-unit">dB</span>
-                  </div>
-                </div>
-                <div>
-                  <div className="technical-label">Est. Baud</div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="metric-value">2.4</span>
-                    <span className="metric-unit">Msps</span>
-                  </div>
-                </div>
-                <div>
-                  <div className="technical-label">CFO</div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="metric-value">-14</span>
-                    <span className="metric-unit">kHz</span>
-                  </div>
-                </div>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="font-black">Measurements</h4>
+                {estimateSNRCFOMutation.isPending && (
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                )}
               </div>
+              {measurementsData ? (
+                <div className="space-y-3">
+                  <div>
+                    <div className="technical-label">SNR (M2M4)</div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="metric-value">
+                        {measurementsData.snr.snr_db !== null 
+                          ? measurementsData.snr.snr_db.toFixed(1) 
+                          : 'N/A'}
+                      </span>
+                      <span className="metric-unit">dB</span>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="technical-label">Signal Power</div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="metric-value">
+                        {measurementsData.snr.signal_power_db !== null
+                          ? measurementsData.snr.signal_power_db.toFixed(1)
+                          : 'N/A'}
+                      </span>
+                      <span className="metric-unit">dBm</span>
+                    </div>
+                  </div>
+                  {measurementsData.cfo && (
+                    <div>
+                      <div className="technical-label">CFO</div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="metric-value">
+                          {(measurementsData.cfo.cfo_hz / 1000).toFixed(1)}
+                        </span>
+                        <span className="metric-unit">kHz</span>
+                      </div>
+                    </div>
+                  )}
+                  <div>
+                    <div className="technical-label">M2/M4 Ratio</div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="metric-value">
+                        {measurementsData.snr.m2m4_ratio.toFixed(3)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground">
+                  {selection ? 'Analyzing selection...' : 'Select a region to measure'}
+                </div>
+              )}
             </Card>
 
             {/* Classification */}
