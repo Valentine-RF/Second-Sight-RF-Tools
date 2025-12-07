@@ -27,10 +27,10 @@ function Navigation() {
       <div className="container">
         <div className="flex items-center justify-between h-16">
           <Link href="/">
-            <a className="flex items-center gap-2 font-black text-xl hover:text-primary transition-colors">
+            <span className="flex items-center gap-2 font-black text-xl hover:text-primary transition-colors cursor-pointer">
               <Radio className="w-6 h-6" />
               Forensic Signal Processor
-            </a>
+            </span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -44,18 +44,18 @@ function Navigation() {
               {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               {theme === 'dark' ? 'Light' : 'Dark'}
             </Button>
-            <Link href="/files">
-              <Button variant="ghost" className="gap-2">
+            <Button variant="ghost" className="gap-2" asChild>
+              <Link href="/files">
                 <Upload className="w-4 h-4" />
                 File Manager
-              </Button>
-            </Link>
-            <Link href="/cockpit">
-              <Button variant="ghost" className="gap-2">
+              </Link>
+            </Button>
+            <Button variant="ghost" className="gap-2" asChild>
+              <Link href="/cockpit">
                 <Radio className="w-4 h-4" />
                 Cockpit
-              </Button>
-            </Link>
+              </Link>
+            </Button>
             <div className="h-6 w-px bg-border" />
             <div className="flex items-center gap-3">
               <div className="text-sm">
@@ -91,18 +91,18 @@ function Navigation() {
               {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
             </Button>
-            <Link href="/files">
-              <Button variant="ghost" className="w-full justify-start gap-2">
+            <Button variant="ghost" className="w-full justify-start gap-2" asChild>
+              <Link href="/files">
                 <Upload className="w-4 h-4" />
                 File Manager
-              </Button>
-            </Link>
-            <Link href="/cockpit">
-              <Button variant="ghost" className="w-full justify-start gap-2">
+              </Link>
+            </Button>
+            <Button variant="ghost" className="w-full justify-start gap-2" asChild>
+              <Link href="/cockpit">
                 <Radio className="w-4 h-4" />
                 Cockpit
-              </Button>
-            </Link>
+              </Link>
+            </Button>
             <div className="border-t border-border pt-2 mt-2">
               <div className="px-4 py-2 text-sm">
                 <div className="font-mono">{user.name || 'User'}</div>

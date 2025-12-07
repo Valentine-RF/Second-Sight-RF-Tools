@@ -39,18 +39,18 @@ export default function Home() {
 
           {isAuthenticated ? (
             <div className="flex gap-4 justify-center">
-              <Link href="/files">
-                <Button size="lg" className="gap-2">
+              <Button size="lg" className="gap-2" asChild>
+                <Link href="/files">
                   <Upload className="w-5 h-5" />
                   Manage Files
-                </Button>
-              </Link>
-              <Link href="/cockpit">
-                <Button size="lg" variant="outline" className="gap-2">
+                </Link>
+              </Button>
+              <Button size="lg" variant="outline" className="gap-2" asChild>
+                <Link href="/cockpit">
                   <Radio className="w-5 h-5" />
                   Open Cockpit
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             </div>
           ) : (
             <Button size="lg" asChild>

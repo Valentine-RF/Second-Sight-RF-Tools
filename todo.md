@@ -129,3 +129,6 @@
 - [x] Change default theme from light to dark
 - [x] Verify dark mode displays on initial page load
 - [x] Test theme persistence across page refreshes
+
+## Bug Fixes
+- [x] Fix nested anchor tag error in navigation (Link wrapping <a>)
