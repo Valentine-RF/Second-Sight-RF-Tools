@@ -47,7 +47,8 @@ import { calculateAdaptiveLoopBandwidth } from './adaptiveLoopBandwidth';
 import { batchRefineCFO, filterAnnotationsForCFO, estimateBatchDuration } from './batchCFO';
 import { sdrRouter } from './routers/sdr';
 import { apiKeysRouter } from './routers/apiKeys';
-import { splunkRouter } from './routers/splunk';
+import { splunkRouter } from "./routers/splunk";
+import { trainingRouter } from "./routers/training";
 import { detectFrequencyHopping } from './freqHopping';
 import { serializeIQSamples, streamIQSamplesArrow } from './arrow';
 import { extractAlphaSlice, extractTauSlice, crossSectionToCSV, type SCFData } from './scfCrossSection';
@@ -69,6 +70,7 @@ export const appRouter = router({
   sdr: sdrRouter,
   apiKeys: apiKeysRouter,
   splunk: splunkRouter,
+  training: trainingRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {

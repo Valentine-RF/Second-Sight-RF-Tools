@@ -12,9 +12,10 @@ import FileManager from "./pages/FileManager";
 import ForensicCockpit from "./pages/ForensicCockpit";
 import APIDocumentation from "./pages/APIDocumentation";
 import SplunkSettings from "./pages/SplunkSettings";
+import TrainingPage from "./pages/TrainingPage";
 import { useAuth } from "./_core/hooks/useAuth";
 import { Button } from "./components/ui/button";
-import { Radio, Upload, LogOut, Menu, Moon, Sun, Activity, Key } from 'lucide-react';
+import { Radio, Upload, LogOut, Menu, Moon, Sun, Activity, Key, Brain } from 'lucide-react';
 import { AccentSwitcher } from './components/AccentSwitcher';
 import { useState } from "react";
 
@@ -82,6 +83,12 @@ function Navigation() {
               <Link href="/api">
                 <Key className="w-4 h-4" />
                 API
+              </Link>
+            </Button>
+            <Button variant="ghost" className="gap-2" asChild>
+              <Link href="/training">
+                <Brain className="w-4 h-4" />
+                Training
               </Link>
             </Button>
             <div className="h-6 w-px bg-border" />
@@ -167,6 +174,7 @@ function Router() {
       <Route path="/advanced" component={AdvancedAnalysis} />
       <Route path="/api" component={APIDocumentation} />
       <Route path="/splunk" component={SplunkSettings} />
+      <Route path="/training" component={TrainingPage} />
       <Route path={"/404"} component={NotFound} />
       <Route path="/cockpit" component={ForensicCockpit} />
       <Route path="/404" component={NotFound} />

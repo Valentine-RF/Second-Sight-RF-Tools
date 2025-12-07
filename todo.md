@@ -1248,22 +1248,42 @@
 - [ ] Test event logging with real workflows
 - [ ] Verify events appear in Splunk dashboard with live server
 
-## Modulation Classifier Training System
+## Modulation Classifier Training System - Phase 1: Training UI
 - [x] Create training dataset database schema (dataset name, samples, labels, format)
-- [ ] Add dataset upload UI with file picker
-- [ ] Implement RadioML HDF5 format parser (h5wasm installed)
-- [ ] Add GNU Radio dataset format support
-- [ ] Create dataset preview with sample spectrograms
-- [ ] Add training configuration UI (epochs, batch size, learning rate)
-- [ ] Implement training progress tracking with loss/accuracy charts
-- [ ] Add model versioning and comparison
-- [ ] Create training history visualization
-- [ ] Add model export/import functionality
-- [ ] Implement validation split and metrics
-- [ ] Add confusion matrix visualization
-- [ ] Test with real RadioML datasets
+- [ ] Create /training route in App.tsx
+- [ ] Build TrainingPage component with tabs (Datasets, Train Model, Model History)
+- [ ] Add dataset upload form with file picker and drag-drop
+- [ ] Create training configuration form (epochs, batch size, learning rate, validation split)
+- [ ] Add dataset list with preview cards
+- [ ] Create tRPC procedures for dataset CRUD operations
+- [ ] Add training start/stop controls
+- [ ] Implement training progress bar with epoch counter
+- [ ] Add real-time loss/accuracy line charts (recharts)
+- [ ] Create model version comparison table
+- [ ] Add model activation toggle (set as active model)
 
-Note: Full training system requires significant development. Current implementation provides foundation with database schema and TensorFlow.js integration. Recommend using pre-trained models or external training pipeline for production use.
+## RadioML HDF5 Parser - Phase 2
+- [ ] Create RadioMLParser class using h5wasm
+- [ ] Implement HDF5 file reading and structure parsing
+- [ ] Extract IQ samples from RadioML2016.10a format
+- [ ] Extract IQ samples from RadioML2018.01a format
+- [ ] Parse modulation labels and SNR values
+- [ ] Create sample batching for training
+- [ ] Add progress callback for large datasets
+- [ ] Upload parsed dataset to S3
+- [ ] Populate training_datasets table automatically
+- [ ] Test with sample RadioML files
+
+## Training Progress Tracking - Phase 3
+- [ ] Create TrainingSession state management
+- [ ] Implement WebSocket for real-time progress updates
+- [ ] Add server-side training worker (separate thread)
+- [ ] Stream epoch metrics (loss, accuracy, val_loss, val_accuracy)
+- [ ] Update progress charts in real-time
+- [ ] Add training cancellation support
+- [ ] Save model checkpoints after each epoch
+- [ ] Generate confusion matrix on training completion
+- [ ] Store final model in S3 and model_versions table
 
 ## GPU-Accelerated Waterfall Display
 - [ ] Create WaterfallDisplay component with WebGL renderer
