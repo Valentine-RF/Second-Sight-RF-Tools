@@ -820,3 +820,17 @@
 - [x] Create captures.batchDelete tRPC procedure
 - [x] Handle S3 cleanup for multiple files in batch
 - [ ] Test all features with real signal data
+
+## HTTP Range Request Handler (Current Sprint)
+- [x] Install Apache Arrow JavaScript library (apache-arrow)
+- [x] Create rangeRequestHandler module for byte-range calculations
+- [x] Implement calculateByteRange function for sample-to-byte conversion
+- [x] Add HTTP Range header parsing and validation
+- [x] Implement fetchDataRange function with Range request to S3
+- [x] Create Arrow Table schema for IQ sample data
+- [x] Implement Arrow serialization for complex float32/int16/uint8 data
+- [x] Update getDataRange procedure to use Range requests
+- [x] Add Arrow buffer response with proper content-type
+- [ ] Test with large signal files (>1GB)
+- [ ] Validate zero-copy performance vs full file loading
+- [x] Add error handling for invalid range requests

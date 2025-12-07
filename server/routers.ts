@@ -29,6 +29,8 @@ import { parseSigMFMetadata, annotationToSigMF, generateSigMFMetadata } from "./
 import { storagePut, storageGet, storageDelete } from "./storage";
 import { demodulateRTTY, demodulatePSK31, decodeCW } from "./demodulator";
 import { batchDeleteCaptures } from "./batchDelete";
+import { calculateByteRange, fetchDataRange } from "./rangeRequest";
+import { serializeIQToArrow } from "./arrowSerializer";
 import { invokeLLM } from "./_core/llm";
 import { exec } from 'child_process';
 import { promisify } from 'util';
@@ -288,16 +290,51 @@ export const appRouter = router({
       .query(async ({ input }) => {
         const capture = await getSignalCaptureById(input.captureId);
         if (!capture) throw new Error("Capture not found");
-
-        // TODO: Implement HTTP Range request to fetch specific samples
-        // This will use Apache Arrow for zero-copy serialization
+        if (!capture.dataFileUrl) throw new Error("Data file not available");
         
+        // Validate sample range
+        const isValid = validateSampleRange(
+          capture.datatype || 'cf32_le',
+          input.sampleStart,
+          input.sampleCount,
+          capture.dataFileSize || 0
+        );
+        if (!isValid) throw new Error("Invalid sample range");
+        
+        // Calculate byte range for HTTP Range request
+        const { start, end } = calculateByteRange(
+          capture.datatype || 'cf32_le',
+          input.sampleStart,
+          input.sampleCount
+        );
+        
+        // Fetch data range from S3 using HTTP Range request
+        const buffer = await fetchDataRange(capture.dataFileUrl, start, end);
+        
+        // Parse binary IQ data using rangeRequest module
+        const { iqReal, iqImag } = await import('./rangeRequest').then(m => 
+          m.parseIQData(buffer, capture.datatype || 'cf32_le')
+        );
+        
+        // Serialize to Apache Arrow format (zero-copy)
+        const arrowBuffer = serializeIQToArrow(
+          iqReal,
+          iqImag,
+          input.sampleStart,
+          {
+            datatype: capture.datatype || 'cf32_le',
+            sample_rate: capture.sampleRate?.toString() || '0',
+            center_frequency: '0', // TODO: Extract from metadata
+          }
+        );
+        
+        // Return Arrow buffer as base64 for tRPC transport
         return {
           sampleStart: input.sampleStart,
           sampleCount: input.sampleCount,
           datatype: capture.datatype,
           sampleRate: capture.sampleRate,
-          // data: arrowBuffer (to be implemented)
+          arrowData: Buffer.from(arrowBuffer).toString('base64'),
         };
       }),
 
