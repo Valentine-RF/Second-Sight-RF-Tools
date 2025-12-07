@@ -755,3 +755,19 @@
 - [ ] Create blind source separation procedure
 - [ ] Add UI controls for algorithm parameter tuning
 - [ ] Visualize separated sources in Analysis Dock
+
+## Advanced Signal Processing Integration (Current Sprint)
+- [x] Create captures.reconstructSparse tRPC procedure with algorithm selection (OMP/CoSaMP/LASSO/FISTA)
+- [x] Create captures.computeWVD tRPC procedure with distribution type (WVD/SPWVD/Choi-Williams)
+- [x] Create captures.separateSources tRPC procedure with algorithm selection (FastICA/NMF)
+- [x] Add Compressive Sensing tab to Analysis Dock with algorithm selector and sparsity slider
+- [x] Add Time-Frequency tab to Analysis Dock with distribution selector and window size controls
+- [x] Add Source Separation tab to Analysis Dock with algorithm selector and component count slider
+- [x] Add "Reconstruct Sparse" action to context menu
+- [x] Add "Time-Frequency Analysis" action to context menu
+- [x] Add "Separate Sources" action to context menu
+- [ ] Create visualization component for reconstructed sparse signals
+- [ ] Create WVD heatmap visualization component
+- [ ] Create separated sources waveform display component
+- [ ] Test all algorithms with real IQ data
+- [x] Add loading states and error handling for all procedures

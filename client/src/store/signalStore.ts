@@ -55,7 +55,7 @@ export interface Viewport {
 /**
  * Active tab in analysis dock
  */
-export type AnalysisTab = 'spectrum' | 'constellation' | 'cyclostationary' | 'hex';
+export type AnalysisTab = 'spectrum' | 'constellation' | 'cyclostationary' | 'hex' | 'compressive' | 'timefreq' | 'separation';
 
 /**
  * Colormap options for spectrogram

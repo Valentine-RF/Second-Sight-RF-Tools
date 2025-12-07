@@ -42,6 +42,9 @@ import { runSNRCFOEstimation } from './snrCfoBridge';
 import { sdrRouter } from './routers/sdr';
 import { detectFrequencyHopping } from './freqHopping';
 import { serializeIQSamples, streamIQSamplesArrow } from './arrow';
+import { orthogonalMatchingPursuit, compressiveSamplingMatchingPursuit, lasso, fista } from './compressiveSensing';
+import { wignerVilleDistribution, smoothedPseudoWVD, choiWilliamsDistribution } from './wignerVille';
+import { fastICA, nmf } from './blindSourceSeparation';
 
 // Helper to convert flat array to 2D matrix
 function convertToNestedArray(flat: Float32Array, rows: number, cols: number): number[][] {
@@ -725,6 +728,284 @@ export const appRouter = router({
         return {
           pdf: pdfBuffer.toString('base64'),
           filename: `${capture.name.replace(/[^a-z0-9]/gi, '_')}_report.pdf`,
+        };
+      }),
+
+    /**
+     * Reconstruct sparse signal using compressive sensing algorithms
+     */
+    reconstructSparse: protectedProcedure
+      .input(z.object({
+        captureId: z.number(),
+        sampleStart: z.number(),
+        sampleCount: z.number(),
+        algorithm: z.enum(['omp', 'cosamp', 'lasso', 'fista']),
+        sparsityLevel: z.number().min(1).max(100), // Number of non-zero coefficients
+        measurementRatio: z.number().min(0.1).max(1).optional(), // Ratio of measurements to signal length
+      }))
+      .mutation(async ({ input }) => {
+        const capture = await getSignalCaptureById(input.captureId);
+        if (!capture) throw new Error("Capture not found");
+        if (!capture.dataFileUrl) throw new Error("Data file not available");
+
+        // Validate sample range
+        const isValid = validateSampleRange(
+          capture.datatype || 'cf32_le',
+          input.sampleStart,
+          input.sampleCount,
+          capture.dataFileSize || 0
+        );
+        if (!isValid) throw new Error("Invalid sample range");
+
+        // Fetch IQ samples from S3
+        const { iqReal, iqImag } = await fetchIQSamples(
+          capture.dataFileUrl,
+          capture.datatype || 'cf32_le',
+          input.sampleStart,
+          Math.min(input.sampleCount, 16384) // Limit to 16k samples for CS
+        );
+
+        // Create measurement matrix (random Gaussian)
+        const signalLength = iqReal.length;
+        const measurementRatio = input.measurementRatio || 0.5;
+        const numMeasurements = Math.floor(signalLength * measurementRatio);
+        
+        const measurementMatrix = new Float32Array(numMeasurements * signalLength);
+        for (let i = 0; i < measurementMatrix.length; i++) {
+          // Gaussian random matrix
+          measurementMatrix[i] = (Math.random() - 0.5) * 2 / Math.sqrt(numMeasurements);
+        }
+
+        // Compute measurements (y = Φx)
+        const measurements = new Float32Array(numMeasurements);
+        for (let i = 0; i < numMeasurements; i++) {
+          let sum = 0;
+          for (let j = 0; j < signalLength; j++) {
+            sum += measurementMatrix[i * signalLength + j] * iqReal[j];
+          }
+          measurements[i] = sum;
+        }
+
+        // Run selected algorithm
+        let reconstructed: Float32Array;
+        let iterations: number;
+        
+        switch (input.algorithm) {
+          case 'omp':
+            const ompResult = orthogonalMatchingPursuit(measurements, measurementMatrix, input.sparsityLevel);
+            reconstructed = ompResult.reconstructed;
+            iterations = ompResult.iterations;
+            break;
+          case 'cosamp':
+            const cosampResult = compressiveSamplingMatchingPursuit(measurements, measurementMatrix, input.sparsityLevel);
+            reconstructed = cosampResult.reconstructed;
+            iterations = cosampResult.iterations;
+            break;
+          case 'lasso':
+            const lassoResult = lasso(measurements, measurementMatrix, 0.1);
+            reconstructed = lassoResult.reconstructed;
+            iterations = lassoResult.iterations;
+            break;
+          case 'fista':
+            const fistaResult = fista(measurements, measurementMatrix, 0.1);
+            reconstructed = fistaResult.reconstructed;
+            iterations = fistaResult.iterations;
+            break;
+        }
+
+        // Compute reconstruction error
+        let error = 0;
+        for (let i = 0; i < signalLength; i++) {
+          error += (iqReal[i] - reconstructed[i]) ** 2;
+        }
+        const rmse = Math.sqrt(error / signalLength);
+
+        return {
+          original: Array.from(iqReal),
+          reconstructed: Array.from(reconstructed),
+          measurements: Array.from(measurements),
+          algorithm: input.algorithm,
+          sparsityLevel: input.sparsityLevel,
+          measurementRatio,
+          numMeasurements,
+          signalLength,
+          iterations,
+          rmse,
+        };
+      }),
+
+    /**
+     * Compute Wigner-Ville Distribution for time-frequency analysis
+     */
+    computeWVD: protectedProcedure
+      .input(z.object({
+        captureId: z.number(),
+        sampleStart: z.number(),
+        sampleCount: z.number(),
+        distributionType: z.enum(['wvd', 'spwvd', 'choi-williams']),
+        windowSize: z.number().min(16).max(512).optional(),
+        sigma: z.number().min(0.1).max(10).optional(), // For Choi-Williams
+      }))
+      .mutation(async ({ input }) => {
+        const capture = await getSignalCaptureById(input.captureId);
+        if (!capture) throw new Error("Capture not found");
+        if (!capture.dataFileUrl) throw new Error("Data file not available");
+
+        // Validate sample range
+        const isValid = validateSampleRange(
+          capture.datatype || 'cf32_le',
+          input.sampleStart,
+          input.sampleCount,
+          capture.dataFileSize || 0
+        );
+        if (!isValid) throw new Error("Invalid sample range");
+
+        // Fetch IQ samples from S3
+        const { iqReal, iqImag } = await fetchIQSamples(
+          capture.dataFileUrl,
+          capture.datatype || 'cf32_le',
+          input.sampleStart,
+          Math.min(input.sampleCount, 8192) // Limit to 8k samples for WVD
+        );
+
+        // Convert to complex signal
+        const signal = new Float32Array(iqReal.length * 2);
+        for (let i = 0; i < iqReal.length; i++) {
+          signal[i * 2] = iqReal[i];
+          signal[i * 2 + 1] = iqImag[i];
+        }
+
+        // Compute selected distribution
+        let tfr: Float32Array;
+        let timePoints: number;
+        let freqPoints: number;
+        
+        const sampleRate = capture.sampleRate || 1;
+        
+        switch (input.distributionType) {
+          case 'wvd':
+            const wvdResult = wignerVilleDistribution(signal, sampleRate);
+            tfr = wvdResult.tfr;
+            timePoints = wvdResult.width;
+            freqPoints = wvdResult.height;
+            break;
+          case 'spwvd':
+            const spwvdResult = smoothedPseudoWVD(signal, sampleRate, input.windowSize || 64);
+            tfr = spwvdResult.tfr;
+            timePoints = spwvdResult.width;
+            freqPoints = spwvdResult.height;
+            break;
+          case 'choi-williams':
+            const cwResult = choiWilliamsDistribution(signal, sampleRate, input.sigma || 1.0);
+            tfr = cwResult.tfr;
+            timePoints = cwResult.width;
+            freqPoints = cwResult.height;
+            break;
+        }
+
+        // Convert to 2D array for frontend
+        const wvd2D = convertToNestedArray(tfr, timePoints, freqPoints);
+
+        return {
+          wvd: wvd2D,
+          timePoints,
+          freqPoints,
+          distributionType: input.distributionType,
+          sampleRate: capture.sampleRate || 1,
+        };
+      }),
+
+    /**
+     * Separate mixed signals using blind source separation
+     */
+    separateSources: protectedProcedure
+      .input(z.object({
+        captureId: z.number(),
+        sampleStart: z.number(),
+        sampleCount: z.number(),
+        algorithm: z.enum(['fastica', 'nmf']),
+        numComponents: z.number().min(2).max(8),
+        maxIterations: z.number().min(100).max(5000).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const capture = await getSignalCaptureById(input.captureId);
+        if (!capture) throw new Error("Capture not found");
+        if (!capture.dataFileUrl) throw new Error("Data file not available");
+
+        // Validate sample range
+        const isValid = validateSampleRange(
+          capture.datatype || 'cf32_le',
+          input.sampleStart,
+          input.sampleCount,
+          capture.dataFileSize || 0
+        );
+        if (!isValid) throw new Error("Invalid sample range");
+
+        // Fetch IQ samples from S3
+        const { iqReal, iqImag } = await fetchIQSamples(
+          capture.dataFileUrl,
+          capture.datatype || 'cf32_le',
+          input.sampleStart,
+          Math.min(input.sampleCount, 16384) // Limit to 16k samples for BSS
+        );
+
+        // For BSS, we need multiple mixed signals
+        // Create synthetic mixtures from I and Q channels as two observations
+        const mixedSignals = [
+          iqReal,
+          iqImag,
+        ];
+
+        // Run selected algorithm
+        let sources: Float32Array[];
+        let mixingMatrix: Float32Array;
+        let iterations: number;
+        
+        switch (input.algorithm) {
+          case 'fastica':
+            const icaResult = fastICA(mixedSignals, input.numComponents, input.maxIterations || 1000);
+            sources = icaResult.sources;
+            mixingMatrix = icaResult.mixingMatrix;
+            iterations = icaResult.iterations;
+            break;
+          case 'nmf':
+            // For NMF, create magnitude spectrogram
+            const fftSize = 256;
+            const numFrames = Math.floor(iqReal.length / fftSize);
+            const spectrogram = new Float32Array(fftSize * numFrames);
+            
+            for (let i = 0; i < numFrames; i++) {
+              for (let j = 0; j < fftSize; j++) {
+                const idx = i * fftSize + j;
+                if (idx < iqReal.length) {
+                  spectrogram[i * fftSize + j] = Math.sqrt(iqReal[idx] ** 2 + iqImag[idx] ** 2);
+                }
+              }
+            }
+            
+            const nmfResult = nmf(spectrogram, fftSize, numFrames, input.numComponents, input.maxIterations || 1000);
+            
+            // Extract sources from NMF components (W matrix rows)
+            sources = [];
+            for (let i = 0; i < input.numComponents; i++) {
+              const source = new Float32Array(fftSize);
+              for (let j = 0; j < fftSize; j++) {
+                source[j] = nmfResult.W[j * input.numComponents + i];
+              }
+              sources.push(source);
+            }
+            
+            mixingMatrix = nmfResult.H;
+            iterations = nmfResult.iterations;
+            break;
+        }
+
+        return {
+          sources: sources.map(s => Array.from(s)),
+          mixingMatrix: Array.from(mixingMatrix),
+          algorithm: input.algorithm,
+          numComponents: input.numComponents,
+          iterations,
         };
       }),
   }),

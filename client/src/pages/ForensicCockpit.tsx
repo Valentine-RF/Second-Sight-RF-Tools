@@ -81,6 +81,21 @@ export default function ForensicCockpit() {
   const [selectedAnnotationId, setSelectedAnnotationId] = useState<number | null>(null);
   const [pendingAnnotation, setPendingAnnotation] = useState<SignalSelection | null>(null);
   
+  // Advanced signal processing state
+  const [csAlgorithm, setCsAlgorithm] = useState('omp');
+  const [sparsityLevel, setSparsityLevel] = useState(10);
+  const [measurementRatio, setMeasurementRatio] = useState(0.5);
+  const [csResult, setCsResult] = useState<any>(null);
+  
+  const [wvdType, setWvdType] = useState('wvd');
+  const [windowSize, setWindowSize] = useState(64);
+  const [sigma, setSigma] = useState(1.0);
+  const [wvdResult, setWvdResult] = useState<any>(null);
+  
+  const [bssAlgorithm, setBssAlgorithm] = useState('fastica');
+  const [numComponents, setNumComponents] = useState(2);
+  const [bssResult, setBssResult] = useState<any>(null);
+  
   const demodMutation = trpc.captures.demodulate.useMutation({
     onSuccess: (data) => {
       setDemodResult(data);
@@ -146,6 +161,47 @@ export default function ForensicCockpit() {
   });
   
   const deleteAnnotationMutation = trpc.annotations.delete.useMutation({
+    onSuccess: () => {
+      toast.success('Annotation deleted');
+      trpc.useUtils().annotations.list.invalidate();
+    },
+  });
+  
+  // Advanced signal processing mutations
+  const reconstructSparseMutation = trpc.captures.reconstructSparse.useMutation({
+    onSuccess: (data) => {
+      setCsResult(data);
+      setActiveTab('compressive');
+      toast.success(`Sparse reconstruction complete (RMSE: ${data.rmse.toFixed(6)})`);
+    },
+    onError: (error) => {
+      toast.error(`Reconstruction failed: ${error.message}`);
+    },
+  });
+  
+  const computeWVDMutation = trpc.captures.computeWVD.useMutation({
+    onSuccess: (data) => {
+      setWvdResult(data);
+      setActiveTab('timefreq');
+      toast.success(`Time-frequency analysis complete (${data.distributionType.toUpperCase()})`);
+    },
+    onError: (error) => {
+      toast.error(`WVD computation failed: ${error.message}`);
+    },
+  });
+  
+  const separateSourcesMutation = trpc.captures.separateSources.useMutation({
+    onSuccess: (data) => {
+      setBssResult(data);
+      setActiveTab('separation');
+      toast.success(`Separated ${data.numComponents} sources using ${data.algorithm.toUpperCase()}`);
+    },
+    onError: (error) => {
+      toast.error(`Source separation failed: ${error.message}`);
+    },
+  });
+  
+  const deleteAnnotationMutation2 = trpc.annotations.delete.useMutation({
     onSuccess: () => {
       toast.success('Annotation deleted');
       trpc.useUtils().annotations.list.invalidate();
@@ -335,6 +391,56 @@ export default function ForensicCockpit() {
       captureId: currentCapture.id,
       sampleStart: selection.sampleStart,
       sampleCount,
+    });
+    
+    setContextMenuPos(null);
+  };
+  
+  const handleReconstructSparse = () => {
+    if (!selection || !currentCapture) return;
+    
+    const sampleCount = selection.sampleEnd - selection.sampleStart;
+    
+    reconstructSparseMutation.mutate({
+      captureId: currentCapture.id,
+      sampleStart: selection.sampleStart,
+      sampleCount,
+      algorithm: csAlgorithm as 'omp' | 'cosamp' | 'lasso' | 'fista',
+      sparsityLevel,
+      measurementRatio,
+    });
+    
+    setContextMenuPos(null);
+  };
+  
+  const handleTimeFreqAnalysis = () => {
+    if (!selection || !currentCapture) return;
+    
+    const sampleCount = selection.sampleEnd - selection.sampleStart;
+    
+    computeWVDMutation.mutate({
+      captureId: currentCapture.id,
+      sampleStart: selection.sampleStart,
+      sampleCount,
+      distributionType: wvdType as 'wvd' | 'spwvd' | 'choi-williams',
+      windowSize: wvdType === 'spwvd' ? windowSize : undefined,
+      sigma: wvdType === 'choi-williams' ? sigma : undefined,
+    });
+    
+    setContextMenuPos(null);
+  };
+  
+  const handleSeparateSources = () => {
+    if (!selection || !currentCapture) return;
+    
+    const sampleCount = selection.sampleEnd - selection.sampleStart;
+    
+    separateSourcesMutation.mutate({
+      captureId: currentCapture.id,
+      sampleStart: selection.sampleStart,
+      sampleCount,
+      algorithm: bssAlgorithm as 'fastica' | 'nmf',
+      numComponents,
     });
     
     setContextMenuPos(null);
@@ -764,6 +870,19 @@ export default function ForensicCockpit() {
                   <Binary className="w-4 h-4 mr-2" />
                   Demodulate
                 </Button>
+                <div className="border-t border-border my-1" />
+                <Button variant="ghost" size="sm" className="w-full justify-start" onClick={handleReconstructSparse}>
+                  <Activity className="w-4 h-4 mr-2" />
+                  Reconstruct Sparse
+                </Button>
+                <Button variant="ghost" size="sm" className="w-full justify-start" onClick={handleTimeFreqAnalysis}>
+                  <Waves className="w-4 h-4 mr-2" />
+                  Time-Frequency Analysis
+                </Button>
+                <Button variant="ghost" size="sm" className="w-full justify-start" onClick={handleSeparateSources}>
+                  <Radio className="w-4 h-4 mr-2" />
+                  Separate Sources
+                </Button>
               </div>
             )}
           </div>
@@ -799,6 +918,18 @@ export default function ForensicCockpit() {
                   <TabsTrigger value="hex" className="gap-2">
                     <Binary className="w-4 h-4" />
                     Hex View
+                  </TabsTrigger>
+                  <TabsTrigger value="compressive" className="gap-2">
+                    <Activity className="w-4 h-4" />
+                    Compressive Sensing
+                  </TabsTrigger>
+                  <TabsTrigger value="timefreq" className="gap-2">
+                    <Waves className="w-4 h-4" />
+                    Time-Frequency
+                  </TabsTrigger>
+                  <TabsTrigger value="separation" className="gap-2">
+                    <Radio className="w-4 h-4" />
+                    Source Separation
                   </TabsTrigger>
                 </TabsList>
 
@@ -879,6 +1010,287 @@ export default function ForensicCockpit() {
                     mode={demodData?.mode || 'CW'}
                     confidence={demodData?.confidence || 0}
                   />
+                </TabsContent>
+
+                <TabsContent value="compressive" className="p-4 h-full overflow-y-auto">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-bold text-lg">Compressive Sensing Reconstruction</h4>
+                      {reconstructSparseMutation.isPending && (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      )}
+                    </div>
+                    
+                    {/* Algorithm Selector */}
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Algorithm</label>
+                      <Select value={csAlgorithm} onValueChange={setCsAlgorithm}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="omp">OMP (Orthogonal Matching Pursuit)</SelectItem>
+                          <SelectItem value="cosamp">CoSaMP (Compressive Sampling MP)</SelectItem>
+                          <SelectItem value="lasso">LASSO (L1 Regularization)</SelectItem>
+                          <SelectItem value="fista">FISTA (Fast Iterative Shrinkage)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    {/* Sparsity Level Slider */}
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">
+                        Sparsity Level: {sparsityLevel}
+                      </label>
+                      <input
+                        type="range"
+                        min="1"
+                        max="100"
+                        value={sparsityLevel}
+                        onChange={(e) => setSparsityLevel(Number(e.target.value))}
+                        className="w-full"
+                      />
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Number of non-zero coefficients in sparse representation
+                      </div>
+                    </div>
+                    
+                    {/* Measurement Ratio Slider */}
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">
+                        Measurement Ratio: {measurementRatio.toFixed(2)}
+                      </label>
+                      <input
+                        type="range"
+                        min="0.1"
+                        max="1"
+                        step="0.05"
+                        value={measurementRatio}
+                        onChange={(e) => setMeasurementRatio(Number(e.target.value))}
+                        className="w-full"
+                      />
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Ratio of measurements to signal length (lower = more compression)
+                      </div>
+                    </div>
+                    
+                    {/* Results Display */}
+                    {csResult && (
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="font-medium">Algorithm:</span>
+                          <span className="font-mono">{csResult.algorithm.toUpperCase()}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium">Signal Length:</span>
+                          <span className="font-mono">{csResult.signalLength}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium">Measurements:</span>
+                          <span className="font-mono">{csResult.numMeasurements}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium">Compression:</span>
+                          <span className="font-mono">{((1 - csResult.measurementRatio) * 100).toFixed(1)}%</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium">RMSE:</span>
+                          <span className="font-mono">{csResult.rmse.toFixed(6)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium">Iterations:</span>
+                          <span className="font-mono">{csResult.iterations}</span>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {!csResult && (
+                      <div className="text-sm text-muted-foreground text-center py-8">
+                        Select a signal region and choose "Reconstruct Sparse" from context menu
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="timefreq" className="p-4 h-full overflow-y-auto">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-bold text-lg">Time-Frequency Analysis</h4>
+                      {computeWVDMutation.isPending && (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      )}
+                    </div>
+                    
+                    {/* Distribution Type Selector */}
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Distribution Type</label>
+                      <Select value={wvdType} onValueChange={setWvdType}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="wvd">WVD (Wigner-Ville)</SelectItem>
+                          <SelectItem value="spwvd">SPWVD (Smoothed Pseudo-WVD)</SelectItem>
+                          <SelectItem value="choi-williams">Choi-Williams Distribution</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    {/* Window Size Slider (for SPWVD) */}
+                    {wvdType === 'spwvd' && (
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">
+                          Window Size: {windowSize}
+                        </label>
+                        <input
+                          type="range"
+                          min="16"
+                          max="512"
+                          step="16"
+                          value={windowSize}
+                          onChange={(e) => setWindowSize(Number(e.target.value))}
+                          className="w-full"
+                        />
+                        <div className="text-xs text-muted-foreground mt-1">
+                          Smoothing window size for cross-term mitigation
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Sigma Parameter (for Choi-Williams) */}
+                    {wvdType === 'choi-williams' && (
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">
+                          Sigma: {sigma.toFixed(2)}
+                        </label>
+                        <input
+                          type="range"
+                          min="0.1"
+                          max="10"
+                          step="0.1"
+                          value={sigma}
+                          onChange={(e) => setSigma(Number(e.target.value))}
+                          className="w-full"
+                        />
+                        <div className="text-xs text-muted-foreground mt-1">
+                          Kernel parameter for cross-term suppression
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* WVD Heatmap Display */}
+                    {wvdResult && (
+                      <div className="space-y-2">
+                        <div className="text-sm space-y-1">
+                          <div className="flex justify-between">
+                            <span className="font-medium">Distribution:</span>
+                            <span className="font-mono">{wvdResult.distributionType.toUpperCase()}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="font-medium">Time Points:</span>
+                            <span className="font-mono">{wvdResult.timePoints}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="font-medium">Freq Points:</span>
+                            <span className="font-mono">{wvdResult.freqPoints}</span>
+                          </div>
+                        </div>
+                        {/* TODO: Add WVD heatmap canvas visualization component */}
+                        <div className="border border-border rounded p-4 text-center text-sm text-muted-foreground">
+                          WVD Heatmap Visualization (Canvas rendering pending)
+                        </div>
+                      </div>
+                    )}
+                    
+                    {!wvdResult && (
+                      <div className="text-sm text-muted-foreground text-center py-8">
+                        Select a signal region and choose "Time-Frequency Analysis" from context menu
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="separation" className="p-4 h-full overflow-y-auto">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-bold text-lg">Blind Source Separation</h4>
+                      {separateSourcesMutation.isPending && (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      )}
+                    </div>
+                    
+                    {/* Algorithm Selector */}
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Algorithm</label>
+                      <Select value={bssAlgorithm} onValueChange={setBssAlgorithm}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="fastica">FastICA (Independent Component Analysis)</SelectItem>
+                          <SelectItem value="nmf">NMF (Non-negative Matrix Factorization)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    {/* Number of Components Slider */}
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">
+                        Number of Components: {numComponents}
+                      </label>
+                      <input
+                        type="range"
+                        min="2"
+                        max="8"
+                        value={numComponents}
+                        onChange={(e) => setNumComponents(Number(e.target.value))}
+                        className="w-full"
+                      />
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Number of independent sources to extract
+                      </div>
+                    </div>
+                    
+                    {/* Results Display */}
+                    {bssResult && (
+                      <div className="space-y-3">
+                        <div className="text-sm space-y-1">
+                          <div className="flex justify-between">
+                            <span className="font-medium">Algorithm:</span>
+                            <span className="font-mono">{bssResult.algorithm.toUpperCase()}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="font-medium">Components:</span>
+                            <span className="font-mono">{bssResult.numComponents}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="font-medium">Iterations:</span>
+                            <span className="font-mono">{bssResult.iterations}</span>
+                          </div>
+                        </div>
+                        
+                        {/* Separated Sources Waveforms */}
+                        <div className="space-y-2">
+                          <div className="font-medium text-sm">Separated Sources:</div>
+                          {bssResult.sources.map((source: number[], idx: number) => (
+                            <div key={idx} className="border border-border rounded p-2">
+                              <div className="text-xs font-mono mb-1">Source {idx + 1}</div>
+                              {/* TODO: Add waveform canvas visualization */}
+                              <div className="h-16 bg-muted/20 rounded text-xs text-muted-foreground flex items-center justify-center">
+                                Waveform visualization (Canvas rendering pending)
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {!bssResult && (
+                      <div className="text-sm text-muted-foreground text-center py-8">
+                        Select a signal region and choose "Separate Sources" from context menu
+                      </div>
+                    )}
+                  </div>
                 </TabsContent>
               </Tabs>
             )}
