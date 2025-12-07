@@ -405,6 +405,7 @@ export const appRouter = router({
         baudRate: z.number().optional(),
         shift: z.number().optional(),
         wpm: z.number().optional(),
+        coarseCfoHz: z.number().optional(),
       }))
       .mutation(async ({ input }) => {
         const capture = await getSignalCaptureById(input.captureId);
@@ -429,12 +430,58 @@ export const appRouter = router({
         );
 
         // Convert to complex samples
-        const complexSamples = Array.from(iqReal).map((re, i) => ({
+        let complexSamples = Array.from(iqReal).map((re, i) => ({
           re,
           im: iqImag[i]
         }));
 
         const sampleRate = capture.sampleRate || 1;
+        
+        // Apply Costas loop CFO correction if coarseCfoHz is provided
+        if (input.coarseCfoHz && Math.abs(input.coarseCfoHz) > 10) {
+          try {
+            // Determine modulation order from mode
+            let modulationOrder = 4; // Default QPSK
+            if (input.mode === 'RTTY' || input.mode === 'CW') {
+              modulationOrder = 2; // BPSK for RTTY/CW
+            } else if (input.mode === 'PSK31') {
+              modulationOrder = 2; // BPSK for PSK31
+            }
+            
+            // Run Costas loop refinement
+            const costasResult = await refineCFOWithCostasLoop(
+              iqReal,
+              iqImag,
+              sampleRate,
+              {
+                coarseCfoHz: input.coarseCfoHz,
+                modulationOrder,
+                loopBandwidth: 0.01,
+              }
+            );
+            
+            // Apply total CFO correction
+            const totalCfoHz = costasResult.total_cfo_hz;
+            for (let i = 0; i < complexSamples.length; i++) {
+              const t = i / sampleRate;
+              const phase = -2 * Math.PI * totalCfoHz * t;
+              const cosPhase = Math.cos(phase);
+              const sinPhase = Math.sin(phase);
+              
+              const re = complexSamples[i].re;
+              const im = complexSamples[i].im;
+              
+              complexSamples[i] = {
+                re: re * cosPhase - im * sinPhase,
+                im: re * sinPhase + im * cosPhase
+              };
+            }
+            
+            console.log(`[Demodulate] Applied Costas loop CFO correction: ${totalCfoHz.toFixed(1)} Hz`);
+          } catch (error) {
+            console.error('[Demodulate] Costas loop failed, proceeding without CFO correction:', error);
+          }
+        }
 
         // Demodulate based on mode
         let result;

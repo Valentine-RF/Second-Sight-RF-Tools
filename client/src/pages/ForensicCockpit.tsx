@@ -24,6 +24,7 @@ import { WVDHeatmap } from '@/components/WVDHeatmap';
 import { WaveformDisplay } from '@/components/WaveformDisplay';
 import { ReconstructedSignalPlot } from '@/components/ReconstructedSignalPlot';
 import { AlgorithmComparison } from '@/components/AlgorithmComparison';
+import { PhaseTrackingPlot } from '@/components/PhaseTrackingPlot';
 import { generateForensicReport } from '@/lib/pdfExport';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
@@ -228,6 +229,9 @@ export default function ForensicCockpit() {
   });
   
   const [measurementsData, setMeasurementsData] = useState<any>(null);
+  const [costasResult, setCostasResult] = useState<any>(null);
+  const [costasModOrder, setCostasModOrder] = useState(4);
+  const [costasLoopBW, setCostasLoopBW] = useState(0.01);
   
   // Keyboard shortcuts
   useEffect(() => {
@@ -268,6 +272,17 @@ export default function ForensicCockpit() {
       console.error('SNR/CFO estimation failed:', error);
       toast.error(`Measurement failed: ${error.message}`);
       setMeasurementsData(null);
+    },
+  });
+  
+  const refineCFOMutation = trpc.captures.refineCFO.useMutation({
+    onSuccess: (data) => {
+      setCostasResult(data);
+      toast.success(`CFO refined: ${data.total_cfo_hz.toFixed(1)} Hz ${data.lock_detected ? '(Locked)' : '(No Lock)'}`);
+    },
+    onError: (error) => {
+      toast.error(`CFO refinement failed: ${error.message}`);
+      setCostasResult(null);
     },
   });
   
@@ -721,6 +736,7 @@ export default function ForensicCockpit() {
                   sampleStart: sel.sampleStart,
                   sampleCount: sel.sampleCount,
                   mode: mode,
+                  coarseCfoHz: measurementsData?.cfo?.cfo_hz,
                 });
               }}
               onSaveAnnotation={(sel) => {
@@ -1688,6 +1704,118 @@ export default function ForensicCockpit() {
                         </div>
                       )}
                     </>
+                  )}
+                  
+                  {/* Costas Loop CFO Refinement */}
+                  {measurementsData?.cfo && (
+                    <div className="border-t border-border pt-3 mt-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="technical-label text-xs">CFO Refinement (Costas Loop)</div>
+                        {refineCFOMutation.isPending && (
+                          <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                        )}
+                      </div>
+                      
+                      <div className="space-y-2 mb-2">
+                        <div>
+                          <label className="text-xs text-muted-foreground">Modulation Order</label>
+                          <Select value={costasModOrder.toString()} onValueChange={(v) => setCostasModOrder(Number(v))}>
+                            <SelectTrigger className="w-full h-7 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="2">BPSK (2)</SelectItem>
+                              <SelectItem value="4">QPSK (4)</SelectItem>
+                              <SelectItem value="8">8PSK (8)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div>
+                          <label className="text-xs text-muted-foreground">Loop Bandwidth</label>
+                          <Select value={costasLoopBW.toString()} onValueChange={(v) => setCostasLoopBW(Number(v))}>
+                            <SelectTrigger className="w-full h-7 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="0.005">Narrow (0.005)</SelectItem>
+                              <SelectItem value="0.01">Medium (0.01)</SelectItem>
+                              <SelectItem value="0.02">Wide (0.02)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      
+                      <Button
+                        size="sm"
+                        className="w-full"
+                        onClick={() => {
+                          if (selection && currentCapture) {
+                            refineCFOMutation.mutate({
+                              captureId: currentCapture.id,
+                              sampleStart: selection.sampleStart,
+                              sampleCount: Math.min(selection.sampleEnd - selection.sampleStart, 32768),
+                              coarseCfoHz: measurementsData.cfo.cfo_hz,
+                              modulationOrder: costasModOrder,
+                              loopBandwidth: costasLoopBW,
+                            });
+                          }
+                        }}
+                        disabled={!selection || refineCFOMutation.isPending}
+                      >
+                        Refine CFO
+                      </Button>
+                      
+                      {costasResult && (
+                        <div className="mt-3 space-y-2 text-xs">
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground">Total CFO:</span>
+                            <span className="font-mono font-semibold">{costasResult.total_cfo_hz.toFixed(1)} Hz</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground">Fine Correction:</span>
+                            <span className="font-mono">{costasResult.fine_cfo_hz.toFixed(1)} Hz</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground">Lock Status:</span>
+                            <span className={`font-semibold ${costasResult.lock_detected ? 'text-green-500' : 'text-red-500'}`}>
+                              {costasResult.lock_detected ? '✓ Locked' : '✗ No Lock'}
+                            </span>
+                          </div>
+                          {costasResult.lock_time_samples !== null && (
+                            <div className="flex items-center justify-between">
+                              <span className="text-muted-foreground">Lock Time:</span>
+                              <span className="font-mono">{costasResult.lock_time_samples} samples</span>
+                            </div>
+                          )}
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground">Convergence:</span>
+                            <span className="font-mono">{costasResult.convergence_time_samples} samples</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground">Phase Error Var:</span>
+                            <span className="font-mono">{costasResult.phase_error_variance.toFixed(4)}</span>
+                          </div>
+                          
+                          {/* Phase Tracking Visualization */}
+                          {costasResult.phase_errors && costasResult.frequencies && (
+                            <div className="mt-3 pt-3 border-t border-border">
+                              <div className="text-xs text-muted-foreground mb-2">Phase Tracking Plot</div>
+                              <PhaseTrackingPlot
+                                phaseErrors={costasResult.phase_errors}
+                                frequencies={costasResult.frequencies}
+                                lockThreshold={0.1}
+                                lockTimeSamples={costasResult.lock_time_samples}
+                                loopBandwidth={costasLoopBW}
+                                modulationOrder={costasModOrder}
+                                width={320}
+                                height={200}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               ) : (

@@ -852,3 +852,21 @@
 - [ ] Test with real QPSK/PSK signals
 - [ ] Validate phase tracking performance
 - [ ] Compare coarse vs fine CFO accuracy
+
+## Costas Loop UI Integration (Current Sprint)
+- [x] Add "Refine CFO" button to Signal Inspector measurements panel
+- [x] Display Costas loop results (total CFO, lock status, convergence time)
+- [x] Add modulation order selector (BPSK/QPSK/8PSK) for Costas loop
+- [x] Add loop bandwidth slider with presets (narrow/medium/wide)
+- [x] Show lock indicator icon (green checkmark or red X)
+- [x] Display convergence time in milliseconds
+- [x] Integrate Costas loop with demodulation pipeline
+- [x] Auto-apply CFO correction before RTTY demodulation
+- [x] Auto-apply CFO correction before PSK31 demodulation
+- [x] Auto-apply CFO correction before CW demodulation
+- [x] Create PhaseTrackingPlot canvas component
+- [x] Plot phase error variance over time
+- [x] Add lock threshold indicator line
+- [ ] Add zoom/pan controls for phase plot
+- [x] Display loop bandwidth and modulation order in plot legend
+- [ ] Test all features with real signal data

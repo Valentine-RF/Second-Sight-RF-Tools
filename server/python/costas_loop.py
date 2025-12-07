@@ -323,6 +323,8 @@ def refine_cfo_with_costas(iq_samples: np.ndarray,
         'lock_time_samples': result['lock_time_samples'],
         'convergence_time_samples': result['convergence_time_samples'],
         'phase_error_variance': result['phase_error_variance'],
+        'phase_errors': result['phase_errors'].tolist(),
+        'frequencies': result['frequencies'].tolist(),
         'loop_bandwidth': float(loop_bandwidth),
         'modulation_order': int(modulation_order),
         'method': 'Costas Loop PLL'
