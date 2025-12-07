@@ -43,77 +43,101 @@
 }
 
 :root {
-  /* Mathematical Blueprint Aesthetic - Pastel Cyan & Soft Pink */
-  --primary: oklch(0.65 0.15 195); /* Pastel cyan */
-  --primary-foreground: oklch(1 0 0);
-  --sidebar-primary: oklch(0.65 0.15 195);
-  --sidebar-primary-foreground: oklch(1 0 0);
-  --chart-1: oklch(0.7 0.12 195);
-  --chart-2: oklch(0.65 0.15 195);
-  --chart-3: oklch(0.6 0.18 195);
-  --chart-4: oklch(0.7 0.15 330); /* Soft pink */
-  --chart-5: oklch(0.65 0.18 330);
-  --radius: 0.25rem; /* Sharp technical corners */
-  --background: oklch(1 0 0); /* Pure white */
-  --foreground: oklch(0.15 0 0); /* Near black */
-  --card: oklch(0.98 0 0);
-  --card-foreground: oklch(0.15 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.15 0 0);
-  --secondary: oklch(0.7 0.15 330); /* Soft pink */
-  --secondary-foreground: oklch(0.15 0 0);
-  --muted: oklch(0.96 0 0);
-  --muted-foreground: oklch(0.45 0 0);
-  --accent: oklch(0.65 0.15 195); /* Cyan */
-  --accent-foreground: oklch(0.15 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.85 0 0);
-  --input: oklch(0.85 0 0);
-  --ring: oklch(0.65 0.15 195);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.15 0 0);
-  --sidebar-accent: oklch(0.96 0 0);
-  --sidebar-accent-foreground: oklch(0.15 0 0);
-  --sidebar-border: oklch(0.85 0 0);
-  --sidebar-ring: oklch(0.65 0.15 195);
+  /* Second Sight by Valentine RF - ExtraHop-inspired Dark Theme */
+  /* Blues, Silver, Red color scheme */
+  
+  --primary: oklch(0.65 0.18 240); /* Vibrant blue */
+  --primary-foreground: oklch(0.98 0 0);
+  --sidebar-primary: oklch(0.65 0.18 240);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  
+  --chart-1: oklch(0.65 0.18 240); /* Primary blue */
+  --chart-2: oklch(0.7 0.15 200);  /* Cyan blue */
+  --chart-3: oklch(0.75 0.03 240); /* Silver */
+  --chart-4: oklch(0.6 0.22 25);   /* Alert red */
+  --chart-5: oklch(0.6 0.15 260);  /* Purple-blue */
+  
+  --radius: 0.375rem; /* Slightly rounded for modern look */
+  
+  --background: oklch(0.15 0.02 240); /* Deep navy-blue */
+  --foreground: oklch(0.95 0.01 240); /* Off-white with blue tint */
+  
+  --card: oklch(0.2 0.02 240);
+  --card-foreground: oklch(0.95 0.01 240);
+  
+  --popover: oklch(0.18 0.02 240);
+  --popover-foreground: oklch(0.95 0.01 240);
+  
+  --secondary: oklch(0.3 0.03 240); /* Dark silver-gray */
+  --secondary-foreground: oklch(0.85 0.02 240);
+  
+  --muted: oklch(0.25 0.02 240);
+  --muted-foreground: oklch(0.65 0.03 240);
+  
+  --accent: oklch(0.6 0.22 25); /* Alert red */
+  --accent-foreground: oklch(0.98 0 0);
+  
+  --destructive: oklch(0.6 0.22 25);
+  --destructive-foreground: oklch(0.98 0 0);
+  
+  --border: oklch(0.3 0.03 240);
+  --input: oklch(0.35 0.03 240);
+  --ring: oklch(0.65 0.18 240);
+  
+  --sidebar: oklch(0.18 0.02 240);
+  --sidebar-foreground: oklch(0.95 0.01 240);
+  --sidebar-accent: oklch(0.25 0.02 240);
+  --sidebar-accent-foreground: oklch(0.95 0.01 240);
+  --sidebar-border: oklch(0.3 0.03 240);
+  --sidebar-ring: oklch(0.65 0.18 240);
 }
 
 .dark {
-  /* Inverted Mathematical Blueprint Aesthetic - Dark Mode */
-  --primary: oklch(0.75 0.18 195); /* Brighter cyan for dark bg */
-  --primary-foreground: oklch(0.1 0 0);
-  --sidebar-primary: oklch(0.75 0.18 195);
-  --sidebar-primary-foreground: oklch(0.1 0 0);
-  --chart-1: oklch(0.8 0.15 195);
-  --chart-2: oklch(0.75 0.18 195);
-  --chart-3: oklch(0.7 0.2 195);
-  --chart-4: oklch(0.8 0.18 330); /* Brighter pink */
-  --chart-5: oklch(0.75 0.2 330);
-  --radius: 0.25rem; /* Sharp technical corners */
-  --background: oklch(0.15 0 0); /* Near black */
-  --foreground: oklch(0.95 0 0); /* Near white */
-  --card: oklch(0.18 0 0);
-  --card-foreground: oklch(0.95 0 0);
-  --popover: oklch(0.15 0 0);
-  --popover-foreground: oklch(0.95 0 0);
-  --secondary: oklch(0.8 0.18 330); /* Bright pink */
-  --secondary-foreground: oklch(0.1 0 0);
-  --muted: oklch(0.25 0 0);
-  --muted-foreground: oklch(0.65 0 0);
-  --accent: oklch(0.75 0.18 195); /* Cyan */
-  --accent-foreground: oklch(0.1 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.3 0 0);
-  --input: oklch(0.3 0 0);
-  --ring: oklch(0.75 0.18 195);
-  --sidebar: oklch(0.18 0 0);
-  --sidebar-foreground: oklch(0.95 0 0);
-  --sidebar-accent: oklch(0.25 0 0);
-  --sidebar-accent-foreground: oklch(0.95 0 0);
-  --sidebar-border: oklch(0.3 0 0);
-  --sidebar-ring: oklch(0.75 0.18 195);
+  /* Dark theme is the default for Second Sight */
+  --primary: oklch(0.65 0.18 240);
+  --primary-foreground: oklch(0.98 0 0);
+  --sidebar-primary: oklch(0.65 0.18 240);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  
+  --chart-1: oklch(0.65 0.18 240);
+  --chart-2: oklch(0.7 0.15 200);
+  --chart-3: oklch(0.75 0.03 240);
+  --chart-4: oklch(0.6 0.22 25);
+  --chart-5: oklch(0.6 0.15 260);
+  
+  --radius: 0.375rem;
+  
+  --background: oklch(0.15 0.02 240);
+  --foreground: oklch(0.95 0.01 240);
+  
+  --card: oklch(0.2 0.02 240);
+  --card-foreground: oklch(0.95 0.01 240);
+  
+  --popover: oklch(0.18 0.02 240);
+  --popover-foreground: oklch(0.95 0.01 240);
+  
+  --secondary: oklch(0.3 0.03 240);
+  --secondary-foreground: oklch(0.85 0.02 240);
+  
+  --muted: oklch(0.25 0.02 240);
+  --muted-foreground: oklch(0.65 0.03 240);
+  
+  --accent: oklch(0.6 0.22 25);
+  --accent-foreground: oklch(0.98 0 0);
+  
+  --destructive: oklch(0.6 0.22 25);
+  --destructive-foreground: oklch(0.98 0 0);
+  
+  --border: oklch(0.3 0.03 240);
+  --input: oklch(0.35 0.03 240);
+  --ring: oklch(0.65 0.18 240);
+  
+  --sidebar: oklch(0.18 0.02 240);
+  --sidebar-foreground: oklch(0.95 0.01 240);
+  --sidebar-accent: oklch(0.25 0.02 240);
+  --sidebar-accent-foreground: oklch(0.95 0.01 240);
+  --sidebar-border: oklch(0.3 0.03 240);
+  --sidebar-ring: oklch(0.65 0.18 240);
 }
 
 @layer base {
@@ -122,26 +146,24 @@
   }
   body {
     @apply bg-background text-foreground;
-    /* Grid pattern background for blueprint aesthetic */
+    font-family: 'IBM Plex Mono', 'Courier New', monospace;
+    /* Subtle grid pattern for technical aesthetic */
     background-image: 
-      linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+      linear-gradient(rgba(100, 150, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(100, 150, 255, 0.03) 1px, transparent 1px);
     background-size: 20px 20px;
     background-position: -1px -1px;
   }
-  .dark body {
-    /* Inverted grid for dark mode - bright lines on dark background */
-    background-image: 
-      linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-  }
-  /* Bold massive black sans-serif headlines */
+  
+  /* Display font for headings - Space Grotesk */
   h1, h2, h3, h4, h5, h6 {
-    @apply font-sans font-black tracking-tight;
+    font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+    @apply font-bold tracking-tight;
   }
-  h1 { @apply text-6xl; }
-  h2 { @apply text-4xl; }
-  h3 { @apply text-2xl; }
+  h1 { @apply text-5xl; }
+  h2 { @apply text-3xl; }
+  h3 { @apply text-xl; }
+  
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
   [type="button"]:not(:disabled),
@@ -156,24 +178,11 @@
 }
 
 @layer components {
-  /**
-   * Custom container utility that centers content and adds responsive padding.
-   *
-   * This overrides Tailwind's default container behavior to:
-   * - Auto-center content (mx-auto)
-   * - Add responsive horizontal padding
-   * - Set max-width for large screens
-   *
-   * Usage: <div className="container">...</div>
-   *
-   * For custom widths, use max-w-* utilities directly:
-   * <div className="max-w-6xl mx-auto px-4">...</div>
-   */
   .container {
     width: 100%;
     margin-left: auto;
     margin-right: auto;
-    padding-left: 1rem; /* 16px - mobile padding */
+    padding-left: 1rem;
     padding-right: 1rem;
   }
 
@@ -184,17 +193,32 @@
 
   @media (min-width: 640px) {
     .container {
-      padding-left: 1.5rem; /* 24px - tablet padding */
+      padding-left: 1.5rem;
       padding-right: 1.5rem;
     }
   }
 
   @media (min-width: 1024px) {
     .container {
-      padding-left: 2rem; /* 32px - desktop padding */
+      padding-left: 2rem;
       padding-right: 2rem;
-      max-width: 1280px; /* Standard content width */
+      max-width: 1920px;
     }
+  }
+
+  /* Second Sight Branding */
+  .second-sight-logo {
+    font-family: 'Space Grotesk', sans-serif;
+    @apply text-2xl font-bold tracking-tight;
+    background: linear-gradient(135deg, oklch(0.65 0.18 240) 0%, oklch(0.7 0.15 200) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .valentine-rf-badge {
+    font-family: 'IBM Plex Mono', monospace;
+    @apply text-xs font-medium tracking-wider uppercase text-muted-foreground;
   }
 
   /* Technical label styling */
@@ -211,20 +235,53 @@
     @apply font-mono text-sm text-muted-foreground;
   }
 
-  /* Wireframe shapes */
-  .wireframe-cyan {
-    border: 1px solid oklch(0.65 0.15 195 / 0.3);
-    background: oklch(0.65 0.15 195 / 0.05);
+  /* Glowing effects for ExtraHop-inspired UI */
+  .glow-blue {
+    box-shadow: 0 0 20px oklch(0.65 0.18 240 / 0.3);
   }
 
-  .wireframe-pink {
-    border: 1px solid oklch(0.7 0.15 330 / 0.3);
-    background: oklch(0.7 0.15 330 / 0.05);
+  .glow-red {
+    box-shadow: 0 0 20px oklch(0.6 0.22 25 / 0.3);
+  }
+
+  .glow-silver {
+    box-shadow: 0 0 20px oklch(0.75 0.03 240 / 0.2);
+  }
+
+  /* RF Signal visualization accents */
+  .rf-accent-line {
+    border-color: oklch(0.65 0.18 240);
+    box-shadow: 0 0 10px oklch(0.65 0.18 240 / 0.5);
+  }
+
+  .rf-danger-zone {
+    border-color: oklch(0.6 0.22 25);
+    box-shadow: 0 0 10px oklch(0.6 0.22 25 / 0.3);
   }
 
   /* Data panel */
   .data-panel {
     @apply border border-border bg-card/50 backdrop-blur-sm;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+  
+  /* Pulse animation for live indicators */
+  @keyframes pulse-blue {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 oklch(0.65 0.18 240 / 0.7); }
+    50% { opacity: 0.7; box-shadow: 0 0 0 10px oklch(0.65 0.18 240 / 0); }
+  }
+  
+  .pulse-blue {
+    animation: pulse-blue 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  /* Scanner line animation */
+  @keyframes scanner {
+    0%, 100% { transform: translateY(0); opacity: 0.8; }
+    50% { transform: translateY(100%); opacity: 0.3; }
+  }
+  
+  .scanner-line {
+    animation: scanner 3s ease-in-out infinite;
   }
 }

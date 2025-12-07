@@ -29,9 +29,12 @@ function Navigation() {
       <div className="container">
         <div className="flex items-center justify-between h-16">
           <Link href="/">
-            <span className="flex items-center gap-2 font-black text-xl hover:text-primary transition-colors cursor-pointer">
-              <Radio className="w-6 h-6" />
-              Forensic Signal Processor
+            <span className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer">
+              <Radio className="w-6 h-6 text-primary" />
+              <div className="flex flex-col">
+                <span className="second-sight-logo text-xl">Second Sight</span>
+                <span className="valentine-rf-badge text-[0.65rem]">by Valentine RF</span>
+              </div>
             </span>
           </Link>
 

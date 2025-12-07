@@ -31,10 +31,13 @@ export default function Home() {
             </svg>
           </div>
 
-          <h1 className="mb-4">Forensic Signal Processor</h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-            Production-grade RF signal analysis platform with GPU-accelerated processing,
-            WebGL visualizations, and natural language interface for forensic investigators.
+          <h1 className="mb-2">
+            <span className="second-sight-logo text-6xl">Second Sight</span>
+          </h1>
+          <p className="valentine-rf-badge text-base mb-4">by Valentine RF</p>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8 font-mono">
+            ExtraHop-inspired RF signal analysis platform with GPU-accelerated processing,
+            WebGL visualizations, and advanced forensic capabilities for professional investigators.
           </p>
 
           {isAuthenticated ? (

@@ -304,3 +304,17 @@
 - [ ] Create export button in AdvancedAnalysis
 - [x] Add loading indicator during PDF generation
 - [x] Add success toast notification after export
+
+
+## Rebranding to "Second Sight" by Valentine RF
+- [x] Extract and review design tokens from provided files
+- [x] Update color scheme to ExtraHop-inspired dark theme (blues, silver, red)
+- [x] Update CSS variables in index.css with new color palette
+- [x] Update application name from "Forensic Signal Processor" to "Second Sight"
+- [x] Add "by Valentine RF" branding
+- [x] Add Google Fonts (Space Grotesk, IBM Plex Mono)
+- [x] Update navigation header with new branding
+- [x] Update HTML title and meta description
+- [x] Update landing page with new brand identity
+- [x] Test dark theme across all pages
+- [x] Verify color contrast and accessibility
