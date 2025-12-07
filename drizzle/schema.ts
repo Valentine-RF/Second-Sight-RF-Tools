@@ -1,17 +1,10 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean, float } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
- * Extend this file with additional tables as your product grows.
- * Columns use camelCase to match both database fields and generated types.
  */
 export const users = mysqlTable("users", {
-  /**
-   * Surrogate primary key. Auto-incremented numeric value managed by the database.
-   * Use this for relations between tables.
-   */
   id: int("id").autoincrement().primaryKey(),
-  /** Manus OAuth identifier (openId) returned from the OAuth callback. Unique per user. */
   openId: varchar("openId", { length: 64 }).notNull().unique(),
   name: text("name"),
   email: varchar("email", { length: 320 }),
@@ -25,4 +18,119 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
-// TODO: Add your tables here
+/**
+ * SigMF signal capture files uploaded by users.
+ * Stores metadata and S3 references for .sigmf-meta and .sigmf-data files.
+ */
+export const signalCaptures = mysqlTable("signal_captures", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  
+  // File metadata
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  
+  // S3 storage references
+  metaFileKey: varchar("metaFileKey", { length: 512 }).notNull(), // .sigmf-meta file key
+  metaFileUrl: varchar("metaFileUrl", { length: 1024 }).notNull(),
+  dataFileKey: varchar("dataFileKey", { length: 512 }).notNull(), // .sigmf-data file key
+  dataFileUrl: varchar("dataFileUrl", { length: 1024 }).notNull(),
+  
+  // SigMF global metadata (parsed from .sigmf-meta)
+  datatype: varchar("datatype", { length: 64 }), // e.g., cf32_le, ci16_le
+  sampleRate: float("sampleRate"), // Hz
+  hardware: text("hardware"), // core:hw
+  author: varchar("author", { length: 255 }), // core:author
+  sha512: varchar("sha512", { length: 128 }), // integrity hash
+  
+  // File size for range request support
+  dataFileSize: int("dataFileSize"), // bytes
+  
+  // Processing status
+  status: mysqlEnum("status", ["uploaded", "processing", "ready", "error"]).default("uploaded").notNull(),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SignalCapture = typeof signalCaptures.$inferSelect;
+export type InsertSignalCapture = typeof signalCaptures.$inferInsert;
+
+/**
+ * Annotations for signal captures (time-frequency regions of interest).
+ * Corresponds to SigMF annotations array with forensic analysis results.
+ */
+export const annotations = mysqlTable("annotations", {
+  id: int("id").autoincrement().primaryKey(),
+  captureId: int("captureId").notNull(),
+  
+  // Time-frequency bounds
+  sampleStart: int("sampleStart").notNull(), // core:sample_start
+  sampleCount: int("sampleCount").notNull(), // core:sample_count
+  freqLowerEdge: float("freqLowerEdge"), // Hz, core:freq_lower_edge
+  freqUpperEdge: float("freqUpperEdge"), // Hz, core:freq_upper_edge
+  
+  // Analysis results
+  label: varchar("label", { length: 255 }), // User-defined label
+  modulationType: varchar("modulationType", { length: 64 }), // QPSK, BPSK, 16-QAM, etc.
+  confidence: float("confidence"), // 0.0 to 1.0
+  estimatedSNR: float("estimatedSNR"), // dB
+  estimatedCFO: float("estimatedCFO"), // Hz
+  estimatedBaud: float("estimatedBaud"), // symbols/sec
+  
+  // Color coding for UI
+  color: varchar("color", { length: 32 }).default("#3b82f6"), // Hex color for flag/overlay
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Annotation = typeof annotations.$inferSelect;
+export type InsertAnnotation = typeof annotations.$inferInsert;
+
+/**
+ * Processing jobs for async GPU-accelerated tasks.
+ * Tracks FAM computation, TorchSig inference, demodulation status.
+ */
+export const processingJobs = mysqlTable("processing_jobs", {
+  id: int("id").autoincrement().primaryKey(),
+  captureId: int("captureId").notNull(),
+  annotationId: int("annotationId"), // Optional: linked to specific annotation
+  
+  jobType: mysqlEnum("jobType", ["fam", "classification", "demodulation", "snr_estimation", "cfo_estimation"]).notNull(),
+  status: mysqlEnum("status", ["pending", "running", "completed", "failed"]).default("pending").notNull(),
+  
+  // Job parameters (JSON)
+  parameters: text("parameters"), // JSON string of input params
+  
+  // Results (JSON)
+  results: text("results"), // JSON string of output data
+  
+  // Error tracking
+  errorMessage: text("errorMessage"),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  completedAt: timestamp("completedAt"),
+});
+
+export type ProcessingJob = typeof processingJobs.$inferSelect;
+export type InsertProcessingJob = typeof processingJobs.$inferInsert;
+
+/**
+ * Chat messages for natural language interface.
+ * Stores conversation history for signal analysis queries.
+ */
+export const chatMessages = mysqlTable("chat_messages", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  captureId: int("captureId"), // Optional: context-specific to a signal capture
+  
+  role: mysqlEnum("role", ["user", "assistant", "system"]).notNull(),
+  content: text("content").notNull(),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ChatMessage = typeof chatMessages.$inferSelect;
+export type InsertChatMessage = typeof chatMessages.$inferInsert;
