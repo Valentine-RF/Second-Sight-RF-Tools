@@ -124,3 +124,8 @@
 - [x] Enable switchable theme in ThemeProvider
 - [x] Test dark mode across all pages and components
 - [x] Verify WebGL visualizations work in dark mode
+
+## Dark Mode Default Fix
+- [x] Change default theme from light to dark
+- [x] Verify dark mode displays on initial page load
+- [x] Test theme persistence across page refreshes
