@@ -567,7 +567,7 @@ export const appRouter = router({
       }),
 
     /**
-     * Export annotations to SigMF format
+     * Export annotations to SigMF format for a single capture
      */
     exportSigMF: protectedProcedure
       .input(z.object({ captureId: z.number() }))
@@ -593,7 +593,53 @@ export const appRouter = router({
           sigmfAnnotations
         );
 
-        return { metadata };
+        return { metadata, captureName: capture.name };
+      }),
+
+    /**
+     * Batch export annotations for multiple captures to SigMF format
+     */
+    exportBatch: protectedProcedure
+      .input(z.object({ captureIds: z.array(z.number()) }))
+      .query(async ({ input, ctx }) => {
+        const exports: Array<{
+          captureId: number;
+          captureName: string;
+          metadata: string;
+          annotationCount: number;
+        }> = [];
+
+        for (const captureId of input.captureIds) {
+          const capture = await getSignalCaptureById(captureId);
+          if (!capture) continue; // Skip missing captures
+
+          const annotations = await getCaptureAnnotations(captureId);
+          
+          // Convert annotations to SigMF format
+          const sigmfAnnotations = annotations.map(annotationToSigMF);
+
+          // Generate complete metadata file
+          const metadata = generateSigMFMetadata(
+            {
+              "core:datatype": capture.datatype || "cf32_le",
+              "core:sample_rate": capture.sampleRate || 0,
+              "core:hw": capture.hardware || undefined,
+              "core:author": capture.author || undefined,
+              "core:sha512": capture.sha512 || undefined,
+            },
+            [],
+            sigmfAnnotations
+          );
+
+          exports.push({
+            captureId,
+            captureName: capture.name,
+            metadata,
+            annotationCount: annotations.length,
+          });
+        }
+
+        return { exports };
       }),
   }),
 

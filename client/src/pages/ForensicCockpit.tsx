@@ -10,6 +10,7 @@ import SignalContextMenu, { type SignalSelection } from '@/components/SignalCont
 import CyclicProfilePanel from '@/components/CyclicProfilePanel';
 import AnnotationDialog from '@/components/AnnotationDialog';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
 import { ChevronDown, ChevronUp, Activity, Radio, Waves, Binary, FileDown, Loader2 } from 'lucide-react';
@@ -84,6 +85,7 @@ export default function ForensicCockpit() {
   });
   
   const [measurementsData, setMeasurementsData] = useState<any>(null);
+  const [modulationType, setModulationType] = useState<string>('QPSK');
   const estimateSNRCFOMutation = trpc.captures.estimateSNRCFO.useMutation({
     onSuccess: (data) => {
       setMeasurementsData(data);
@@ -96,7 +98,7 @@ export default function ForensicCockpit() {
     },
   });
   
-  // Auto-trigger SNR/CFO estimation when selection changes
+  // Auto-trigger SNR/CFO estimation when selection or modulation type changes
   useEffect(() => {
     if (selection && currentCapture) {
       const sampleStart = selection.sampleStart;
@@ -108,7 +110,7 @@ export default function ForensicCockpit() {
           captureId: currentCapture.id,
           sampleStart,
           sampleCount,
-          modulationType: 'QPSK', // TODO: Get from classification result
+          modulationType: modulationType,
         });
       } else if (sampleCount >= 1e6) {
         toast.error('Selection too large for measurement (max 1M samples)');
@@ -118,7 +120,8 @@ export default function ForensicCockpit() {
         setMeasurementsData(null);
       }
     }
-  }, [selection, currentCapture]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selection, currentCapture, modulationType]);
   
   // Refs for capturing visualizations
   const mainSpectrogramRef = useRef<{ captureCanvas: () => string }>(null);
@@ -603,6 +606,29 @@ export default function ForensicCockpit() {
                 {estimateSNRCFOMutation.isPending && (
                   <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                 )}
+              </div>
+              
+              {/* Modulation Type Selector */}
+              <div className="mb-3">
+                <div className="technical-label mb-1.5">Modulation Type</div>
+                <Select value={modulationType} onValueChange={setModulationType}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="BPSK">BPSK</SelectItem>
+                    <SelectItem value="QPSK">QPSK</SelectItem>
+                    <SelectItem value="8PSK">8PSK</SelectItem>
+                    <SelectItem value="16-QAM">16-QAM</SelectItem>
+                    <SelectItem value="64-QAM">64-QAM</SelectItem>
+                    <SelectItem value="FSK">FSK</SelectItem>
+                    <SelectItem value="GMSK">GMSK</SelectItem>
+                    <SelectItem value="OOK">OOK</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Modulation hint improves SNR estimation accuracy
+                </p>
               </div>
               {measurementsData ? (
                 <div className="space-y-3">

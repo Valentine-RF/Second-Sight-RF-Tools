@@ -10,7 +10,8 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Upload, FileText, Trash2, Radio } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Upload, FileText, Trash2, Radio, Download, CheckSquare, Square } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { toast } from 'sonner';
 
@@ -47,6 +48,8 @@ export default function FileManager() {
     centerFrequency: 0,
     hardware: '',
   });
+  const [selectedCaptureIds, setSelectedCaptureIds] = useState<number[]>([]);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Fetch signal captures
   const { data: captures, refetch, isLoading } = trpc.captures.list.useQuery(undefined, {
@@ -241,6 +244,61 @@ export default function FileManager() {
   const handleDeleteCapture = (id: number) => {
     if (confirm('Are you sure you want to delete this signal capture?')) {
       deleteMutation.mutate({ id });
+    }
+  };
+
+  const handleBatchExport = async () => {
+    if (selectedCaptureIds.length === 0) {
+      toast.error('No captures selected');
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      // Use fetch to call tRPC endpoint directly
+      const response = await fetch(
+        `/api/trpc/annotations.exportBatch?input=${encodeURIComponent(JSON.stringify({ captureIds: selectedCaptureIds }))}`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Export request failed');
+      }
+
+      const data = await response.json();
+      const result = data.result.data;
+      
+      if (result.exports.length === 0) {
+        toast.error('No annotations found for selected captures');
+        return;
+      }
+
+      // Create a zip-like structure by downloading each file
+      for (const exp of result.exports) {
+        const blob = new Blob([exp.metadata], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${exp.captureName.replace(/[^a-z0-9]/gi, '_')}.sigmf-meta`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        // Small delay between downloads
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+
+      toast.success(`Exported ${result.exports.length} annotation file(s)`);
+      setSelectedCaptureIds([]);
+    } catch (error) {
+      toast.error(`Export failed: ${error}`);
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -464,7 +522,39 @@ export default function FileManager() {
 
         {/* Captures List */}
         <div>
-          <h2 className="mb-4">Signal Captures</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2>Signal Captures</h2>
+            {captures && captures.length > 0 && (
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (selectedCaptureIds.length === captures.length) {
+                      setSelectedCaptureIds([]);
+                    } else {
+                      setSelectedCaptureIds(captures.map(c => c.id));
+                    }
+                  }}
+                >
+                  {selectedCaptureIds.length === captures.length ? (
+                    <><CheckSquare className="w-4 h-4 mr-2" />Deselect All</>
+                  ) : (
+                    <><Square className="w-4 h-4 mr-2" />Select All</>
+                  )}
+                </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  disabled={selectedCaptureIds.length === 0 || isExporting}
+                  onClick={handleBatchExport}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  {isExporting ? 'Exporting...' : `Export ${selectedCaptureIds.length} Annotation${selectedCaptureIds.length !== 1 ? 's' : ''}`}
+                </Button>
+              </div>
+            )}
+          </div>
           
           {isLoading ? (
             <FileListSkeleton />
@@ -480,7 +570,18 @@ export default function FileManager() {
             <div className="grid gap-4">
               {captures.map((capture) => (
                 <Card key={capture.id} className="p-4 data-panel hover:shadow-md transition-shadow">
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      checked={selectedCaptureIds.includes(capture.id)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedCaptureIds([...selectedCaptureIds, capture.id]);
+                        } else {
+                          setSelectedCaptureIds(selectedCaptureIds.filter(id => id !== capture.id));
+                        }
+                      }}
+                      className="mt-1"
+                    />
                     <div className="flex-1">
                       <h3 className="text-xl font-black mb-2">{capture.name}</h3>
                       {capture.description && (

@@ -493,3 +493,20 @@
 - [x] Show SNR in dB, signal/noise power, M2M4 ratio
 - [x] Show CFO in Hz and normalized by sample rate
 - [ ] Add modulation type hint selector for better SNR accuracy
+
+## Modulation Type Selector
+- [x] Add dropdown selector UI in Signal Inspector for modulation type
+- [x] Support modulation types: QPSK, 8PSK, 16-QAM, 64-QAM, BPSK, FSK, GMSK, OOK
+- [x] Wire selected modulation type to SNR/CFO estimation procedure
+- [x] Update SNR estimation to use modulation-specific parameters
+- [x] Add tooltip explaining how modulation type affects SNR accuracy
+- [x] Persist selected modulation type in component state
+
+## Batch Annotation Export to SigMF
+- [x] Implement SigMF annotation format converter
+- [x] Create exportAnnotationsBatch tRPC procedure
+- [x] Generate compliant SigMF captures array with annotations
+- [x] Add export button to FileManager for batch export
+- [x] Support exporting all annotations for selected captures
+- [x] Generate downloadable .sigmf-meta file with annotations
+- [x] Add success/error toast notifications for export
