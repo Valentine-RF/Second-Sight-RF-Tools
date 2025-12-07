@@ -234,9 +234,24 @@ export default function FileManager() {
         )
       );
 
-      toast.success('Upload complete!');
+       toast.success('Upload complete!');
+      
+      // Log to Splunk
+      try {
+        await fetch('/api/splunk/log-upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            captureName: uploadForm.name,
+            fileSize: totalSize,
+            format: 'sigmf',
+          }),
+        });
+      } catch (err) {
+        console.error('Failed to log to Splunk:', err);
+      }
+      
       refetch();
-
       setUploadForm({
         name: '',
         description: '',

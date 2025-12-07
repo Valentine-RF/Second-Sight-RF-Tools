@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tooltip, Legend, BarChart, Bar, CartesianGrid } from 'recharts';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
 
@@ -141,6 +142,105 @@ export default function SplunkDashboard() {
             </Card>
           </div>
 
+          {/* Charts Row */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Modulation Classification Pie Chart */}
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Modulation Classification</h3>
+              {data.modulationDistribution.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={data.modulationDistribution}
+                      dataKey="count"
+                      nameKey="modulation"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={100}
+                      label={(entry) => `${entry.modulation}: ${entry.count}`}
+                    >
+                      {data.modulationDistribution.map((entry: any, index: number) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                  No classification data
+                </div>
+              )}
+            </Card>
+
+            {/* Event Type Distribution Bar Chart */}
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Event Types</h3>
+              {data.eventTypeDistribution.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={data.eventTypeDistribution}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                    <XAxis 
+                      dataKey="eventType" 
+                      angle={-45} 
+                      textAnchor="end" 
+                      height={100}
+                      tick={{ fill: '#888' }}
+                    />
+                    <YAxis tick={{ fill: '#888' }} />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333' }}
+                      labelStyle={{ color: '#fff' }}
+                    />
+                    <Bar dataKey="count" fill="#3b82f6" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                  No event data
+                </div>
+              )}
+            </Card>
+          </div>
+
+          {/* API Usage Line Chart */}
+          {data.apiUsageTimeseries.length > 0 && (
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold mb-4">API Usage Over Time</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={data.apiUsageTimeseries}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                  <XAxis 
+                    dataKey="_time" 
+                    tick={{ fill: '#888' }}
+                    tickFormatter={(value) => new Date(value).toLocaleTimeString()}
+                  />
+                  <YAxis tick={{ fill: '#888' }} />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333' }}
+                    labelStyle={{ color: '#fff' }}
+                    labelFormatter={(value) => new Date(value).toLocaleString()}
+                  />
+                  <Legend />
+                  {Object.keys(data.apiUsageTimeseries[0] || {})
+                    .filter(key => key !== '_time')
+                    .map((key, index) => (
+                      <Line
+                        key={key}
+                        type="monotone"
+                        dataKey={key}
+                        stroke={COLORS[index % COLORS.length]}
+                        strokeWidth={2}
+                        dot={{ r: 3 }}
+                      />
+                    ))}
+                </LineChart>
+              </ResponsiveContainer>
+            </Card>
+          )}
+
+          {/* Anomaly Alerts */}
           <Card className="p-6">
             <h3 className="text-lg font-semibold mb-4">Recent Anomaly Alerts</h3>
             {data.anomalyAlerts.length > 0 ? (
@@ -183,6 +283,7 @@ export default function SplunkDashboard() {
             )}
           </Card>
 
+          {/* Recent Events */}
           <Card className="p-6">
             <h3 className="text-lg font-semibold mb-4">Recent Events</h3>
             {data.recentEvents.length > 0 ? (

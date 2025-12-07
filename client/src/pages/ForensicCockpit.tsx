@@ -583,6 +583,22 @@ export default function ForensicCockpit() {
       
       setModulationResult(result);
       toast.success(`Detected: ${result.modulation} (${(result.confidence * 100).toFixed(1)}% confidence)`);
+      
+      // Log to Splunk
+      try {
+        await fetch('/api/splunk/log-classification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            captureName: currentCapture.name,
+            modulationType: result.modulation,
+            confidence: result.confidence,
+            features: result.features,
+          }),
+        });
+      } catch (err) {
+        console.error('Failed to log to Splunk:', err);
+      }
     } catch (error) {
       console.error('Modulation classification failed:', error);
       toast.error('Classification failed - model may need training');

@@ -81,6 +81,23 @@ async function validateApiKey(req: Request, res: Response, next: Function) {
     // Attach key info to request
     (req as any).apiKeyRecord = keyRecord;
     
+    // Log API request to Splunk (async, don't block)
+    const startTime = Date.now();
+    res.on('finish', () => {
+      const responseTime = Date.now() - startTime;
+      import('./splunkClient').then(({ logApiRequest }) => {
+        logApiRequest({
+          apiKeyId: keyRecord.id,
+          apiKeyName: keyRecord.name,
+          endpoint: req.path,
+          method: req.method,
+          statusCode: res.statusCode,
+          responseTime,
+          ipAddress: req.ip || 'unknown',
+        }).catch(err => console.error('Splunk logging error:', err));
+      });
+    });
+    
     next();
   } catch (error) {
     console.error('API key validation error:', error);

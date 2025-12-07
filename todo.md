@@ -1232,3 +1232,18 @@
 - [ ] Add API usage line chart (recharts integration)
 - [ ] Add export dashboard data to CSV
 - [ ] Test with live Splunk data
+
+## Complete Splunk Integration
+- [x] Add recharts modulation classification pie chart to dashboard
+- [x] Add recharts event type distribution bar chart to dashboard
+- [x] Add recharts API usage line chart to dashboard
+- [x] Wire logSignalUpload into file upload handlers (FileManager)
+- [x] Wire logModulationClassification into TensorFlow.js inference (ForensicCockpit)
+- [x] Wire logApiRequest into public API middleware (publicApi.ts)
+- [x] Create Splunk logging API endpoints (/api/splunk/log-upload, log-classification, log-anomaly)
+- [x] Register Splunk logging router in server/_core/index.ts
+- [x] Add response time tracking to API logging
+- [ ] Wire logAnomalyDetection into signal quality analyzer
+- [ ] Wire logAnnotationCreated into annotation creation workflow
+- [ ] Test event logging with real workflows
+- [ ] Verify events appear in Splunk dashboard with live server
