@@ -1,0 +1,35 @@
+{
+  "query": "SELECT id, name, userId FROM signal_captures ORDER BY id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2ACQfACSQZoz6vb.d095a050fa67 --database 6cEK8Bhjn9P8MpMjVBM6F9 --execute SELECT id, name, userId FROM signal_captures ORDER BY id;",
+  "rows": [
+    {
+      "id": "1",
+      "name": "Test Capture",
+      "userId": "1"
+    },
+    {
+      "id": "30001",
+      "name": "Test Capture",
+      "userId": "1"
+    },
+    {
+      "id": "30002",
+      "name": "Test Capture",
+      "userId": "1"
+    },
+    {
+      "id": "30003",
+      "name": "Test Capture",
+      "userId": "1"
+    },
+    {
+      "id": "30004",
+      "name": "5MHz Test Capture",
+      "userId": "1"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\tuserId\n1\tTest Capture\t1\n30001\tTest Capture\t1\n30002\tTest Capture\t1\n30003\tTest Capture\t1\n30004\t5MHz Test Capture\t1\n",
+  "stderr": "",
+  "execution_time_ms": 53
+}

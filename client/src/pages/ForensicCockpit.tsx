@@ -77,6 +77,17 @@ export default function ForensicCockpit() {
     });
   }, [pipeline]);
 
+  // Auto-start pipeline when capture is loaded
+  useEffect(() => {
+    if (currentCapture) {
+      console.log('[ForensicCockpit] Starting streaming pipeline for capture:', currentCapture.id);
+      pipeline.start();
+    }
+    return () => {
+      pipeline.stop();
+    };
+  }, [currentCapture, pipeline]);
+
   const handleBoxSelect = (sel: { sampleStart: number; sampleEnd: number; freqLowerHz: number; freqUpperHz: number }) => {
     console.log('Selection:', sel);
     // Context menu will appear at selection location

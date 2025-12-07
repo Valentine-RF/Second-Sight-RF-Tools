@@ -1,0 +1,15 @@
+{
+  "query": "SELECT id, name, dataFileUrl FROM signal_captures WHERE name = '5MHz Test Capture' LIMIT 1;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2ACQfACSQZoz6vb.d095a050fa67 --database 6cEK8Bhjn9P8MpMjVBM6F9 --execute SELECT id, name, dataFileUrl FROM signal_captures WHERE name = '5MHz Test Capture' LIMIT 1;",
+  "rows": [
+    {
+      "id": "30004",
+      "name": "5MHz Test Capture",
+      "dataFileUrl": "https://files.manuscdn.com/user_upload_by_module/session_file/310519663143934911/VpKOxkZfKxIMDhqZ.sigmf-data"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\tdataFileUrl\n30004\t5MHz Test Capture\thttps://files.manuscdn.com/user_upload_by_module/session_file/310519663143934911/VpKOxkZfKxIMDhqZ.sigmf-data\n",
+  "stderr": "",
+  "execution_time_ms": 55
+}
