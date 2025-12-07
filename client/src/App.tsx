@@ -10,9 +10,10 @@ import ComparisonMode from "./pages/ComparisonMode";
 import AdvancedAnalysis from "./pages/AdvancedAnalysis";
 import FileManager from "./pages/FileManager";
 import ForensicCockpit from "./pages/ForensicCockpit";
+import APIDocumentation from "./pages/APIDocumentation";
 import { useAuth } from "./_core/hooks/useAuth";
 import { Button } from "./components/ui/button";
-import { Radio, Upload, LogOut, Menu, Moon, Sun, Activity } from 'lucide-react';
+import { Radio, Upload, LogOut, Menu, Moon, Sun, Activity, Key } from 'lucide-react';
 import { AccentSwitcher } from './components/AccentSwitcher';
 import { useState } from "react";
 
@@ -76,16 +77,18 @@ function Navigation() {
                 Advanced
               </Link>
             </Button>
+            <Button variant="ghost" className="gap-2" asChild>
+              <Link href="/api">
+                <Key className="w-4 h-4" />
+                API
+              </Link>
+            </Button>
             <div className="h-6 w-px bg-border" />
             <div className="flex items-center gap-3">
               <div className="text-sm">
                 <div className="font-mono">{user.name || 'User'}</div>
                 <div className="technical-label">{user.email}</div>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => logout()} className="gap-2">
-                <LogOut className="w-4 h-4" />
-                Logout
-              </Button>
             </div>
           </div>
 
@@ -161,6 +164,7 @@ function Router() {
       <Route path={"/cockpit"} component={ForensicCockpit} />
        <Route path="/compare" component={ComparisonMode} />
       <Route path="/advanced" component={AdvancedAnalysis} />
+      <Route path="/api" component={APIDocumentation} />
       <Route path={"/404"} component={NotFound} />
       <Route path="/cockpit" component={ForensicCockpit} />
       <Route path="/404" component={NotFound} />

@@ -46,6 +46,7 @@ import { refineCFOWithCostasLoop } from './snrCfoBridge';
 import { calculateAdaptiveLoopBandwidth } from './adaptiveLoopBandwidth';
 import { batchRefineCFO, filterAnnotationsForCFO, estimateBatchDuration } from './batchCFO';
 import { sdrRouter } from './routers/sdr';
+import { apiKeysRouter } from './routers/apiKeys';
 import { detectFrequencyHopping } from './freqHopping';
 import { serializeIQSamples, streamIQSamplesArrow } from './arrow';
 import { extractAlphaSlice, extractTauSlice, crossSectionToCSV, type SCFData } from './scfCrossSection';
@@ -65,6 +66,7 @@ function convertToNestedArray(flat: Float32Array, rows: number, cols: number): n
 export const appRouter = router({
   system: systemRouter,
   sdr: sdrRouter,
+  apiKeys: apiKeysRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {

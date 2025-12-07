@@ -1162,3 +1162,22 @@
 - [x] Add singleton pattern for classifier instance
 - [ ] Test with known modulation samples
 - [ ] Train model with real data or pre-trained weights
+
+## Public API for Modulation Classification
+- [x] Design REST API endpoint structure (POST /api/public/classify, GET /api/public/status)
+- [x] Define request/response schemas (IQ samples, sample rate, metadata)
+- [x] Implement API key authentication (X-API-Key header)
+- [x] Create API key generation and management UI (APIDocumentation page)
+- [x] Add rate limiting (per API key, in-memory store)
+- [x] Implement server-side TensorFlow.js classification
+- [x] Add input validation and error handling
+- [x] Support multiple input formats (array, base64)
+- [x] Create API documentation with examples (cURL, Python)
+- [x] Add usage statistics tracking (requestCount, lastUsed)
+- [x] Add API key CRUD operations (create, list, update, delete)
+- [x] Add API keys database table with expiration support
+- [x] Add API route to navigation (/api)
+- [x] Create tRPC procedures for API key management
+- [ ] Add CORS configuration for cross-origin requests
+- [ ] Test endpoint with curl and Python examples
+- [ ] Add Redis for distributed rate limiting (production)

@@ -158,3 +158,23 @@ export const chatMessages = mysqlTable("chat_messages", {
 
 export type ChatMessage = typeof chatMessages.$inferSelect;
 export type InsertChatMessage = typeof chatMessages.$inferInsert;
+
+/**
+ * API keys for third-party access to modulation classification endpoint.
+ * Enables external tools to submit signals for analysis.
+ */
+export const apiKeys = mysqlTable("api_keys", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  key: varchar("key", { length: 64 }).notNull().unique(),
+  lastUsed: timestamp("lastUsed"),
+  requestCount: int("requestCount").notNull().default(0),
+  rateLimit: int("rateLimit").notNull().default(100), // requests per hour
+  isActive: boolean("isActive").notNull().default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  expiresAt: timestamp("expiresAt"),
+});
+
+export type ApiKey = typeof apiKeys.$inferSelect;
+export type InsertApiKey = typeof apiKeys.$inferInsert;

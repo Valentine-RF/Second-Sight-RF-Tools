@@ -9,6 +9,7 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { dataRouter } from "../dataRoutes";
 import { initializeWebSocketServer } from "./websocket";
+import publicApiRouter from "../publicApi";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -42,6 +43,8 @@ async function startServer() {
   registerOAuthRoutes(app);
   // Data streaming routes (must be before tRPC to avoid conflicts)
   app.use("/api", dataRouter);
+  // Public API routes for third-party access
+  app.use("/api/public", publicApiRouter);
   // tRPC API
   app.use(
     "/api/trpc",
