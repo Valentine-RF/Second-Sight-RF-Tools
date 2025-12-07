@@ -619,16 +619,20 @@ export default function ForensicCockpit() {
             {savedAnnotations.map((annotation) => (
               <div
                 key={annotation.id}
-                className="absolute border-2 pointer-events-auto cursor-pointer hover:opacity-80 transition-opacity"
+                className={`absolute border-2 pointer-events-auto cursor-pointer hover:opacity-80 transition-all ${
+                  selectedAnnotationId === annotation.id ? 'ring-2 ring-yellow-400 ring-offset-2 ring-offset-black' : ''
+                }`}
                 style={{
                   left: `${(annotation.sampleStart / 1000000) * 100}%`,  // TODO: Calculate proper position from sample rate
                   width: `${(annotation.sampleCount / 1000000) * 100}%`,
                   top: 0,
                   height: '100%',
                   borderColor: annotation.color || '#3b82f6',
-                  backgroundColor: `${annotation.color || '#3b82f6'}20`,
+                  backgroundColor: `${annotation.color || '#3b82f6'}30`, // Increased opacity from 20 to 30
+                  borderWidth: selectedAnnotationId === annotation.id ? '3px' : '2px',
                 }}
                 title={annotation.label || 'Annotation'}
+                onClick={() => setSelectedAnnotationId(annotation.id)}
               >
                 {/* Annotation Label */}
                 <div
@@ -640,6 +644,32 @@ export default function ForensicCockpit() {
                 >
                   {annotation.label}
                 </div>
+                
+                {/* Drag Handles for Resizing */}
+                {selectedAnnotationId === annotation.id && (
+                  <>
+                    {/* Left resize handle */}
+                    <div
+                      className="absolute left-0 top-0 w-2 h-full bg-yellow-400/50 cursor-ew-resize hover:bg-yellow-400"
+                      onMouseDown={(e) => {
+                        e.stopPropagation();
+                        // TODO: Implement drag resize logic
+                        toast.info('Drag to resize annotation (not yet implemented)');
+                      }}
+                      title="Drag to resize start"
+                    />
+                    {/* Right resize handle */}
+                    <div
+                      className="absolute right-0 top-0 w-2 h-full bg-yellow-400/50 cursor-ew-resize hover:bg-yellow-400"
+                      onMouseDown={(e) => {
+                        e.stopPropagation();
+                        // TODO: Implement drag resize logic
+                        toast.info('Drag to resize annotation (not yet implemented)');
+                      }}
+                      title="Drag to resize end"
+                    />
+                  </>
+                )}
                 
                 {/* Delete Button */}
                 <button

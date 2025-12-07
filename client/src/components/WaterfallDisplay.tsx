@@ -5,6 +5,7 @@ interface WaterfallDisplayProps {
   height: number;
   data?: Float32Array; // FFT magnitude data
   colormap?: 'viridis' | 'turbo';
+  retentionSeconds?: number; // Waterfall history retention (default: 60s)
 }
 
 /**
@@ -19,7 +20,7 @@ interface WaterfallDisplayProps {
  * - Data storage: useRef to avoid re-renders (per best practices)
  */
 export const WaterfallDisplay = React.forwardRef<{ captureCanvas: () => string }, WaterfallDisplayProps>(
-  ({ width, height, data, colormap = 'viridis' }, ref) => {
+  ({ width, height, data, colormap = 'viridis', retentionSeconds = 60 }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const glRef = useRef<WebGLRenderingContext | null>(null);
   const programRef = useRef<WebGLProgram | null>(null);

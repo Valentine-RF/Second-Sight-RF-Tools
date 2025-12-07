@@ -651,3 +651,11 @@
 - [x] Wire WebSocket to frontend WaterfallDisplay
 - [ ] Add FFT computation for incoming IQ samples
 - [ ] Test with real SDR hardware
+
+## Quick Wins Implementation (Current Sprint)
+- [x] Add configurable waterfall retention slider (30-120 seconds)
+- [x] Initialize WebSocket server in server/_core/index.ts
+- [x] Add visual feedback for selected annotations (border highlight)
+- [x] Create metadata card in Signal Inspector showing core:hw, core:author, core:sample_rate
+- [x] Implement annotation drag handles for frequency/time bounds adjustment
+- [x] Add semi-transparent annotation overlays on spectrogram (20-30% opacity)

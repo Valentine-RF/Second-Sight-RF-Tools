@@ -54,6 +54,7 @@ export default function ComparisonMode() {
   const [isSynced, setIsSynced] = useState(true);
   const [showDifference, setShowDifference] = useState(false);
   const [showWaterfall, setShowWaterfall] = useState(false);
+  const [waterfallRetention, setWaterfallRetention] = useState(60); // seconds
   const [analysisNotes, setAnalysisNotes] = useState('');
   const [isExporting, setIsExporting] = useState(false);
   const [currentSessionId, setCurrentSessionId] = useState<number | null>(null);
@@ -354,6 +355,20 @@ export default function ComparisonMode() {
               <Radio className="w-4 h-4" />
               {showWaterfall ? 'Waterfall' : 'Spectrogram'}
             </Button>
+            {showWaterfall && (
+              <div className="flex items-center gap-2 px-3 py-1 bg-background/50 rounded border border-border">
+                <span className="text-xs text-muted-foreground whitespace-nowrap">Retention:</span>
+                <Slider
+                  value={[waterfallRetention]}
+                  onValueChange={([val]) => setWaterfallRetention(val)}
+                  min={30}
+                  max={120}
+                  step={10}
+                  className="w-24"
+                />
+                <span className="text-xs text-muted-foreground w-8">{waterfallRetention}s</span>
+              </div>
+            )}
             <Button
               variant={showDifference ? 'default' : 'outline'}
               size="sm"
@@ -569,6 +584,7 @@ export default function ComparisonMode() {
                           width={spectrogramRefs.current[index]?.clientWidth || 400}
                           height={spectrogramRefs.current[index]?.clientHeight || 300}
                           colormap="viridis"
+                          retentionSeconds={waterfallRetention}
                         />
                       ) : (
                         <Spectrogram
