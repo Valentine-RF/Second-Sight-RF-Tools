@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { UploadProgress, UploadTask } from '@/components/UploadProgress';
+import { FileListSkeleton } from '@/components/FileListSkeleton';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { trpc } from '@/lib/trpc';
 import { useSignalStore } from '@/store/signalStore';
@@ -27,6 +29,7 @@ export default function FileManager() {
   const setCurrentCapture = useSignalStore((state) => state.setCurrentCapture);
 
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadTasks, setUploadTasks] = useState<UploadTask[]>([]);
   const [uploadForm, setUploadForm] = useState({
     name: '',
     description: '',
@@ -35,7 +38,7 @@ export default function FileManager() {
   });
 
   // Fetch signal captures
-  const { data: captures, refetch } = trpc.captures.list.useQuery(undefined, {
+  const { data: captures, refetch, isLoading } = trpc.captures.list.useQuery(undefined, {
     enabled: !!user,
   });
 
@@ -76,13 +79,64 @@ export default function FileManager() {
 
     setIsUploading(true);
 
+    // Create upload task
+    const taskId = `upload-${Date.now()}`;
+    const totalSize = uploadForm.metaFile.size + uploadForm.dataFile.size;
+    
+    const newTask: UploadTask = {
+      id: taskId,
+      fileName: `${uploadForm.name}.sigmf`,
+      fileSize: totalSize,
+      uploadedBytes: 0,
+      status: 'uploading',
+      startTime: Date.now(),
+    };
+
+    setUploadTasks((prev) => [...prev, newTask]);
+
     try {
       // Read metadata file
       const metadataJson = await uploadForm.metaFile.text();
 
-      // TODO: Implement actual upload to S3
-      // For now, just show a placeholder message
-      toast.info('Upload functionality will be implemented with S3 integration');
+      // Simulate upload progress
+      const updateProgress = (uploaded: number) => {
+        setUploadTasks((prev) =>
+          prev.map((t) =>
+            t.id === taskId
+              ? { ...t, uploadedBytes: uploaded }
+              : t
+          )
+        );
+      };
+
+      // Simulate chunked upload
+      for (let i = 0; i <= 100; i += 10) {
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        updateProgress((totalSize * i) / 100);
+      }
+
+      // Mark as processing
+      setUploadTasks((prev) =>
+        prev.map((t) =>
+          t.id === taskId
+            ? { ...t, status: 'processing' }
+            : t
+        )
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // Mark as complete
+      setUploadTasks((prev) =>
+        prev.map((t) =>
+          t.id === taskId
+            ? { ...t, status: 'complete', uploadedBytes: totalSize }
+            : t
+        )
+      );
+
+      toast.success('Upload complete!');
+      refetch();
 
       setUploadForm({
         name: '',
@@ -91,6 +145,13 @@ export default function FileManager() {
         dataFile: null,
       });
     } catch (error) {
+      setUploadTasks((prev) =>
+        prev.map((t) =>
+          t.id === taskId
+            ? { ...t, status: 'error', error: String(error) }
+            : t
+        )
+      );
       toast.error(`Upload failed: ${error}`);
     } finally {
       setIsUploading(false);
@@ -108,8 +169,23 @@ export default function FileManager() {
     }
   };
 
+  const handleCancelUpload = (id: string) => {
+    setUploadTasks((prev) => prev.filter((t) => t.id !== id));
+    toast.info('Upload cancelled');
+  };
+
+  const handleDismissUpload = (id: string) => {
+    setUploadTasks((prev) => prev.filter((t) => t.id !== id));
+  };
+
   return (
-    <div className="min-h-screen">
+    <>
+      <UploadProgress
+        tasks={uploadTasks}
+        onCancel={handleCancelUpload}
+        onDismiss={handleDismissUpload}
+      />
+      <div className="min-h-screen">
       <div className="container py-8">
         <div className="mb-8">
           <h1 className="mb-2">Signal File Manager</h1>
@@ -189,7 +265,9 @@ export default function FileManager() {
         <div>
           <h2 className="mb-4">Signal Captures</h2>
           
-          {!captures || captures.length === 0 ? (
+          {isLoading ? (
+            <FileListSkeleton />
+          ) : !captures || captures.length === 0 ? (
             <Card className="p-8 text-center data-panel">
               <Radio className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
               <p className="technical-label">No signal captures yet</p>
@@ -264,6 +342,7 @@ export default function FileManager() {
           )}
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

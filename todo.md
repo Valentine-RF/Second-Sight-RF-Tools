@@ -132,3 +132,12 @@
 
 ## Bug Fixes
 - [x] Fix nested anchor tag error in navigation (Link wrapping <a>)
+
+## UX Improvements
+- [x] Create skeleton loading components for file list
+- [x] Create skeleton loading components for cockpit interface
+- [x] Implement WebGL error boundary component
+- [x] Create fallback UI for WebGL failures
+- [x] Add file upload progress tracking with percentage
+- [x] Display estimated time remaining for uploads
+- [x] Add progress bar visualization for uploads

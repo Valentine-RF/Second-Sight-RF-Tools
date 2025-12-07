@@ -1,4 +1,7 @@
 import { useState } from 'react';
+import { WebGLErrorBoundary } from '@/components/WebGLErrorBoundary';
+import { CockpitSkeleton } from '@/components/CockpitSkeleton';
+import { useAuth } from '@/_core/hooks/useAuth';
 import { useSignalStore } from '@/store/signalStore';
 import { Spectrogram } from '@/components/Spectrogram';
 import { ConstellationPlot } from '@/components/ConstellationPlot';
@@ -19,6 +22,7 @@ import { trpc } from '@/lib/trpc';
  * - Zone D: Signal Inspector (Right Sidebar) - Metadata and measurements
  */
 export default function ForensicCockpit() {
+  const { loading } = useAuth();
   const currentCapture = useSignalStore((state) => state.currentCapture);
   const annotations = useSignalStore((state) => state.annotations);
   const selection = useSignalStore((state) => state.selection);
@@ -50,6 +54,10 @@ export default function ForensicCockpit() {
     // TODO: Trigger demodulation
     setActiveTab('hex');
   };
+
+  if (loading) {
+    return <CockpitSkeleton />;
+  }
 
   if (!currentCapture) {
     return (
@@ -83,7 +91,9 @@ export default function ForensicCockpit() {
           
           {/* Timeline spectrogram - decimated overview */}
           <div className="flex-1 relative">
-            <Spectrogram width={window.innerWidth} height={80} />
+            <WebGLErrorBoundary>
+              <Spectrogram width={window.innerWidth} height={80} />
+            </WebGLErrorBoundary>
             
             {/* Annotation markers as colored flags */}
             {annotations.map((ann) => (
@@ -106,11 +116,13 @@ export default function ForensicCockpit() {
         {/* Zone B: Main Workspace (Center, Dominant) */}
         <div className="flex-1 flex flex-col">
           <div className="flex-1 relative bg-black">
-            <Spectrogram
-              width={window.innerWidth - 400} // Account for sidebar
-              height={isDockCollapsed ? window.innerHeight - 200 : window.innerHeight - 500}
-              onBoxSelect={handleBoxSelect}
-            />
+            <WebGLErrorBoundary fallbackMessage="Failed to render spectrogram. Your GPU may not support the required WebGL features.">
+              <Spectrogram
+                width={window.innerWidth - 400} // Account for sidebar
+                height={isDockCollapsed ? window.innerHeight - 200 : window.innerHeight - 500}
+                onBoxSelect={handleBoxSelect}
+              />
+            </WebGLErrorBoundary>
             
             {/* Selection overlay */}
             {selection && (
@@ -192,11 +204,15 @@ export default function ForensicCockpit() {
                 </TabsContent>
 
                 <TabsContent value="constellation" className="p-4 h-full">
-                  <ConstellationPlot width={600} height={250} />
+                  <WebGLErrorBoundary fallbackMessage="Failed to render constellation plot.">
+                    <ConstellationPlot width={600} height={250} />
+                  </WebGLErrorBoundary>
                 </TabsContent>
 
                 <TabsContent value="cyclostationary" className="p-4 h-full">
-                  <SCFSurface width={800} height={250} />
+                  <WebGLErrorBoundary fallbackMessage="Failed to render 3D SCF surface.">
+                    <SCFSurface width={800} height={250} />
+                  </WebGLErrorBoundary>
                 </TabsContent>
 
                 <TabsContent value="hex" className="p-4 h-full">
