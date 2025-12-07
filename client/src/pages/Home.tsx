@@ -35,9 +35,8 @@ export default function Home() {
             <span className="second-sight-logo text-6xl">Second Sight</span>
           </h1>
           <p className="valentine-rf-badge text-base mb-4">by Valentine RF</p>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8 font-mono">
-            ExtraHop-inspired RF signal analysis platform with GPU-accelerated processing,
-            WebGL visualizations, and advanced forensic capabilities for professional investigators.
+               <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8 technical-label">
+            Professional RF signal analysis platform with GPU-accelerated processing, WebGL visualizations, and advanced forensic capabilities.
           </p>
 
           {isAuthenticated ? (
