@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { WebGLErrorBoundary } from '@/components/WebGLErrorBoundary';
 import { CockpitSkeleton } from '@/components/CockpitSkeleton';
 import { useAuth } from '@/_core/hooks/useAuth';
@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
 import { ChevronDown, ChevronUp, Activity, Radio, Waves, Binary } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
+import { useStreamingPipeline } from '@/hooks/useStreamingPipeline';
 
 /**
  * Forensic Cockpit - Main Signal Analysis Interface
@@ -32,6 +33,41 @@ export default function ForensicCockpit() {
   const setDockCollapsed = useSignalStore((state) => state.setDockCollapsed);
 
   const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
+  
+  // Streaming pipeline for real-time IQ data processing
+  const pipeline = useStreamingPipeline({
+    dataUrl: currentCapture ? `/api/captures/${currentCapture.id}/data` : '',
+    datatype: (currentCapture?.datatype as any) || 'cf32_le',
+    fftSize: 1024,
+    window: 'hann',
+    chunkSize: 8192,
+    maxQueueSize: 10
+  });
+  
+  // Refs for WebGL components (high-frequency data - no React state)
+  const spectrogramRef = useRef<any>(null);
+  const constellationRef = useRef<any>(null);
+  const waterfallRef = useRef<any>(null);
+  
+  // Connect pipeline to visualizations
+  useEffect(() => {
+    // FFT results -> Spectrogram & Waterfall
+    pipeline.onFFT((fft, chunkIndex) => {
+      if (spectrogramRef.current?.updateFFT) {
+        spectrogramRef.current.updateFFT(fft, chunkIndex);
+      }
+      if (waterfallRef.current?.updateFFT) {
+        waterfallRef.current.updateFFT(fft, chunkIndex);
+      }
+    });
+    
+    // IQ samples -> Constellation
+    pipeline.onSamples((samples, chunkIndex) => {
+      if (constellationRef.current?.updateSamples) {
+        constellationRef.current.updateSamples(samples, chunkIndex);
+      }
+    });
+  }, [pipeline]);
 
   const handleBoxSelect = (sel: { sampleStart: number; sampleEnd: number; freqLowerHz: number; freqUpperHz: number }) => {
     console.log('Selection:', sel);

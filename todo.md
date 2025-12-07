@@ -265,3 +265,22 @@
 - [ ] Create results export in multiple formats (JSON, CSV, PDF)
 - [ ] Add batch processing queue for multiple captures
 - [ ] Create analysis templates for common forensic workflows
+
+
+## Real-Time IQ Data Pipeline
+- [x] Create Web Worker for off-thread FFT computation
+- [x] Implement FFT.js or KissFFT WebAssembly integration
+- [x] Add windowing functions (Hamming, Hann, Blackman-Harris)
+- [x] Create binary .sigmf-data file reader with ArrayBuffer
+- [x] Implement HTTP Range request support for streaming large files
+- [x] Add IQ sample parser for different datatypes (cf32_le, ci16_le, cu8)
+- [x] Build streaming data pipeline with chunked processing
+- [x] Implement backpressure handling for real-time updates
+- [x] Create data transfer protocol between Worker and main thread
+- [x] Connect FFT results to Spectrogram component
+- [x] Connect IQ samples to ConstellationPlot component
+- [x] Connect FFT results to WaterfallDisplay component
+- [x] Add progress indicators for file processing
+- [x] Implement pause/resume controls for streaming
+- [x] Add sample rate validation against metadata
+- [x] Create performance monitoring for pipeline throughput
