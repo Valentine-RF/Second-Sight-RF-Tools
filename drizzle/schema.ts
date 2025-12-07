@@ -180,10 +180,50 @@ export type ApiKey = typeof apiKeys.$inferSelect;
 export type InsertApiKey = typeof apiKeys.$inferInsert;
 
 /**
+ * Training datasets for modulation classifier.
+ * Stores uploaded RadioML or GNU Radio datasets.
+ */
+export const trainingDatasets = mysqlTable('training_datasets', {
+  id: int('id').autoincrement().primaryKey(),
+  userId: int('user_id').notNull(),
+  name: text('name').notNull(),
+  description: text('description'),
+  format: varchar('format', { length: 50 }).notNull(), // 'radioml', 'gnuradio', 'custom'
+  sampleCount: int('sample_count').notNull(),
+  modulationTypes: text('modulation_types').notNull(), // JSON array of modulation types
+  sampleRate: int('sample_rate'),
+  fileSize: int('file_size').notNull(),
+  filePath: text('file_path').notNull(), // S3 path
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+});
+
+/**
+ * Model versions for modulation classifier.
+ * Tracks trained models with metrics and confusion matrices.
+ */
+export const modelVersions = mysqlTable('model_versions', {
+  id: int('id').autoincrement().primaryKey(),
+  userId: int('user_id').notNull(),
+  name: text('name').notNull(),
+  description: text('description'),
+  datasetId: int('dataset_id'),
+  epochs: int('epochs').notNull(),
+  batchSize: int('batch_size').notNull(),
+  learningRate: float('learning_rate').notNull(),
+  accuracy: float('accuracy'),
+  loss: float('loss'),
+  confusionMatrix: text('confusion_matrix'), // JSON
+  modelPath: text('model_path').notNull(), // S3 path
+  isActive: boolean('is_active').notNull().default(false),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+/**
  * Splunk Enterprise integration configuration.
  * Stores HEC (HTTP Event Collector) settings for centralized logging.
  */
-export const splunkConfig = mysqlTable("splunk_config", {
+export const splunkConfig = mysqlTable('splunk_config', {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
   

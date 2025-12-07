@@ -1247,3 +1247,34 @@
 - [ ] Wire logAnnotationCreated into annotation creation workflow
 - [ ] Test event logging with real workflows
 - [ ] Verify events appear in Splunk dashboard with live server
+
+## Modulation Classifier Training System
+- [x] Create training dataset database schema (dataset name, samples, labels, format)
+- [ ] Add dataset upload UI with file picker
+- [ ] Implement RadioML HDF5 format parser (h5wasm installed)
+- [ ] Add GNU Radio dataset format support
+- [ ] Create dataset preview with sample spectrograms
+- [ ] Add training configuration UI (epochs, batch size, learning rate)
+- [ ] Implement training progress tracking with loss/accuracy charts
+- [ ] Add model versioning and comparison
+- [ ] Create training history visualization
+- [ ] Add model export/import functionality
+- [ ] Implement validation split and metrics
+- [ ] Add confusion matrix visualization
+- [ ] Test with real RadioML datasets
+
+Note: Full training system requires significant development. Current implementation provides foundation with database schema and TensorFlow.js integration. Recommend using pre-trained models or external training pipeline for production use.
+
+## GPU-Accelerated Waterfall Display
+- [ ] Create WaterfallDisplay component with WebGL renderer
+- [ ] Implement texture scrolling for time-frequency evolution
+- [ ] Add GPU shader for FFT line rendering
+- [ ] Implement circular buffer for waterfall history
+- [ ] Add configurable scroll speed (lines per second)
+- [ ] Add colormap support (Viridis, Jet, Grayscale)
+- [ ] Implement zoom and pan controls
+- [ ] Add time axis with timestamps
+- [ ] Add frequency axis synchronized with spectrogram
+- [ ] Integrate into Forensic Cockpit below spectrogram
+- [ ] Add waterfall export to PNG
+- [ ] Test with high sample rate signals (10+ MSps)

@@ -172,6 +172,9 @@ importers:
       framer-motion:
         specifier: ^12.23.22
         version: 12.23.22(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      h5wasm:
+        specifier: ^0.8.8
+        version: 0.8.8
       html2canvas:
         specifier: ^1.4.1
         version: 1.4.1
@@ -3696,6 +3699,9 @@ packages:
 
   graceful-fs@4.2.11:
     resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
+
+  h5wasm@0.8.8:
+    resolution: {integrity: sha512-wgob0VuCgvVU6E2S4fwPkwf+SbsPfk1fuRgX5o392NDyPfJMjWlM+ZvVuRBTaoo/futq3Fd1iPcRA74s9wMC2w==}
 
   hachure-fill@0.5.2:
     resolution: {integrity: sha512-3GKBOn+m2LX9iq+JC1064cSFprJY4jL1jCXTcpnfER5HYE2l/4EfWSGzkPa/ZDBmYI0ZOEj5VHV/eKnPGkHuOg==}
@@ -9370,6 +9376,8 @@ snapshots:
   gopd@1.2.0: {}
 
   graceful-fs@4.2.11: {}
+
+  h5wasm@0.8.8: {}
 
   hachure-fill@0.5.2: {}
 

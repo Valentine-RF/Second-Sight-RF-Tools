@@ -65,6 +65,7 @@
     "express": "^4.21.2",
     "fft.js": "^4.0.4",
     "framer-motion": "^12.23.22",
+    "h5wasm": "^0.8.8",
     "html2canvas": "^1.4.1",
     "input-otp": "^1.4.2",
     "jose": "6.1.0",
