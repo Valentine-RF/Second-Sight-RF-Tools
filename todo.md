@@ -771,3 +771,16 @@
 - [ ] Create separated sources waveform display component
 - [ ] Test all algorithms with real IQ data
 - [x] Add loading states and error handling for all procedures
+
+## Advanced Signal Processing Enhancements (Current Sprint)
+- [x] Create WVDHeatmap canvas component for time-frequency visualization
+- [x] Create WaveformDisplay canvas component for separated sources
+- [x] Create ReconstructedSignalPlot canvas component for compressive sensing results
+- [x] Add CSV export for reconstructed signals
+- [x] Add JSON export for WVD matrices
+- [x] Add CSV export for separated sources
+- [x] Create AlgorithmComparison component with side-by-side display
+- [x] Add comparison mode toggle to Compressive Sensing tab
+- [x] Display RMSE/iterations comparison metrics
+- [ ] Test all visualizations with real signal data
+- [ ] Test export functionality for all formats

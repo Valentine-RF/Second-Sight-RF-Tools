@@ -19,7 +19,11 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
-import { ChevronDown, ChevronUp, Activity, Radio, Waves, Binary, FileDown, Loader2, Plus, Minus, Move } from 'lucide-react';
+import { ChevronDown, ChevronUp, Activity, Radio, Waves, Binary, FileDown, Loader2, Plus, Minus, Move, Download } from 'lucide-react';
+import { WVDHeatmap } from '@/components/WVDHeatmap';
+import { WaveformDisplay } from '@/components/WaveformDisplay';
+import { ReconstructedSignalPlot } from '@/components/ReconstructedSignalPlot';
+import { AlgorithmComparison } from '@/components/AlgorithmComparison';
 import { generateForensicReport } from '@/lib/pdfExport';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
@@ -86,6 +90,8 @@ export default function ForensicCockpit() {
   const [sparsityLevel, setSparsityLevel] = useState(10);
   const [measurementRatio, setMeasurementRatio] = useState(0.5);
   const [csResult, setCsResult] = useState<any>(null);
+  const [comparisonMode, setComparisonMode] = useState(false);
+  const [comparisonResults, setComparisonResults] = useState<any[]>([]);
   
   const [wvdType, setWvdType] = useState('wvd');
   const [windowSize, setWindowSize] = useState(64);
@@ -170,9 +176,19 @@ export default function ForensicCockpit() {
   // Advanced signal processing mutations
   const reconstructSparseMutation = trpc.captures.reconstructSparse.useMutation({
     onSuccess: (data) => {
-      setCsResult(data);
+      if (comparisonMode) {
+        // Add to comparison results
+        setComparisonResults(prev => {
+          // Remove existing result for same algorithm
+          const filtered = prev.filter(r => r.algorithm !== data.algorithm);
+          return [...filtered, data];
+        });
+        toast.success(`${data.algorithm.toUpperCase()} added to comparison (RMSE: ${data.rmse.toFixed(6)})`);
+      } else {
+        setCsResult(data);
+        toast.success(`Sparse reconstruction complete (RMSE: ${data.rmse.toFixed(6)})`);
+      }
       setActiveTab('compressive');
-      toast.success(`Sparse reconstruction complete (RMSE: ${data.rmse.toFixed(6)})`);
     },
     onError: (error) => {
       toast.error(`Reconstruction failed: ${error.message}`);
@@ -1016,10 +1032,50 @@ export default function ForensicCockpit() {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <h4 className="font-bold text-lg">Compressive Sensing Reconstruction</h4>
-                      {reconstructSparseMutation.isPending && (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      )}
+                      <div className="flex items-center gap-3">
+                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={comparisonMode}
+                            onChange={(e) => {
+                              setComparisonMode(e.target.checked);
+                              if (!e.target.checked) {
+                                setComparisonResults([]);
+                              }
+                            }}
+                            className="w-4 h-4"
+                          />
+                          <span>Comparison Mode</span>
+                        </label>
+                        {reconstructSparseMutation.isPending && (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        )}
+                      </div>
                     </div>
+                    
+                    {comparisonMode && (
+                      <div className="bg-blue-500/10 border border-blue-500/20 rounded p-3 text-sm">
+                        <div className="font-medium mb-1">🔬 Comparison Mode Active</div>
+                        <div className="text-muted-foreground">
+                          Select different algorithms and run reconstruction to compare results side-by-side.
+                          {comparisonResults.length > 0 && (
+                            <span className="ml-1 font-mono text-blue-500">
+                              ({comparisonResults.length} algorithms compared)
+                            </span>
+                          )}
+                        </div>
+                        {comparisonResults.length > 0 && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="mt-2"
+                            onClick={() => setComparisonResults([])}
+                          >
+                            Clear Comparison
+                          </Button>
+                        )}
+                      </div>
+                    )}
                     
                     {/* Algorithm Selector */}
                     <div>
@@ -1075,38 +1131,81 @@ export default function ForensicCockpit() {
                     </div>
                     
                     {/* Results Display */}
-                    {csResult && (
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="font-medium">Algorithm:</span>
-                          <span className="font-mono">{csResult.algorithm.toUpperCase()}</span>
+                    {csResult && !comparisonMode && (
+                      <div className="space-y-3">
+                        {/* Export Button */}
+                        <div className="flex justify-end">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const csv = `Sample,Reconstructed\n${csResult.reconstructed.map((v: number, i: number) => `${i},${v}`).join('\n')}`;
+                              const blob = new Blob([csv], { type: 'text/csv' });
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = `reconstructed_${csResult.algorithm}_${Date.now()}.csv`;
+                              a.click();
+                              URL.revokeObjectURL(url);
+                              toast.success('Reconstructed signal exported');
+                            }}
+                          >
+                            <Download className="w-4 h-4 mr-2" />
+                            Export CSV
+                          </Button>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="font-medium">Signal Length:</span>
-                          <span className="font-mono">{csResult.signalLength}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="font-medium">Measurements:</span>
-                          <span className="font-mono">{csResult.numMeasurements}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="font-medium">Compression:</span>
-                          <span className="font-mono">{((1 - csResult.measurementRatio) * 100).toFixed(1)}%</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="font-medium">RMSE:</span>
-                          <span className="font-mono">{csResult.rmse.toFixed(6)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="font-medium">Iterations:</span>
-                          <span className="font-mono">{csResult.iterations}</span>
+                        
+                        {/* Visualization */}
+                        <ReconstructedSignalPlot
+                          reconstructed={csResult.reconstructed}
+                          width={650}
+                          height={200}
+                        />
+                        
+                        {/* Metrics */}
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="font-medium">Algorithm:</span>
+                            <span className="font-mono">{csResult.algorithm.toUpperCase()}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="font-medium">Signal Length:</span>
+                            <span className="font-mono">{csResult.signalLength}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="font-medium">Measurements:</span>
+                            <span className="font-mono">{csResult.numMeasurements}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="font-medium">Compression:</span>
+                            <span className="font-mono">{((1 - csResult.measurementRatio) * 100).toFixed(1)}%</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="font-medium">RMSE:</span>
+                            <span className="font-mono">{csResult.rmse.toFixed(6)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="font-medium">Iterations:</span>
+                            <span className="font-mono">{csResult.iterations}</span>
+                          </div>
                         </div>
                       </div>
                     )}
                     
-                    {!csResult && (
+                    {!csResult && !comparisonMode && (
                       <div className="text-sm text-muted-foreground text-center py-8">
                         Select a signal region and choose "Reconstruct Sparse" from context menu
+                      </div>
+                    )}
+                    
+                    {/* Comparison View */}
+                    {comparisonMode && comparisonResults.length > 0 && (
+                      <AlgorithmComparison results={comparisonResults} />
+                    )}
+                    
+                    {comparisonMode && comparisonResults.length === 0 && (
+                      <div className="text-sm text-muted-foreground text-center py-8">
+                        Run reconstructions with different algorithms to compare their performance
                       </div>
                     )}
                   </div>
@@ -1180,7 +1279,45 @@ export default function ForensicCockpit() {
                     
                     {/* WVD Heatmap Display */}
                     {wvdResult && (
-                      <div className="space-y-2">
+                      <div className="space-y-3">
+                        {/* Export Button */}
+                        <div className="flex justify-end">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const json = JSON.stringify({
+                                distributionType: wvdResult.distributionType,
+                                timePoints: wvdResult.timePoints,
+                                freqPoints: wvdResult.freqPoints,
+                                wvd: wvdResult.wvd,
+                              }, null, 2);
+                              const blob = new Blob([json], { type: 'application/json' });
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = `wvd_${wvdResult.distributionType}_${Date.now()}.json`;
+                              a.click();
+                              URL.revokeObjectURL(url);
+                              toast.success('WVD matrix exported');
+                            }}
+                          >
+                            <Download className="w-4 h-4 mr-2" />
+                            Export JSON
+                          </Button>
+                        </div>
+                        
+                        {/* Heatmap Visualization */}
+                        <WVDHeatmap
+                          data={wvdResult.wvd}
+                          timePoints={wvdResult.timePoints}
+                          freqPoints={wvdResult.freqPoints}
+                          width={650}
+                          height={300}
+                          colormap="viridis"
+                        />
+                        
+                        {/* Metrics */}
                         <div className="text-sm space-y-1">
                           <div className="flex justify-between">
                             <span className="font-medium">Distribution:</span>
@@ -1194,10 +1331,6 @@ export default function ForensicCockpit() {
                             <span className="font-medium">Freq Points:</span>
                             <span className="font-mono">{wvdResult.freqPoints}</span>
                           </div>
-                        </div>
-                        {/* TODO: Add WVD heatmap canvas visualization component */}
-                        <div className="border border-border rounded p-4 text-center text-sm text-muted-foreground">
-                          WVD Heatmap Visualization (Canvas rendering pending)
                         </div>
                       </div>
                     )}
@@ -1254,6 +1387,33 @@ export default function ForensicCockpit() {
                     {/* Results Display */}
                     {bssResult && (
                       <div className="space-y-3">
+                        {/* Export Button */}
+                        <div className="flex justify-end">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const csv = bssResult.sources.map((source: number[], idx: number) => {
+                                const header = `Source ${idx + 1}`;
+                                const values = source.join('\n');
+                                return `${header}\n${values}`;
+                              }).join('\n\n');
+                              const blob = new Blob([csv], { type: 'text/csv' });
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = `separated_sources_${bssResult.algorithm}_${Date.now()}.csv`;
+                              a.click();
+                              URL.revokeObjectURL(url);
+                              toast.success('Separated sources exported');
+                            }}
+                          >
+                            <Download className="w-4 h-4 mr-2" />
+                            Export CSV
+                          </Button>
+                        </div>
+                        
+                        {/* Metrics */}
                         <div className="text-sm space-y-1">
                           <div className="flex justify-between">
                             <span className="font-medium">Algorithm:</span>
@@ -1273,12 +1433,15 @@ export default function ForensicCockpit() {
                         <div className="space-y-2">
                           <div className="font-medium text-sm">Separated Sources:</div>
                           {bssResult.sources.map((source: number[], idx: number) => (
-                            <div key={idx} className="border border-border rounded p-2">
-                              <div className="text-xs font-mono mb-1">Source {idx + 1}</div>
-                              {/* TODO: Add waveform canvas visualization */}
-                              <div className="h-16 bg-muted/20 rounded text-xs text-muted-foreground flex items-center justify-center">
-                                Waveform visualization (Canvas rendering pending)
-                              </div>
+                            <div key={idx} className="space-y-1">
+                              <WaveformDisplay
+                                data={source}
+                                width={650}
+                                height={100}
+                                color={['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'][idx % 6]}
+                                label={`Source ${idx + 1}`}
+                                sampleRate={currentCapture?.sampleRate || 1}
+                              />
                             </div>
                           ))}
                         </div>
