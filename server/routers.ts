@@ -45,6 +45,7 @@ import { compressiveSensingRouter } from './routers/compressiveSensing';
 import { rfFingerprintRouter } from './routers/rfFingerprint';
 import { advancedAnalysisRouter } from './routers/advancedAnalysis';
 import { gpuAnalysisRouter } from './routers/gpuAnalysis';
+import { batchRouter } from './routers/batch';
 import { detectFrequencyHopping } from './freqHopping';
 import { serializeIQSamples, streamIQSamplesArrow } from './arrow';
 
@@ -69,6 +70,9 @@ export const appRouter = router({
   
   // GPU-Accelerated Analysis
   gpuAnalysis: gpuAnalysisRouter,
+  
+  // Batch Job Queue
+  batch: batchRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {

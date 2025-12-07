@@ -831,3 +831,24 @@
 - [ ] Test GPU performance vs CPU baseline - Phase 2
 - [x] Create tRPC GPU analysis router with 7 endpoints
 - [x] Add TypeScript GPU bridge with ZeroMQ
+
+
+## 🚀 GPU Service Testing & UI Integration (Current Sprint)
+- [x] Start GPU service with start_gpu_service.sh
+- [x] Verify GPU service connectivity via ZeroMQ
+- [x] Test gpuAnalysis.status endpoint (CPU fallback mode)
+- [ ] Test gpuAnalysis.wvd with real capture data
+- [ ] Test gpuAnalysis.fam with real capture data
+- [ ] Test gpuAnalysis.rfDNA with real capture data
+- [x] Build batch job submission UI panel in ForensicCockpit
+- [x] Add job type selector (WVD, FAM, RF-DNA, Classification, Demodulation)
+- [x] Add parameter inputs for each job type
+- [x] Implement WebSocket connection for progress updates
+- [x] Add real-time progress bars for running jobs
+- [x] Add job queue display with status indicators
+- [x] Create batch job tRPC router (submit, list, get, stats, cancel)
+- [x] Add batch_jobs table to database schema
+- [x] Create simplified job queue (in-memory, sequential processing)
+- [ ] Add "GPU Analysis" button to annotation context menu
+- [ ] Create GPU analysis result modal with visualization
+- [ ] Test end-to-end workflow: annotate → GPU analyze → view results

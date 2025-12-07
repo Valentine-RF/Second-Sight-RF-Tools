@@ -151,3 +151,32 @@ export const chatMessages = mysqlTable("chat_messages", {
 
 export type ChatMessage = typeof chatMessages.$inferSelect;
 export type InsertChatMessage = typeof chatMessages.$inferInsert;
+
+/**
+ * Batch jobs table for GPU-accelerated analysis queue.
+ * Tracks sequential job processing to prevent GPU contention.
+ */
+export const batchJobs = mysqlTable("batch_jobs", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  
+  // Job configuration
+  jobType: varchar("jobType", { length: 64 }).notNull(), // wvd, fam, rf_dna, classification, demodulation
+  parameters: text("parameters"), // JSON string of job parameters
+  
+  // Status tracking
+  status: mysqlEnum("status", ["pending", "running", "completed", "failed"]).default("pending").notNull(),
+  progress: int("progress").default(0), // 0-100 percentage
+  
+  // Results
+  resultUrl: varchar("resultUrl", { length: 1024 }), // S3 URL to result file
+  errorMessage: text("errorMessage"),
+  
+  // Timestamps
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  startedAt: timestamp("startedAt"),
+  completedAt: timestamp("completedAt"),
+});
+
+export type BatchJob = typeof batchJobs.$inferSelect;
+export type InsertBatchJob = typeof batchJobs.$inferInsert;
