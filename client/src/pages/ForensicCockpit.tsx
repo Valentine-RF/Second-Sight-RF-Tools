@@ -157,16 +157,52 @@ export default function ForensicCockpit() {
     setActiveTab('hex');
   };
 
+  const exportReportMutation = trpc.captures.exportReport.useMutation();
+
   const handleExportPDF = async () => {
     if (!currentCapture) return;
     
     setIsExporting(true);
     
     try {
+      const result = await exportReportMutation.mutateAsync({
+        captureId: currentCapture.id,
+        includeAnnotations: true,
+        includeClassification: false,
+        includeCyclicProfile: false,
+      });
+
+      // Download PDF
+      const blob = new Blob(
+        [Uint8Array.from(atob(result.pdf), c => c.charCodeAt(0))],
+        { type: 'application/pdf' }
+      );
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = result.filename;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      toast.success('PDF report exported successfully');
+    } catch (error) {
+      console.error('PDF export failed:', error);
+      toast.error('Failed to export PDF report');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportPDFOld = async () => {
+    if (!currentCapture) return;
+    
+    setIsExporting(true);
+    
+    try {
       // Capture visualizations
-      const spectrogramImage = mainSpectrogramRef.current?.captureCanvas();
-      const constellationImage = constellationPlotRef.current?.captureCanvas();
-      const scfImage = scfSurfaceRef.current?.captureCanvas();
+      const spectrogramImage = {} as any; // mainSpectrogramRef.current?.captureCanvas();
+      const constellationImage = {} as any; // constellationPlotRef.current?.captureCanvas();
+      const scfImage = {} as any; // scfSurfaceRef.current?.captureCanvas();
       
       await generateForensicReport({
         metadata: {

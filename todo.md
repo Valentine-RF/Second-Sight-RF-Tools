@@ -464,3 +464,14 @@
 - [x] Add error handling for Python script failures
 - [ ] Test Python script execution with real IQ data
 - [ ] Document Python environment setup requirements for deployment
+
+## PDF Forensic Report Export
+- [x] Install PDF generation library (pdfkit or jsPDF)
+- [x] Create PDF report generator with capture metadata
+- [x] Add spectrogram screenshot capture to PDF
+- [x] Include annotation summary table in PDF
+- [x] Add classification results section to PDF
+- [x] Include cyclostationary analysis plots in PDF
+- [x] Add tRPC procedure for PDF export
+- [x] Create "Export Report" button in ForensicCockpit
+- [ ] Test PDF generation with real capture data

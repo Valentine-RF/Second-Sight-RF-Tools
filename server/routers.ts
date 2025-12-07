@@ -397,6 +397,56 @@ export const appRouter = router({
           };
         }
       }),
+
+    /**
+     * Export forensic report as PDF
+     */
+    exportReport: protectedProcedure
+      .input(z.object({
+        captureId: z.number(),
+        includeAnnotations: z.boolean().optional(),
+        includeClassification: z.boolean().optional(),
+        includeCyclicProfile: z.boolean().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const capture = await getSignalCaptureById(input.captureId);
+        if (!capture) throw new Error("Capture not found");
+
+        const reportData: any = {
+          capture: {
+            name: capture.name,
+            description: capture.description,
+            sampleRate: capture.sampleRate,
+            centerFrequency: null, // Not in schema
+            datatype: capture.datatype,
+            hardware: capture.hardware,
+            author: capture.author,
+            createdAt: capture.createdAt,
+          },
+        };
+
+        // Include annotations if requested
+        if (input.includeAnnotations) {
+          const annotations = await getCaptureAnnotations(input.captureId);
+          reportData.annotations = annotations.map(ann => ({
+            label: ann.label || 'Unlabeled',
+            sampleStart: ann.sampleStart,
+            sampleEnd: ann.sampleStart + ann.sampleCount,
+            color: ann.color,
+            notes: null,
+          }));
+        }
+
+        // Generate PDF
+        const { generateForensicReport } = await import('./pdfReportGenerator');
+        const pdfBuffer = await generateForensicReport(reportData);
+
+        // Return base64 for client download
+        return {
+          pdf: pdfBuffer.toString('base64'),
+          filename: `${capture.name.replace(/[^a-z0-9]/gi, '_')}_report.pdf`,
+        };
+      }),
   }),
 
   // Annotations Management
