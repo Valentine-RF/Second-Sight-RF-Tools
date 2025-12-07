@@ -4,6 +4,7 @@ import NotFound from "@/pages/NotFound";
 import { Route, Switch, Link } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
+import { AccentProvider } from "./contexts/AccentContext";
 import Home from "./pages/Home";
 import ComparisonMode from "./pages/ComparisonMode";
 import AdvancedAnalysis from "./pages/AdvancedAnalysis";
@@ -12,6 +13,7 @@ import ForensicCockpit from "./pages/ForensicCockpit";
 import { useAuth } from "./_core/hooks/useAuth";
 import { Button } from "./components/ui/button";
 import { Radio, Upload, LogOut, Menu, Moon, Sun, Activity } from 'lucide-react';
+import { AccentSwitcher } from './components/AccentSwitcher';
 import { useState } from "react";
 
 /**
@@ -40,6 +42,7 @@ function Navigation() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-4">
+            <AccentSwitcher />
             <Button
               variant="ghost"
               size="sm"
@@ -172,12 +175,16 @@ function Router() {
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="dark" switchable>
-        <TooltipProvider>
-          <Toaster />
-          <Navigation />
-          <Router />
-        </TooltipProvider>
+      <ThemeProvider
+        defaultTheme="dark"
+        switchable
+      >
+        <AccentProvider defaultAccent="blue">
+          <TooltipProvider>
+            <Toaster />
+            <Router />
+          </TooltipProvider>
+        </AccentProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );

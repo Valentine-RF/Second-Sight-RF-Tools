@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { Textarea } from '@/components/ui/textarea';
+import { AccentSwitcher } from '@/components/AccentSwitcher';
 
 interface ComparisonCapture {
   id: number;
@@ -343,6 +344,7 @@ export default function ComparisonMode() {
           </div>
           
           <div className="flex items-center gap-2">
+            <AccentSwitcher />
             <Button
               variant={showWaterfall ? 'default' : 'outline'}
               size="sm"

@@ -318,3 +318,15 @@
 - [x] Update landing page with new brand identity
 - [x] Test dark theme across all pages
 - [x] Verify color contrast and accessibility
+
+
+## Theme Accent Switcher
+- [x] Create CSS variables for blue, red, and silver accent variants
+- [x] Implement AccentContext for managing accent state
+- [x] Create accent switcher UI component with mode indicators
+- [x] Add accent switcher to navigation header
+- [x] Apply accent colors to primary buttons and interactive elements
+- [x] Update logo gradient to match selected accent
+- [x] Add visual feedback for mode changes (toast notifications)
+- [x] Persist accent preference to localStorage
+- [x] Test all three accent modes across all pages

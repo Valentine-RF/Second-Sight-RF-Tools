@@ -46,7 +46,15 @@
   /* Second Sight by Valentine RF - ExtraHop-inspired Dark Theme */
   /* Blues, Silver, Red color scheme */
   
-  --primary: oklch(0.65 0.18 240); /* Vibrant blue */
+  /* Accent Mode Colors */
+  --accent-blue: oklch(0.65 0.18 240);
+  --accent-blue-light: oklch(0.7 0.15 200);
+  --accent-red: oklch(0.6 0.22 25);
+  --accent-red-light: oklch(0.65 0.2 30);
+  --accent-silver: oklch(0.75 0.03 240);
+  --accent-silver-light: oklch(0.8 0.02 240);
+  
+  --primary: var(--accent-blue); /* Default to blue */
   --primary-foreground: oklch(0.98 0 0);
   --sidebar-primary: oklch(0.65 0.18 240);
   --sidebar-primary-foreground: oklch(0.98 0 0);
@@ -92,9 +100,26 @@
   --sidebar-ring: oklch(0.65 0.18 240);
 }
 
+/* Accent Mode Variants */
+[data-accent="blue"] {
+  --primary: var(--accent-blue);
+  --ring: var(--accent-blue);
+}
+
+[data-accent="red"] {
+  --primary: var(--accent-red);
+  --ring: var(--accent-red);
+  --accent: var(--accent-red);
+}
+
+[data-accent="silver"] {
+  --primary: var(--accent-silver);
+  --ring: var(--accent-silver);
+}
+
 .dark {
   /* Dark theme is the default for Second Sight */
-  --primary: oklch(0.65 0.18 240);
+  --primary: var(--accent-blue);
   --primary-foreground: oklch(0.98 0 0);
   --sidebar-primary: oklch(0.65 0.18 240);
   --sidebar-primary-foreground: oklch(0.98 0 0);
@@ -210,7 +235,21 @@
   .second-sight-logo {
     font-family: 'Space Grotesk', sans-serif;
     @apply text-2xl font-bold tracking-tight;
-    background: linear-gradient(135deg, oklch(0.65 0.18 240) 0%, oklch(0.7 0.15 200) 100%);
+    background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-blue-light) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  [data-accent="red"] .second-sight-logo {
+    background: linear-gradient(135deg, var(--accent-red) 0%, var(--accent-red-light) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  [data-accent="silver"] .second-sight-logo {
+    background: linear-gradient(135deg, var(--accent-silver) 0%, var(--accent-silver-light) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
