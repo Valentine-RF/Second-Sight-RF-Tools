@@ -141,3 +141,10 @@
 - [x] Add file upload progress tracking with percentage
 - [x] Display estimated time remaining for uploads
 - [x] Add progress bar visualization for uploads
+
+## Drag-and-Drop Upload
+- [x] Create drag-and-drop upload zone component
+- [x] Add visual drop target highlighting
+- [x] Handle file validation on drop
+- [x] Support dropping both .sigmf-meta and .sigmf-data files
+- [x] Integrate drag-and-drop into FileManager upload section

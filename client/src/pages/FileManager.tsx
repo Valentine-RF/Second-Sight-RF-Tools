@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { UploadProgress, UploadTask } from '@/components/UploadProgress';
 import { FileListSkeleton } from '@/components/FileListSkeleton';
+import { DropZone } from '@/components/DropZone';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { trpc } from '@/lib/trpc';
 import { useSignalStore } from '@/store/signalStore';
@@ -68,6 +69,22 @@ export default function FileManager() {
       setUploadForm({ ...uploadForm, dataFile: file });
     } else {
       toast.error('Please select a .sigmf-data file');
+    }
+  };
+
+  const handleFilesDropped = (files: { metaFile: File | null; dataFile: File | null }) => {
+    setUploadForm({
+      ...uploadForm,
+      metaFile: files.metaFile,
+      dataFile: files.dataFile,
+    });
+
+    if (files.metaFile && files.dataFile) {
+      toast.success('Both files loaded! Enter a name to upload.');
+    } else if (files.metaFile) {
+      toast.info('Metadata file loaded. Drop or select the data file.');
+    } else if (files.dataFile) {
+      toast.info('Data file loaded. Drop or select the metadata file.');
     }
   };
 
@@ -195,6 +212,13 @@ export default function FileManager() {
         {/* Upload Section */}
         <Card className="p-6 mb-8 data-panel">
           <h2 className="mb-4">Upload Signal Capture</h2>
+          
+          {/* Drag and Drop Zone */}
+          <DropZone onFilesDropped={handleFilesDropped} className="mb-6" />
+          
+          <div className="text-center my-4">
+            <span className="technical-label text-sm">or use manual file selection below</span>
+          </div>
           
           <div className="grid gap-4">
             <div>
