@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { SignalMetrics } from '@/lib/signalMetricsExtractor';
 
 /**
  * Signal capture metadata
@@ -67,6 +68,10 @@ interface SignalStore {
   currentCapture: SignalCapture | null;
   setCurrentCapture: (capture: SignalCapture | null) => void;
 
+  // Signal metrics
+  signalMetrics: SignalMetrics | null;
+  setSignalMetrics: (metrics: SignalMetrics | null) => void;
+
   // Annotations
   annotations: Annotation[];
   setAnnotations: (annotations: Annotation[]) => void;
@@ -110,6 +115,10 @@ export const useSignalStore = create<SignalStore>((set) => ({
   // Current capture
   currentCapture: null,
   setCurrentCapture: (capture) => set({ currentCapture: capture }),
+
+  // Signal metrics
+  signalMetrics: null,
+  setSignalMetrics: (metrics) => set({ signalMetrics: metrics }),
 
   // Annotations
   annotations: [],

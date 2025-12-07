@@ -47,6 +47,7 @@ import { useStreamingPipeline } from '@/hooks/useStreamingPipeline';
 export default function ForensicCockpit() {
   const { loading } = useAuth();
   const currentCapture = useSignalStore((state) => state.currentCapture);
+  const signalMetrics = useSignalStore((state) => state.signalMetrics);
   // const annotations = useSignalStore((state) => state.annotations); // Replaced by tRPC query
   const selection = useSignalStore((state) => state.selection);
   const activeTab = useSignalStore((state) => state.activeTab);
@@ -577,7 +578,13 @@ export default function ForensicCockpit() {
         duration: undefined,
         spectrogramImage,
         famPlotImage,
-        metrics: {
+        metrics: signalMetrics ? {
+          snr: signalMetrics.snr,
+          peakPower: signalMetrics.peakPower,
+          avgPower: signalMetrics.avgPower,
+          dynamicRange: signalMetrics.dynamicRange,
+          bandwidth: signalMetrics.bandwidth,
+        } : {
           snr: undefined,
           peakPower: undefined,
           avgPower: undefined,
@@ -1666,6 +1673,43 @@ export default function ForensicCockpit() {
                 </div>
               </div>
             </Card>
+
+            {/* Signal Metrics */}
+            {signalMetrics && (
+              <Card className="p-4 data-panel">
+                <h4 className="font-black mb-3">Signal Metrics</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="technical-label">SNR</span>
+                    <span className="font-mono text-cyan-400">{signalMetrics.snr.toFixed(2)} dB</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="technical-label">Peak Power</span>
+                    <span className="font-mono">{signalMetrics.peakPower.toFixed(2)} dB</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="technical-label">Avg Power</span>
+                    <span className="font-mono">{signalMetrics.avgPower.toFixed(2)} dB</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="technical-label">Dynamic Range</span>
+                    <span className="font-mono">{signalMetrics.dynamicRange.toFixed(2)} dB</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="technical-label">Bandwidth</span>
+                    <span className="font-mono">{(signalMetrics.bandwidth / 1e3).toFixed(2)} kHz</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="technical-label">Crest Factor</span>
+                    <span className="font-mono">{signalMetrics.crestFactor.toFixed(2)} dB</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="technical-label">Noise Floor</span>
+                    <span className="font-mono">{signalMetrics.noiseFloor.toFixed(2)} dB</span>
+                  </div>
+                </div>
+              </Card>
+            )}
 
             {/* Measurements */}
             <Card className="p-4 data-panel">

@@ -1111,3 +1111,26 @@
 - [x] Map annotation fields correctly (sampleStart, freqLowerEdge, etc.)
 - [ ] Test report generation with sample data in browser
 - [ ] Add actual metrics extraction from analysis results
+
+## Automatic Metrics Extraction for Reports
+- [x] Create SignalMetricsExtractor class
+- [x] Implement SNR calculation from FFT/PSD data
+- [x] Implement bandwidth calculation (occupied bandwidth method)
+- [x] Implement peak power calculation
+- [x] Implement average power calculation
+- [x] Implement dynamic range calculation
+- [x] Implement crest factor calculation
+- [x] Implement RMS level calculation
+- [x] Implement noise floor estimation
+- [x] Implement 99% power containment bandwidth
+- [x] Add metrics storage in Zustand store (signalMetrics field)
+- [x] Create metrics calculation hook (useSignalMetrics)
+- [x] Trigger metrics calculation from FFTPSDPlot component
+- [x] Update metrics on analysis operations (automatic via hook)
+- [x] Integrate metrics into report generation (ForensicCockpit)
+- [x] Add metrics display in Forensic Cockpit UI (Signal Metrics card)
+- [x] Test metrics accuracy with known signals (15/15 tests passing)
+- [x] Support multiple window functions (Hamming, Hann, Blackman)
+- [x] Implement PSD calculation from IQ samples
+- [x] Implement SNR calculation from IQ samples
+- [x] Handle edge cases (empty data, single values, extreme sample rates)

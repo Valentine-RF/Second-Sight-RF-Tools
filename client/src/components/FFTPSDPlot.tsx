@@ -1,4 +1,6 @@
 import { useEffect, useRef } from 'react';
+import { useSignalMetrics } from '@/hooks/useSignalMetrics';
+import { useSignalStore } from '@/store/signalStore';
 
 interface FFTPSDPlotProps {
   frequencies: number[];
@@ -10,6 +12,8 @@ interface FFTPSDPlotProps {
 
 export function FFTPSDPlot({ frequencies, magnitudes, width = 800, height = 300, centerFreq = 0 }: FFTPSDPlotProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { updateMetricsFromPlot } = useSignalMetrics();
+  const currentCapture = useSignalStore((state) => state.currentCapture);
 
   useEffect(() => {
     if (!canvasRef.current || frequencies.length === 0 || magnitudes.length === 0) return;
@@ -130,7 +134,12 @@ export function FFTPSDPlot({ frequencies, magnitudes, width = 800, height = 300,
       ctx.fillText(`Peak: ${peakFreqMHz.toFixed(3)} MHz, ${maxMag.toFixed(1)} dB`, peakX + 8, peakY - 8);
     }
 
-  }, [frequencies, magnitudes, width, height, centerFreq]);
+    // Calculate and store metrics
+    if (currentCapture?.sampleRate) {
+      updateMetricsFromPlot(frequencies, magnitudes, currentCapture.sampleRate);
+    }
+
+  }, [frequencies, magnitudes, width, height, centerFreq, currentCapture, updateMetricsFromPlot]);
 
   if (frequencies.length === 0 || magnitudes.length === 0) {
     return (
