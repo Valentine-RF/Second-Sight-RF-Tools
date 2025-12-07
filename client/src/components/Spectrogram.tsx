@@ -1,6 +1,8 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useSignalStore } from '@/store/signalStore';
 import { LODManager } from '@/lib/lodManager';
+import { GPUFFT } from '@/lib/gpuFFT';
+import { TileManager, type Viewport } from '@/lib/tileManager';
 
 /**
  * Colormap shader functions for WebGL
@@ -38,6 +40,9 @@ interface SpectrogramProps {
   height: number;
   sampleRate?: number; // For LOD calculation
   lodQuality?: 'high' | 'medium' | 'low' | 'auto';
+  enableGPUFFT?: boolean; // Enable GPU-accelerated FFT
+  enableTiling?: boolean; // Enable viewport culling with tiles
+  totalSamples?: number; // Total samples in capture (for tiling)
   onBoxSelect?: (selection: { sampleStart: number; sampleEnd: number; freqLowerHz: number; freqUpperHz: number }) => void;
   onFPSUpdate?: (fps: number) => void; // Callback for FPS monitoring
 }
@@ -56,7 +61,7 @@ interface SpectrogramProps {
  * during high-frequency updates. Use requestAnimationFrame for smooth animation.
  */
 export const Spectrogram = React.forwardRef<{ captureCanvas: () => string }, SpectrogramProps>(
-  ({ width, height, sampleRate = 1e6, lodQuality = 'auto', onBoxSelect, onFPSUpdate }, ref) => {
+  ({ width, height, sampleRate = 1e6, lodQuality = 'auto', enableGPUFFT = false, enableTiling = false, totalSamples = 1e6, onBoxSelect, onFPSUpdate }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const glRef = useRef<WebGLRenderingContext | null>(null);
   const programRef = useRef<WebGLProgram | null>(null);
@@ -66,7 +71,10 @@ export const Spectrogram = React.forwardRef<{ captureCanvas: () => string }, Spe
   const fftDataRef = useRef<Float32Array | null>(null);
   const animationFrameRef = useRef<number>(0);
   const lodManagerRef = useRef<LODManager>(new LODManager());
+  const gpuFFTRef = useRef<GPUFFT | null>(null);
+  const tileManagerRef = useRef<TileManager | null>(null);
   const [currentLOD, setCurrentLOD] = useState<{ quality: string; reason: string }>({ quality: 'high', reason: 'Initializing...' });
+  const [viewport, setViewport] = useState<Viewport>({ x: 0, y: 0, width, height, zoom: 1, pan: { x: 0, y: 0 } });
 
   // UI state from store
   const colormap = useSignalStore((state) => state.colormap);

@@ -961,3 +961,32 @@
 - [x] Add expandable parameter views on each node
 - [x] Color-coded nodes by processing stage
 - [ ] Wire to actual DSP pipeline parameters (backend integration)
+
+## GPU FFT Shader Implementation
+- [x] Create GPUFFT class with WebGL2 compute-style shaders
+- [x] Implement Cooley-Tukey FFT algorithm in fragment shader
+- [x] Add texture ping-pong for butterfly operations
+- [x] Implement bit-reversal permutation shader
+- [x] Add windowing function shader (Hamming/Hann/Blackman/Rectangular)
+- [x] Create PSD calculation shader (magnitude to dB)
+- [x] Add complex number multiplication in shaders
+- [x] Implement twiddle factor calculation
+- [x] Add props to Spectrogram component (enableGPUFFT)
+- [ ] Integrate GPU FFT into render loop
+- [ ] Benchmark performance vs CPU FFT
+- [ ] Test with 20+ MSps sample rates
+
+## Viewport Culling & Tile-Based Rendering
+- [x] Create TileManager class for spectrogram tiling
+- [x] Implement frustum culling algorithm
+- [x] Add visible tile detection based on viewport
+- [x] Create tile cache with LRU eviction
+- [x] Implement lazy tile loading
+- [x] Add tile boundary rendering (debug mode)
+- [x] Implement predictive tile preloading
+- [x] Add memory usage statistics tracking
+- [x] Add props to Spectrogram component (enableTiling, totalSamples)
+- [x] Create comprehensive test suite (19/19 tests passing)
+- [ ] Integrate TileManager into render loop
+- [ ] Measure memory reduction (target 70%)
+- [ ] Test with large captures (>1GB files)
