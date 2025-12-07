@@ -26,7 +26,7 @@ import {
   deleteComparisonSession,
 } from "./db";
 import { parseSigMFMetadata, annotationToSigMF, generateSigMFMetadata } from "./sigmf";
-import { storagePut, storageGet } from "./storage";
+import { storagePut, storageGet, storageDelete } from "./storage";
 import { invokeLLM } from "./_core/llm";
 import { exec } from 'child_process';
 import { promisify } from 'util';
@@ -232,7 +232,24 @@ export const appRouter = router({
     delete: protectedProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
-        // TODO: Delete S3 files before deleting database record
+        // Get capture metadata to find S3 file keys
+        const capture = await getSignalCaptureById(input.id);
+        if (!capture) throw new Error("Capture not found");
+        
+        // Delete S3 files if they exist
+        try {
+          if (capture.metaFileKey) {
+            await storageDelete(capture.metaFileKey);
+          }
+          if (capture.dataFileKey) {
+            await storageDelete(capture.dataFileKey);
+          }
+        } catch (error) {
+          console.error('Failed to delete S3 files:', error);
+          // Continue with database deletion even if S3 deletion fails
+        }
+        
+        // Delete database record
         await deleteSignalCapture(input.id);
         return { success: true };
       }),

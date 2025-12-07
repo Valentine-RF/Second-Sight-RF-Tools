@@ -63,13 +63,17 @@ export default function ForensicCockpit() {
     },
   });
   
+  const [classificationResults, setClassificationResults] = useState<any[]>([]);
+  
   const classifyModulationMutation = trpc.captures.classifyModulation.useMutation({
     onSuccess: (data) => {
       const topPrediction = data.predictions[0];
+      setClassificationResults(data.predictions);
       toast.success(`Classified as ${topPrediction.modulation} (${topPrediction.confidence.toFixed(1)}%)`);
     },
     onError: (error) => {
       toast.error(`Classification failed: ${error.message}`);
+      setClassificationResults([]);
     },
   });
   
@@ -175,20 +179,73 @@ export default function ForensicCockpit() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentCapture]);
 
-  const handleBoxSelect = (sel: { sampleStart: number; sampleEnd: number; freqLowerHz: number; freqUpperHz: number }) => {
+  const handleBoxSelect = (sel: { sampleStart: number; sampleEnd: number; freqLowerHz: number; freqUpperHz: number }, event?: MouseEvent) => {
     console.log('Selection:', sel);
-    // Context menu will appear at selection location
+    
+    // Show context menu at mouse position if available
+    if (event) {
+      setContextMenuPos({ x: event.clientX, y: event.clientY });
+    }
   };
+  
+  // Close context menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (contextMenuPos) {
+        setContextMenuPos(null);
+      }
+    };
+    
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [contextMenuPos]);
 
   const handleAnalyzeCycles = () => {
     if (!selection || !currentCapture) return;
-    // TODO: Trigger FAM analysis
-    setActiveTab('cyclostationary');
+    
+    const sampleCount = selection.sampleEnd - selection.sampleStart;
+    
+    analyzeCyclesMutation.mutate({
+      captureId: currentCapture.id,
+      sampleStart: selection.sampleStart,
+      sampleCount,
+    });
+    
+    setContextMenuPos(null);
   };
 
   const handleClassifyModulation = () => {
     if (!selection || !currentCapture) return;
-    // TODO: Trigger TorchSig classification
+    
+    const sampleCount = selection.sampleEnd - selection.sampleStart;
+    
+    classifyModulationMutation.mutate({
+      captureId: currentCapture.id,
+      sampleStart: selection.sampleStart,
+      sampleCount,
+    });
+    
+    setContextMenuPos(null);
+  };
+  
+  const handleSaveAnnotation = () => {
+    if (!selection || !currentCapture) return;
+    
+    const sampleCount = selection.sampleEnd - selection.sampleStart;
+    const sampleRate = currentCapture.sampleRate || 1;
+    
+    const annotationData: SignalSelection = {
+      sampleStart: selection.sampleStart,
+      sampleCount,
+      timeStart: selection.sampleStart / sampleRate,
+      timeEnd: selection.sampleEnd / sampleRate,
+      freqStart: selection.freqLowerHz,
+      freqEnd: selection.freqUpperHz,
+    };
+    
+    setPendingAnnotation(annotationData);
+    setAnnotationDialogOpen(true);
+    setContextMenuPos(null);
   };
 
   const handleDemodulate = () => {
@@ -488,6 +545,11 @@ export default function ForensicCockpit() {
                 className="absolute bg-card border border-border shadow-lg rounded-md p-2 space-y-1"
                 style={{ left: contextMenuPos.x, top: contextMenuPos.y }}
               >
+                <Button variant="ghost" size="sm" className="w-full justify-start" onClick={handleSaveAnnotation}>
+                  <FileDown className="w-4 h-4 mr-2" />
+                  Save as Annotation
+                </Button>
+                <div className="border-t border-border my-1" />
                 <Button variant="ghost" size="sm" className="w-full justify-start" onClick={handleAnalyzeCycles}>
                   <Waves className="w-4 h-4 mr-2" />
                   Analyze Cycles
@@ -799,26 +861,28 @@ export default function ForensicCockpit() {
             {/* Classification */}
             <Card className="p-4 data-panel">
               <h4 className="font-black mb-3">Classification</h4>
-              <div className="space-y-2">
-                {[
-                  { label: 'QPSK', value: 90 },
-                  { label: '8PSK', value: 10 },
-                  { label: '16-QAM', value: 5 },
-                ].map((item) => (
-                  <div key={item.label}>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="font-mono">{item.label}</span>
-                      <span className="font-mono">{item.value}%</span>
+              {classificationResults.length > 0 ? (
+                <div className="space-y-2">
+                  {classificationResults.slice(0, 5).map((item) => (
+                    <div key={item.modulation}>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="font-mono">{item.modulation}</span>
+                        <span className="font-mono">{item.confidence.toFixed(1)}%</span>
+                      </div>
+                      <div className="h-2 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-primary"
+                          style={{ width: `${item.confidence}%` }}
+                        />
+                      </div>
                     </div>
-                    <div className="h-2 bg-muted rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-primary"
-                        style={{ width: `${item.value}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground">
+                  Select a region and classify to see results
+                </div>
+              )}
             </Card>
 
             {/* DSP Chain */}

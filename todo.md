@@ -547,3 +547,15 @@
 - [x] Add teletype mode classifier to DSP library
 - [x] Update modulation selector UI with teletype category
 - [x] Add teletype-specific measurements panel
+
+## High-Impact Feature Implementation (Current Sprint)
+- [x] Implement annotation creation from box selection in Forensic Cockpit
+- [x] Add annotation persistence to database when saving selection
+- [x] Create context menu on box selection with forensic actions
+- [x] Add "Save as Annotation" action to context menu
+- [x] Add "Classify Modulation" action to context menu
+- [x] Display classification results in Signal Inspector
+- [x] Update classification bar chart with real probabilities
+- [x] Implement file deletion with S3 cleanup in FileManager
+- [x] Add confirmation dialog for file deletion
+- [x] Test complete annotation workflow end-to-end
