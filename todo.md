@@ -330,3 +330,14 @@
 - [x] Add visual feedback for mode changes (toast notifications)
 - [x] Persist accent preference to localStorage
 - [x] Test all three accent modes across all pages
+
+## Raw IQ File Upload Support
+- [x] Add raw IQ file upload option to FileManager (accept .iq, .dat, .bin files)
+- [x] Create manual metadata entry form (datatype, sample rate, center frequency, hardware)
+- [x] Implement backend SigMF metadata generator from user inputs
+- [x] Auto-generate .sigmf-meta JSON file with core fields
+- [x] Store both raw IQ file and generated metadata in S3
+- [x] Support common datatypes: cf32_le, ci16_le, cu8, ci8
+- [x] Add file format auto-detection based on file size and patterns
+- [x] Update upload flow to handle both native SigMF and raw IQ files
+- [x] Test raw IQ upload with HackRF/RTL-SDR captures

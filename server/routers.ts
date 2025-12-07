@@ -32,7 +32,8 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 
 const execAsync = promisify(exec);
-import { nanoid } from "nanoid";
+import { nanoid } from 'nanoid';
+import { generateSigMFMetadata as generateRawIQMetadata, isValidDatatype, validateFileSize, type RawIQMetadata } from './sigmfGenerator';
 
 export const appRouter = router({
   system: systemRouter,
@@ -113,6 +114,83 @@ export const appRouter = router({
           captureId: capture.id,
           metaFileUrl: metaResult.url,
           dataFileKey,
+        };
+      }),
+
+    /**
+     * Upload raw IQ file with manual metadata parameters
+     * Automatically generates SigMF metadata wrapper
+     */
+    uploadRawIQ: protectedProcedure
+      .input(z.object({
+        name: z.string(),
+        description: z.string().optional(),
+        datatype: z.string(),
+        sampleRate: z.number(),
+        centerFrequency: z.number().optional(),
+        hardware: z.string().optional(),
+        author: z.string().optional(),
+        dataFileSize: z.number(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Validate datatype
+        if (!isValidDatatype(input.datatype)) {
+          throw new Error(`Invalid datatype: ${input.datatype}. Must be a valid SigMF datatype (e.g., cf32_le, ci16_le, cu8)`);
+        }
+        
+        // Validate file size matches datatype
+        if (!validateFileSize(input.dataFileSize, input.datatype)) {
+          throw new Error(`File size ${input.dataFileSize} bytes is not a valid multiple of sample size for datatype ${input.datatype}`);
+        }
+
+        // Generate SigMF metadata
+        const metadataParams: RawIQMetadata = {
+          name: input.name,
+          description: input.description,
+          datatype: input.datatype,
+          sampleRate: input.sampleRate,
+          centerFrequency: input.centerFrequency,
+          hardware: input.hardware,
+          author: input.author || ctx.user.name || undefined,
+        };
+        
+        const metadataJson = generateRawIQMetadata(metadataParams);
+        
+        // Generate unique file keys for S3
+        const fileId = nanoid();
+        const metaFileKey = `${ctx.user.id}/signals/${fileId}.sigmf-meta`;
+        const dataFileKey = `${ctx.user.id}/signals/${fileId}.sigmf-data`;
+
+        // Upload metadata file to S3
+        const metaResult = await storagePut(
+          metaFileKey,
+          metadataJson,
+          "application/json"
+        );
+
+        // Create database record
+        const capture = await createSignalCapture({
+          userId: ctx.user.id,
+          name: input.name,
+          description: input.description || null,
+          metaFileKey,
+          metaFileUrl: metaResult.url,
+          dataFileKey,
+          dataFileUrl: "", // Will be updated after data upload
+          datatype: input.datatype,
+          sampleRate: input.sampleRate,
+          hardware: input.hardware || null,
+          author: input.author || ctx.user.name || null,
+          sha512: null, // Will be calculated after data upload
+          dataFileSize: input.dataFileSize,
+          status: "uploaded",
+        });
+
+        return {
+          captureId: capture.id,
+          metaFileUrl: metaResult.url,
+          dataFileKey,
+          generatedMetadata: metadataJson,
         };
       }),
 

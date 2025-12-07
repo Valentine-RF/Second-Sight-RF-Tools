@@ -31,11 +31,21 @@ export default function FileManager() {
 
   const [isUploading, setIsUploading] = useState(false);
   const [uploadTasks, setUploadTasks] = useState<UploadTask[]>([]);
+  const [uploadMode, setUploadMode] = useState<'sigmf' | 'raw'>('sigmf');
   const [uploadForm, setUploadForm] = useState({
     name: '',
     description: '',
     metaFile: null as File | null,
     dataFile: null as File | null,
+  });
+  const [rawIQForm, setRawIQForm] = useState({
+    name: '',
+    description: '',
+    dataFile: null as File | null,
+    datatype: 'cf32_le',
+    sampleRate: 0,
+    centerFrequency: 0,
+    hardware: '',
   });
 
   // Fetch signal captures
@@ -51,6 +61,26 @@ export default function FileManager() {
     },
     onError: (error) => {
       toast.error(`Failed to delete: ${error.message}`);
+    },
+  });
+
+  // Raw IQ upload mutation
+  const uploadRawIQMutation = trpc.captures.uploadRawIQ.useMutation({
+    onSuccess: () => {
+      toast.success('Raw IQ file uploaded successfully! SigMF metadata auto-generated.');
+      setRawIQForm({
+        name: '',
+        description: '',
+        dataFile: null,
+        datatype: 'cf32_le',
+        sampleRate: 0,
+        centerFrequency: 0,
+        hardware: '',
+      });
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(`Upload failed: ${error.message}`);
     },
   });
 
@@ -85,6 +115,34 @@ export default function FileManager() {
       toast.info('Metadata file loaded. Drop or select the data file.');
     } else if (files.dataFile) {
       toast.info('Data file loaded. Drop or select the metadata file.');
+    }
+  };
+
+  const handleRawIQUpload = async () => {
+    if (!rawIQForm.dataFile || !rawIQForm.name || !rawIQForm.sampleRate) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      // Call uploadRawIQ mutation
+      await uploadRawIQMutation.mutateAsync({
+        name: rawIQForm.name,
+        description: rawIQForm.description || undefined,
+        datatype: rawIQForm.datatype,
+        sampleRate: rawIQForm.sampleRate,
+        centerFrequency: rawIQForm.centerFrequency || undefined,
+        hardware: rawIQForm.hardware || undefined,
+        dataFileSize: rawIQForm.dataFile.size,
+      });
+
+      // TODO: Upload data file to S3 using the returned dataFileKey
+    } catch (error: any) {
+      // Error already handled by mutation onError
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -211,7 +269,25 @@ export default function FileManager() {
 
         {/* Upload Section */}
         <Card className="p-6 mb-8 data-panel">
-          <h2 className="mb-4">Upload Signal Capture</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2>Upload Signal Capture</h2>
+            <div className="flex gap-2">
+              <Button
+                variant={uploadMode === 'sigmf' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setUploadMode('sigmf')}
+              >
+                SigMF Upload
+              </Button>
+              <Button
+                variant={uploadMode === 'raw' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setUploadMode('raw')}
+              >
+                Raw IQ Upload
+              </Button>
+            </div>
+          </div>
           
           {/* Drag and Drop Zone */}
           <DropZone onFilesDropped={handleFilesDropped} className="mb-6" />
@@ -220,69 +296,170 @@ export default function FileManager() {
             <span className="technical-label text-sm">or use manual file selection below</span>
           </div>
           
-          <div className="grid gap-4">
-            <div>
-              <Label htmlFor="name">Capture Name *</Label>
-              <Input
-                id="name"
-                value={uploadForm.name}
-                onChange={(e) => setUploadForm({ ...uploadForm, name: e.target.value })}
-                placeholder="e.g., QPSK_Downlink_2.4GHz"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={uploadForm.description}
-                onChange={(e) => setUploadForm({ ...uploadForm, description: e.target.value })}
-                placeholder="Optional notes about this capture"
-                rows={3}
-              />
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4">
+          {uploadMode === 'sigmf' ? (
+            <div className="grid gap-4">
               <div>
-                <Label htmlFor="metaFile">Metadata File (.sigmf-meta) *</Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    id="metaFile"
-                    type="file"
-                    accept=".sigmf-meta"
-                    onChange={handleMetaFileChange}
-                  />
-                  {uploadForm.metaFile && (
-                    <FileText className="w-5 h-5 text-primary" />
-                  )}
-                </div>
+                <Label htmlFor="name">Capture Name *</Label>
+                <Input
+                  id="name"
+                  value={uploadForm.name}
+                  onChange={(e) => setUploadForm({ ...uploadForm, name: e.target.value })}
+                  placeholder="e.g., QPSK_Downlink_2.4GHz"
+                />
               </div>
 
               <div>
-                <Label htmlFor="dataFile">Data File (.sigmf-data) *</Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    id="dataFile"
-                    type="file"
-                    accept=".sigmf-data"
-                    onChange={handleDataFileChange}
-                  />
-                  {uploadForm.dataFile && (
-                    <FileText className="w-5 h-5 text-primary" />
-                  )}
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={uploadForm.description}
+                  onChange={(e) => setUploadForm({ ...uploadForm, description: e.target.value })}
+                  placeholder="Optional notes about this capture"
+                  rows={3}
+                />
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="metaFile">Metadata File (.sigmf-meta) *</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="metaFile"
+                      type="file"
+                      accept=".sigmf-meta"
+                      onChange={handleMetaFileChange}
+                    />
+                    {uploadForm.metaFile && (
+                      <FileText className="w-5 h-5 text-primary" />
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="dataFile">Data File (.sigmf-data) *</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="dataFile"
+                      type="file"
+                      accept=".sigmf-data"
+                      onChange={handleDataFileChange}
+                    />
+                    {uploadForm.dataFile && (
+                      <FileText className="w-5 h-5 text-primary" />
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <Button
-              onClick={handleUpload}
-              disabled={isUploading || !uploadForm.name || !uploadForm.metaFile || !uploadForm.dataFile}
-              className="w-full"
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              {isUploading ? 'Uploading...' : 'Upload Signal Capture'}
-            </Button>
-          </div>
+              <Button
+                onClick={handleUpload}
+                disabled={isUploading || !uploadForm.name || !uploadForm.metaFile || !uploadForm.dataFile}
+                className="w-full"
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                {isUploading ? 'Uploading...' : 'Upload Signal Capture'}
+              </Button>
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              <div>
+                <Label htmlFor="rawName">Capture Name *</Label>
+                <Input
+                  id="rawName"
+                  value={rawIQForm.name}
+                  onChange={(e) => setRawIQForm({ ...rawIQForm, name: e.target.value })}
+                  placeholder="e.g., HackRF_FM_Capture"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="rawDescription">Description</Label>
+                <Textarea
+                  id="rawDescription"
+                  value={rawIQForm.description}
+                  onChange={(e) => setRawIQForm({ ...rawIQForm, description: e.target.value })}
+                  placeholder="Optional notes about this capture"
+                  rows={3}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="rawDataFile">IQ Data File (.iq, .dat, .bin) *</Label>
+                <Input
+                  id="rawDataFile"
+                  type="file"
+                  accept=".iq,.dat,.bin"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setRawIQForm({ ...rawIQForm, dataFile: file });
+                    }
+                  }}
+                />
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="datatype">Datatype *</Label>
+                  <select
+                    id="datatype"
+                    value={rawIQForm.datatype}
+                    onChange={(e) => setRawIQForm({ ...rawIQForm, datatype: e.target.value })}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <option value="cf32_le">cf32_le (Complex Float32 LE)</option>
+                    <option value="ci16_le">ci16_le (Complex Int16 LE)</option>
+                    <option value="ci8">ci8 (Complex Int8)</option>
+                    <option value="cu8">cu8 (Complex Uint8)</option>
+                    <option value="cu16_le">cu16_le (Complex Uint16 LE)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <Label htmlFor="sampleRate">Sample Rate (Hz) *</Label>
+                  <Input
+                    id="sampleRate"
+                    type="number"
+                    value={rawIQForm.sampleRate || ''}
+                    onChange={(e) => setRawIQForm({ ...rawIQForm, sampleRate: parseFloat(e.target.value) || 0 })}
+                    placeholder="e.g., 2400000"
+                  />
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="centerFrequency">Center Frequency (Hz)</Label>
+                  <Input
+                    id="centerFrequency"
+                    type="number"
+                    value={rawIQForm.centerFrequency || ''}
+                    onChange={(e) => setRawIQForm({ ...rawIQForm, centerFrequency: parseFloat(e.target.value) || 0 })}
+                    placeholder="e.g., 915000000"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="hardware">Hardware/SDR</Label>
+                  <Input
+                    id="hardware"
+                    value={rawIQForm.hardware}
+                    onChange={(e) => setRawIQForm({ ...rawIQForm, hardware: e.target.value })}
+                    placeholder="e.g., HackRF One"
+                  />
+                </div>
+              </div>
+
+              <Button
+                onClick={handleRawIQUpload}
+                disabled={isUploading || !rawIQForm.name || !rawIQForm.dataFile || !rawIQForm.sampleRate}
+                className="w-full"
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                {isUploading ? 'Uploading...' : 'Upload Raw IQ File'}
+              </Button>
+            </div>
+          )}
         </Card>
 
         {/* Captures List */}
