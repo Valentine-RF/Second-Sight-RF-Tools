@@ -8,6 +8,8 @@ import { ConstellationPlot } from '@/components/ConstellationPlot';
 import SCFSurface3D from '@/components/SCFSurface3D';
 import { FFTPSDPlot } from '@/components/FFTPSDPlot';
 import { HexView } from '@/components/HexView';
+import { SDRStreamingPanel } from '@/components/SDRStreamingPanel';
+import { AnnotationEditDialog } from '@/components/AnnotationEditDialog';
 import SignalContextMenu, { type SignalSelection } from '@/components/SignalContextMenu';
 import CyclicProfilePanel from '@/components/CyclicProfilePanel';
 import AnnotationDialog from '@/components/AnnotationDialog';
@@ -45,7 +47,6 @@ export default function ForensicCockpit() {
   const [scfData, setScfData] = useState<any>(null);
   const [showCyclicProfile, setShowCyclicProfile] = useState(true);
   const [annotationDialogOpen, setAnnotationDialogOpen] = useState(false);
-  const [pendingAnnotation, setPendingAnnotation] = useState<SignalSelection | null>(null);
   
   // Load annotations for current capture from database
   const { data: savedAnnotations = [] } = trpc.annotations.list.useQuery(
@@ -68,6 +69,10 @@ export default function ForensicCockpit() {
   const [classificationResults, setClassificationResults] = useState<any[]>([]);
   const [fftData, setFftData] = useState<any>(null);
   const [demodData, setDemodData] = useState<any>(null);
+  const [editingAnnotation, setEditingAnnotation] = useState<any>(null);
+  const [annotationEditOpen, setAnnotationEditOpen] = useState(false);
+  const [selectedAnnotationId, setSelectedAnnotationId] = useState<number | null>(null);
+  const [pendingAnnotation, setPendingAnnotation] = useState<SignalSelection | null>(null);
   
   const demodulateMutation = trpc.captures.demodulate.useMutation({
     onSuccess: (data) => {
@@ -108,7 +113,20 @@ export default function ForensicCockpit() {
   const createAnnotationMutation = trpc.annotations.create.useMutation({
     onSuccess: () => {
       toast.success('Annotation saved successfully!');
-      // Invalidate annotations list to refresh
+      trpc.useUtils().annotations.list.invalidate();
+    },
+  });
+  
+  const updateAnnotationMutation = trpc.annotations.update.useMutation({
+    onSuccess: () => {
+      toast.success('Annotation updated');
+      trpc.useUtils().annotations.list.invalidate();
+    },
+  });
+  
+  const deleteAnnotationMutation = trpc.annotations.delete.useMutation({
+    onSuccess: () => {
+      toast.success('Annotation deleted');
       trpc.useUtils().annotations.list.invalidate();
     },
     onError: (error) => {
@@ -117,6 +135,36 @@ export default function ForensicCockpit() {
   });
   
   const [measurementsData, setMeasurementsData] = useState<any>(null);
+  
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Delete key - remove selected annotation
+      if (e.key === 'Delete' && selectedAnnotationId) {
+        deleteAnnotationMutation.mutate({ id: selectedAnnotationId });
+        setSelectedAnnotationId(null);
+      }
+      
+      // Ctrl+E - edit selected annotation
+      if (e.ctrlKey && e.key === 'e' && selectedAnnotationId) {
+        e.preventDefault();
+        const annotation = savedAnnotations.find((a: any) => a.id === selectedAnnotationId);
+        if (annotation) {
+          setEditingAnnotation(annotation);
+          setAnnotationEditOpen(true);
+        }
+      }
+      
+      // Escape - clear selection
+      if (e.key === 'Escape') {
+        setSelectedAnnotationId(null);
+        setContextMenuPos(null);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedAnnotationId, savedAnnotations]);
   const [modulationType, setModulationType] = useState<string>('QPSK');
   const estimateSNRCFOMutation = trpc.captures.estimateSNRCFO.useMutation({
     onSuccess: (data) => {
@@ -1016,6 +1064,26 @@ export default function ForensicCockpit() {
           timeStart: pendingAnnotation.timeStart,
           timeEnd: pendingAnnotation.timeEnd,
         } : undefined}
+      />
+      
+      {/* Annotation Edit Dialog */}
+      <AnnotationEditDialog
+        open={annotationEditOpen}
+        annotation={editingAnnotation}
+        onClose={() => {
+          setAnnotationEditOpen(false);
+          setEditingAnnotation(null);
+        }}
+        onSave={(annotation) => {
+          updateAnnotationMutation.mutate({
+            id: annotation.id,
+            label: annotation.label,
+            color: annotation.color,
+          });
+        }}
+        onDelete={(id) => {
+          deleteAnnotationMutation.mutate({ id });
+        }}
       />
     </div>
   );

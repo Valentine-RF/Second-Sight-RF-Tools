@@ -585,3 +585,51 @@
 - [x] Wire Demodulate button to trigger demodulation
 - [x] Display decoded text in monospace font with highlighting
 - [x] Test demodulator with real RTTY/PSK31/CW signals
+
+## Waterfall History Implementation (Current Sprint)
+- [x] Add circular buffer for FFT history storage (configurable 30-60s retention)
+- [x] Implement scrolling time axis with vertical waterfall display
+- [x] Add waterfall colormap rendering with GPU acceleration
+- [x] Wire waterfall to main spectrogram component
+- [x] Add time labels and grid lines to waterfall axis
+- [ ] Implement configurable retention period slider
+- [x] Add pause/resume waterfall scrolling controls
+- [x] Optimize memory usage for long retention periods
+
+## Annotation Editing (Current Sprint)
+- [ ] Implement double-click handler on annotation boxes
+- [x] Create annotation edit dialog with pre-filled values
+- [x] Add keyboard shortcut handler (Delete, Ctrl+E)
+- [x] Wire Delete key to remove selected annotation
+- [x] Wire Ctrl+E to open edit dialog for selected annotation
+- [ ] Update annotation bounds with drag handles
+- [x] Add color picker for annotation color changes
+- [x] Implement annotation selection state management
+- [ ] Add visual feedback for selected annotations
+
+## Real-Time Streaming Mode (Current Sprint)
+- [ ] Implement WebSocket server for IQ sample streaming
+- [ ] Add streaming session management (start/stop/pause)
+- [ ] Create circular buffer for incoming IQ samples
+- [ ] Wire WebSocket client to spectrogram component
+- [ ] Add automatic FFT computation on incoming data
+- [x] Implement recording controls (start/stop recording)
+- [ ] Save streamed data to S3 with metadata
+- [x] Add streaming status indicator in UI
+- [ ] Implement bandwidth throttling for WebSocket
+- [x] Add latency monitoring and buffer health metrics
+
+## SoapySDR API Integration (Current Sprint)
+- [ ] Install SoapySDR library and Python bindings
+- [ ] Create SoapySDR device enumeration endpoint
+- [ ] Implement device configuration (frequency, sample rate, gain)
+- [ ] Add antenna selection and channel configuration
+- [ ] Create streaming start/stop procedures
+- [ ] Wire SoapySDR to WebSocket streaming pipeline
+- [ ] Add device status monitoring (temperature, overflow)
+- [ ] Implement automatic gain control (AGC) toggle
+- [x] Add frequency tuning UI with preset bands
+- [x] Create SDR device selector dropdown in UI
+- [x] Add sample rate and bandwidth selectors
+- [x] Implement gain slider with dB scale
+- [ ] Test with RTL-SDR, HackRF, and USRP devices
