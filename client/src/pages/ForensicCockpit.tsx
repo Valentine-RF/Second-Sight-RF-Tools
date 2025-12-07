@@ -86,7 +86,8 @@ export default function ForensicCockpit() {
     return () => {
       pipeline.stop();
     };
-  }, [currentCapture, pipeline]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentCapture]);
 
   const handleBoxSelect = (sel: { sampleStart: number; sampleEnd: number; freqLowerHz: number; freqUpperHz: number }) => {
     console.log('Selection:', sel);

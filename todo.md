@@ -341,3 +341,6 @@
 - [x] Add file format auto-detection based on file size and patterns
 - [x] Update upload flow to handle both native SigMF and raw IQ files
 - [x] Test raw IQ upload with HackRF/RTL-SDR captures
+
+## Bug Fixes - Streaming Pipeline
+- [x] Fix infinite loop in ForensicCockpit useEffect (pipeline dependency issue)
