@@ -571,3 +571,17 @@
 - [x] Implement pan controls for main spectrogram (click-drag, arrow keys)
 - [ ] Add zoom level indicator and reset button
 - [x] Test all Analysis Dock tabs with real signal data
+
+## Hex View Demodulator Implementation (Current Sprint)
+- [x] Implement RTTY FSK demodulator with mark/space detection
+- [x] Add Baudot code decoder for RTTY (ITA2 character set)
+- [x] Implement PSK31 BPSK demodulator with Costas loop
+- [x] Add Varicode decoder for PSK31 variable-length encoding
+- [x] Implement CW Morse code detector with envelope detection
+- [x] Add Morse code translator with timing analysis
+- [x] Create demodulate tRPC procedure with mode selection
+- [x] Build HexView component with hex dump and ASCII columns
+- [x] Add bitstream visualization with timing markers
+- [x] Wire Demodulate button to trigger demodulation
+- [x] Display decoded text in monospace font with highlighting
+- [x] Test demodulator with real RTTY/PSK31/CW signals

@@ -27,6 +27,7 @@ import {
 } from "./db";
 import { parseSigMFMetadata, annotationToSigMF, generateSigMFMetadata } from "./sigmf";
 import { storagePut, storageGet, storageDelete } from "./storage";
+import { demodulateRTTY, demodulatePSK31, decodeCW } from "./demodulator";
 import { invokeLLM } from "./_core/llm";
 import { exec } from 'child_process';
 import { promisify } from 'util';
@@ -333,6 +334,71 @@ export const appRouter = router({
           centerFreq: 0, // Center frequency not stored in schema
           sampleRate,
         };
+      }),
+
+    /**
+     * Demodulate digital signal (RTTY, PSK31, CW)
+     */
+    demodulate: protectedProcedure
+      .input(z.object({
+        captureId: z.number(),
+        sampleStart: z.number(),
+        sampleCount: z.number(),
+        mode: z.enum(['RTTY', 'PSK31', 'CW']),
+        baudRate: z.number().optional(),
+        shift: z.number().optional(),
+        wpm: z.number().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const capture = await getSignalCaptureById(input.captureId);
+        if (!capture) throw new Error("Capture not found");
+        if (!capture.dataFileUrl) throw new Error("Data file not available");
+
+        // Validate sample range
+        const isValid = validateSampleRange(
+          capture.datatype || 'cf32_le',
+          input.sampleStart,
+          input.sampleCount,
+          capture.dataFileSize || 0
+        );
+        if (!isValid) throw new Error("Invalid sample range");
+
+        // Fetch IQ samples from S3
+        const { iqReal, iqImag } = await fetchIQSamples(
+          capture.dataFileUrl,
+          capture.datatype || 'cf32_le',
+          input.sampleStart,
+          Math.min(input.sampleCount, 32768) // Limit to 32k samples
+        );
+
+        // Convert to complex samples
+        const complexSamples = Array.from(iqReal).map((re, i) => ({
+          re,
+          im: iqImag[i]
+        }));
+
+        const sampleRate = capture.sampleRate || 1;
+
+        // Demodulate based on mode
+        let result;
+        switch (input.mode) {
+          case 'RTTY':
+            result = demodulateRTTY(
+              complexSamples,
+              sampleRate,
+              input.baudRate || 45.45,
+              input.shift || 170
+            );
+            break;
+          case 'PSK31':
+            result = demodulatePSK31(complexSamples, sampleRate);
+            break;
+          case 'CW':
+            result = decodeCW(complexSamples, sampleRate, input.wpm || 20);
+            break;
+        }
+
+        return result;
       }),
 
     /**

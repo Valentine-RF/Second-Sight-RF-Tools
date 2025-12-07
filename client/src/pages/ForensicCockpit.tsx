@@ -7,6 +7,7 @@ import { Spectrogram } from '@/components/Spectrogram';
 import { ConstellationPlot } from '@/components/ConstellationPlot';
 import SCFSurface3D from '@/components/SCFSurface3D';
 import { FFTPSDPlot } from '@/components/FFTPSDPlot';
+import { HexView } from '@/components/HexView';
 import SignalContextMenu, { type SignalSelection } from '@/components/SignalContextMenu';
 import CyclicProfilePanel from '@/components/CyclicProfilePanel';
 import AnnotationDialog from '@/components/AnnotationDialog';
@@ -66,6 +67,19 @@ export default function ForensicCockpit() {
   
   const [classificationResults, setClassificationResults] = useState<any[]>([]);
   const [fftData, setFftData] = useState<any>(null);
+  const [demodData, setDemodData] = useState<any>(null);
+  
+  const demodulateMutation = trpc.captures.demodulate.useMutation({
+    onSuccess: (data) => {
+      setDemodData(data);
+      setActiveTab('hex');
+      toast.success(`${data.mode} signal demodulated!`);
+    },
+    onError: (error) => {
+      toast.error(`Demodulation failed: ${error.message}`);
+      setDemodData(null);
+    },
+  });
   
   const computeFFTMutation = trpc.captures.computeFFT.useMutation({
     onSuccess: (data) => {
@@ -279,8 +293,24 @@ export default function ForensicCockpit() {
 
   const handleDemodulate = () => {
     if (!selection || !currentCapture) return;
-    // TODO: Trigger demodulation
-    setActiveTab('hex');
+    
+    const sampleCount = selection.sampleEnd - selection.sampleStart;
+    
+    // Auto-detect mode based on modulation type or use CW as default
+    const mode = modulationType.includes('PSK') ? 'PSK31' : 
+                 modulationType.includes('RTTY') || modulationType.includes('FSK') ? 'RTTY' : 'CW';
+    
+    demodulateMutation.mutate({
+      captureId: currentCapture.id,
+      sampleStart: selection.sampleStart,
+      sampleCount,
+      mode,
+      baudRate: 45.45,
+      shift: 170,
+      wpm: 20,
+    });
+    
+    setContextMenuPos(null);
   };
 
   const exportReportMutation = trpc.captures.exportReport.useMutation();
@@ -689,13 +719,13 @@ export default function ForensicCockpit() {
                   </WebGLErrorBoundary>
                 </TabsContent>
 
-                <TabsContent value="hex" className="p-4 h-full">
-                  <div className="wireframe-pink h-full overflow-auto">
-                    <pre className="font-mono text-xs">
-                      {/* Hex dump will be displayed here */}
-                      00000000: 48 65 6c 6c 6f 20 57 6f 72 6c 64 0a              Hello World.
-                    </pre>
-                  </div>
+                <TabsContent value="hex" className="p-0 h-full">
+                  <HexView
+                    bitstream={demodData?.bitstream || ''}
+                    decoded={demodData?.decoded || ''}
+                    mode={demodData?.mode || 'CW'}
+                    confidence={demodData?.confidence || 0}
+                  />
                 </TabsContent>
               </Tabs>
             )}
