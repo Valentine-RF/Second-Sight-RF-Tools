@@ -723,3 +723,18 @@
 - [x] Add installation script for SoapySDR library
 - [x] Create comprehensive README with usage examples
 - [ ] Test with RTL-SDR, HackRF, and USRP devices
+
+## Performance Optimizations (Current Sprint)
+- [x] Implement Apache Arrow IPC for zero-copy data transport
+- [x] Add Arrow buffer serialization for IQ samples
+- [x] Create Arrow streaming endpoint in server
+- [ ] Wire Arrow deserialization in frontend
+- [x] Optimize WebGL spectrogram rendering for 60 FPS
+- [x] Implement frame rate monitoring for performance tracking
+- [ ] Add level-of-detail (LOD) rendering for large datasets
+- [ ] Implement viewport culling to skip off-screen rendering
+- [ ] Add GPU-accelerated FFT computation with WebGL shaders
+- [ ] Create WebGL FFT shader using Cooley-Tukey algorithm
+- [ ] Implement texture-based data input/output for GPU FFT
+- [ ] Add fallback to CPU FFT for unsupported browsers
+- [ ] Benchmark performance improvements with large datasets
