@@ -7,6 +7,7 @@ import { Spectrogram } from '@/components/Spectrogram';
 import { ConstellationPlot } from '@/components/ConstellationPlot';
 import SCFSurface3D from '@/components/SCFSurface3D';
 import SignalContextMenu, { type SignalSelection } from '@/components/SignalContextMenu';
+import CyclicProfilePanel from '@/components/CyclicProfilePanel';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
@@ -38,6 +39,7 @@ export default function ForensicCockpit() {
   const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [scfData, setScfData] = useState<any>(null);
+  const [showCyclicProfile, setShowCyclicProfile] = useState(true);
   
   // tRPC mutations for FAM and classification
   const analyzeCyclesMutation = trpc.captures.analyzeCycles.useMutation({
@@ -312,6 +314,17 @@ export default function ForensicCockpit() {
                 </WebGLErrorBoundary>
               </div>
             </SignalContextMenu>
+            
+            {/* Cyclic Profile Overlay */}
+            {showCyclicProfile && scfData?.cyclicProfile && (
+              <CyclicProfilePanel
+                cyclicProfile={scfData.cyclicProfile}
+                cyclicFreqs={scfData.cyclicFreqs}
+                onClose={() => setShowCyclicProfile(false)}
+                width={220}
+                height={450}
+              />
+            )}
             
             {/* Selection overlay */}
             {selection && (

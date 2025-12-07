@@ -415,3 +415,13 @@
 - [x] Display loading states during processing
 - [x] Update Signal Inspector panels with results
 
+
+## Cyclic Profile Overlay - In Progress
+- [x] Create CyclicProfilePanel component with Canvas 2D
+- [x] Render 1D cyclic profile as line plot
+- [x] Add peak detection markers
+- [x] Integrate as side panel in Main Workspace
+- [x] Wire to FAM analysis cyclicProfile data
+- [x] Add toggle to show/hide overlay
+- [x] Display cyclic frequency axis labels
+
