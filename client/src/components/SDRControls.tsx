@@ -41,44 +41,47 @@ export const SDRControls: React.FC<SDRControlsProps> = ({
   
   // Enumerate devices on mount
   const enumerateDevices = trpc.sdr.enumerateDevices.useMutation({
-    onSuccess: (data) => {
-      setDevices(data.devices);
-      if (data.devices.length > 0) {
-        setSelectedDevice(data.devices[0].driver);
+    onSuccess: (devices: SDRDevice[]) => {
+      setDevices(devices);
+      if (devices.length > 0) {
+        setSelectedDevice(devices[0].driver);
       }
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('[SDRControls] Failed to enumerate devices:', error);
     },
   });
   
   // Start streaming session
   const startSession = trpc.sdr.startSession.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: { sessionId: string; status: string }) => {
       console.log('[SDRControls] Session started:', data.sessionId);
+      setCurrentSessionId(data.sessionId);
       onSessionStart(data.sessionId);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('[SDRControls] Failed to start session:', error);
     },
   });
   
   // Stop streaming session
+  const [currentSessionId, setCurrentSessionId] = useState<string>('');
+  
   const stopSession = trpc.sdr.stopSession.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: { sessionId: string; samplesRecorded: number; metaUrl?: string; dataUrl?: string }) => {
       console.log('[SDRControls] Session stopped');
       if (data.metaUrl) {
         console.log('[SDRControls] Recording saved:', data.metaUrl);
       }
       onSessionStop();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('[SDRControls] Failed to stop session:', error);
     },
   });
   
   useEffect(() => {
-    enumerateDevices.mutate();
+    enumerateDevices.mutate(undefined);
   }, []);
   
   const handleStart = () => {
@@ -106,7 +109,11 @@ export const SDRControls: React.FC<SDRControlsProps> = ({
   };
   
   const handleStop = () => {
-    stopSession.mutate();
+    if (!currentSessionId) {
+      console.error('[SDRControls] No active session');
+      return;
+    }
+    stopSession.mutate({ sessionId: currentSessionId });
   };
   
   const selectedDeviceInfo = devices.find(d => d.driver === selectedDevice);

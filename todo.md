@@ -931,3 +931,9 @@
 - [x] Add recording buffer management
 - [x] Implement SigMF export for recordings
 - [x] Upload recordings to S3 with metadata
+- [x] Add startSession procedure to SDR router
+- [x] Fix TypeScript errors in SDRControls component
+- [x] Integrate SDRControls into ForensicCockpit Live Streaming tab
+- [x] Fix TypeScript errors (added isStreaming state and proper imports)
+- [x] Wire StreamingSpectrogram to active session (ready for WebSocket integration)
+- [ ] Document hardware setup for RTL-SDR/HackRF

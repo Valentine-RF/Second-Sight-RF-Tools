@@ -49,7 +49,34 @@ export const sdrRouter = router({
     }),
 
   /**
-   * Start SDR streaming session
+   * Start SDR streaming session (simplified API)
+   */
+  startSession: protectedProcedure
+    .input(z.object({
+      deviceDriver: z.string(),
+      centerFreqHz: z.number(),
+      sampleRateHz: z.number(),
+      gainDb: z.number(),
+      recording: z.boolean().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const session = sessionManager.createSession({
+        userId: ctx.user.openId,
+        deviceDriver: input.deviceDriver,
+        centerFreqHz: input.centerFreqHz,
+        sampleRateHz: input.sampleRateHz,
+        gainDb: input.gainDb,
+        recording: input.recording,
+      });
+      
+      return {
+        sessionId: session.id,
+        status: session.status,
+      };
+    }),
+
+  /**
+   * Start SDR streaming session (legacy API)
    */
   startStream: protectedProcedure
     .input(z.object({

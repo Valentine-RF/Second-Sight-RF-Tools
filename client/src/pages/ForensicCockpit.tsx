@@ -11,6 +11,7 @@ import { HexView } from '@/components/HexView';
 import { AnnotationStatistics } from '@/components/AnnotationStatistics';
 import { HopPatternVisualization } from '@/components/HopPatternVisualization';
 import { SDRStreamingPanel } from '@/components/SDRStreamingPanel';
+import { SDRControls } from '@/components/SDRControls';
 import { AnnotationEditDialog } from '@/components/AnnotationEditDialog';
 import SignalContextMenu, { type SignalSelection } from '@/components/SignalContextMenu';
 import CyclicProfilePanel from '@/components/CyclicProfilePanel';
@@ -54,8 +55,8 @@ export default function ForensicCockpit() {
 
   const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
   const [isExporting, setIsExporting] = useState(false);
-  const [scfData, setScfData] = useState<any>(null);
-  const [showCyclicProfile, setShowCyclicProfile] = useState(true);
+  const [scfData, setScfData] = useState<any>(null);  const [showCyclicProfile, setShowCyclicProfile] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
   const [annotationDialogOpen, setAnnotationDialogOpen] = useState(false);
   
   // Load annotations for current capture from database
@@ -996,6 +997,10 @@ export default function ForensicCockpit() {
                     <Radio className="w-4 h-4" />
                     Source Separation
                   </TabsTrigger>
+                  <TabsTrigger value="streaming" className="gap-2">
+                    <Radio className="w-4 h-4" />
+                    Live Streaming
+                  </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="spectrum" className="p-4 h-full">
@@ -1586,6 +1591,33 @@ export default function ForensicCockpit() {
                         Select a signal region and choose "Separate Sources" from context menu
                       </div>
                     )}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="streaming" className="p-4 h-full overflow-y-auto">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-bold text-lg">Live SDR Streaming</h4>
+                    </div>
+                    
+                    <SDRControls
+                      isStreaming={isStreaming}
+                      onSessionStart={(sessionId: string) => {
+                        console.log('[ForensicCockpit] Streaming session started:', sessionId);
+                        setIsStreaming(true);
+                        toast.success('Streaming session started');
+                      }}
+                      onSessionStop={() => {
+                        console.log('[ForensicCockpit] Streaming session stopped');
+                        setIsStreaming(false);
+                        toast.info('Streaming session stopped');
+                      }}
+                    />
+                    
+                    <div className="text-sm text-muted-foreground mt-4">
+                      <p>Connect an RTL-SDR, HackRF, or USRP device to start live signal streaming.</p>
+                      <p className="mt-2">The spectrogram will update in real-time with FFT data from the SDR.</p>
+                    </div>
                   </div>
                 </TabsContent>
               </Tabs>
