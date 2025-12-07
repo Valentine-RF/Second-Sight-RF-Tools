@@ -653,12 +653,19 @@ export default function ForensicCockpit() {
             {savedAnnotations.map((ann) => (
               <div
                 key={ann.id}
-                className="absolute top-0 w-1 h-full opacity-70"
+                className={`absolute top-0 w-1 h-full opacity-70 cursor-pointer transition-all hover:opacity-100 hover:w-2 ${
+                  selectedAnnotationId === ann.id ? 'ring-2 ring-white w-2' : ''
+                }`}
                 style={{
                   left: `${(ann.sampleStart / 1000000) * 100}%`, // Placeholder calculation
                   backgroundColor: ann.color || '#3b82f6',
                 }}
                 title={ann.label || 'Annotation'}
+                onClick={() => setSelectedAnnotationId(ann.id)}
+                onDoubleClick={() => {
+                  setSelectedAnnotationId(ann.id);
+                  setAnnotationDialogOpen(true);
+                }}
               />
             ))}
           </div>
@@ -705,6 +712,15 @@ export default function ForensicCockpit() {
                   captureId: currentCapture.id,
                   sampleStart: sel.sampleStart,
                   sampleCount: Math.min(sel.sampleCount, 4096),  // Limit to 4096 samples
+                });
+              }}
+              onDemodulate={(sel) => {
+                if (!currentCapture) return;
+                demodMutation.mutate({
+                  captureId: currentCapture.id,
+                  sampleStart: sel.sampleStart,
+                  sampleCount: sel.sampleCount,
+                  mode: 'RTTY',  // Default mode, could be made configurable
                 });
               }}
               onSaveAnnotation={(sel) => {

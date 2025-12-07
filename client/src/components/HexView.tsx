@@ -31,16 +31,25 @@ export function HexView({ bitstream, decoded, mode, confidence }: HexViewProps) 
   
   for (let i = 0; i < bitstreamBytes.length; i += 16) {
     const offset = i.toString(16).padStart(8, '0').toUpperCase();
-    const hexBytes = bitstreamBytes
-      .slice(i, i + 16)
+    const chunk = bitstreamBytes.slice(i, i + 16);
+    
+    // Format hex bytes with spacing for readability (8 bytes, space, 8 bytes)
+    const hexPart1 = chunk
+      .slice(0, 8)
       .map(b => (isNaN(b) ? '??' : b.toString(16).padStart(2, '0').toUpperCase()))
       .join(' ');
-    const asciiChars = bitstreamBytes
-      .slice(i, i + 16)
+    const hexPart2 = chunk
+      .slice(8, 16)
+      .map(b => (isNaN(b) ? '??' : b.toString(16).padStart(2, '0').toUpperCase()))
+      .join(' ');
+    const hexBytes = `${hexPart1.padEnd(23, ' ')}  ${hexPart2}`.padEnd(50, ' ');
+    
+    // ASCII representation
+    const asciiChars = chunk
       .map(b => (isNaN(b) || b < 32 || b > 126 ? '.' : String.fromCharCode(b)))
       .join('');
     
-    hexLines.push(`${offset}: ${hexBytes.padEnd(48, ' ')}  ${asciiChars}`);
+    hexLines.push(`${offset}  ${hexBytes} |${asciiChars}|`);
   }
 
   return (
@@ -51,6 +60,9 @@ export function HexView({ bitstream, decoded, mode, confidence }: HexViewProps) 
           <span className="font-black text-sm">Mode: {mode}</span>
           <span className="technical-label">
             Confidence: {(confidence * 100).toFixed(1)}%
+          </span>
+          <span className="text-xs text-muted-foreground">
+            {bitstreamBytes.filter(b => !isNaN(b)).length} bytes
           </span>
         </div>
         <div className="flex items-center gap-2">

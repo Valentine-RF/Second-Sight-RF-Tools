@@ -241,8 +241,8 @@ export default function FileManager() {
     setLocation('/cockpit');
   };
 
-  const handleDeleteCapture = (id: number) => {
-    if (confirm('Are you sure you want to delete this signal capture?')) {
+  const handleDeleteCapture = (id: number, name: string) => {
+    if (confirm(`Are you sure you want to delete "${name}"?\n\nThis will permanently delete:\n• Signal capture metadata\n• Raw IQ data file from S3\n• All annotations and analysis results\n\nThis action cannot be undone.`)) {
       deleteMutation.mutate({ id });
     }
   };
@@ -632,7 +632,8 @@ export default function FileManager() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDeleteCapture(capture.id)}
+                        onClick={() => handleDeleteCapture(capture.id, capture.name)}
+                        title="Delete capture"
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>

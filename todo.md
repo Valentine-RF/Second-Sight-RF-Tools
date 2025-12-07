@@ -784,3 +784,22 @@
 - [x] Display RMSE/iterations comparison metrics
 - [ ] Test all visualizations with real signal data
 - [ ] Test export functionality for all formats
+
+## Core Forensic Features (Current Sprint)
+- [x] Enhance HexView component with demodulated bitstream display
+- [x] Add ASCII representation column to hex view
+- [x] Add byte offset and address display
+- [x] Wire hex view to demodulation results
+- [x] Add "Analyze Cycles" context menu action
+- [x] Add "Classify Modulation" context menu action
+- [x] Add "Demodulate" context menu action
+- [x] Wire context menu actions to tRPC procedures
+- [x] Add double-click handler to annotation boxes
+- [ ] Implement annotation drag handles (8-point resize)
+- [ ] Add annotation position update procedure
+- [x] Add visual feedback for selected/hovered annotations
+- [x] Create file deletion tRPC procedure (already exists)
+- [x] Add S3 file cleanup on deletion (already implemented)
+- [x] Add confirmation dialog for file deletion
+- [x] Wire delete button to deletion procedure
+- [ ] Test all features with real signal data
