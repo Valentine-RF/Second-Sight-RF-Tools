@@ -893,3 +893,15 @@
 - [x] Show carrier drift rate (Hz/s) between annotations
 - [ ] Add export CFO history as CSV
 - [ ] Test all features with real signal data
+
+## SCF Cross-Section Slicing (Current Sprint)
+- [x] Create extractSCFCrossSection function for alpha-slice (fixed cyclic frequency)
+- [x] Create extractSCFCrossSection function for tau-slice (fixed lag)
+- [x] Add interpolation for non-grid-aligned slice positions
+- [x] Create SlicePlaneControls component with alpha/tau slider
+- [ ] Add slice plane visualization overlay on 3D SCF surface
+- [x] Create SCFCrossSection2D canvas component for slice display
+- [x] Add export cross-section data as CSV (crossSectionToCSV)
+- [ ] Wire slice controls to SCFSurface3D component
+- [ ] Add keyboard shortcuts for slice navigation (arrow keys)
+- [ ] Test with real SCF data
