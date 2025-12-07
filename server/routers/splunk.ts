@@ -170,4 +170,64 @@ export const splunkRouter = router({
     
     return { success: true };
   }),
+  
+  /**
+   * Get dashboard data from Splunk
+   */
+  getDashboardData: protectedProcedure
+    .input(z.object({
+      timeRange: z.enum(['1h', '24h', '7d', '30d']).default('24h'),
+    }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error('Database unavailable');
+      
+      // Get Splunk config
+      const result = await db.select()
+        .from(splunkConfig)
+        .where(eq(splunkConfig.userId, ctx.user.id))
+        .limit(1);
+      
+      if (result.length === 0 || !result[0].splunkUrl || !result[0].searchUsername) {
+        throw new Error('Splunk Search API not configured');
+      }
+      
+      const config = result[0];
+      const { SplunkSearchClient, SplunkQueries } = await import('../splunkSearchClient');
+      
+      const client = new SplunkSearchClient({
+        splunkUrl: config.splunkUrl!,
+        username: config.searchUsername!,
+        password: config.searchPassword!,
+        verifySsl: config.verifySsl,
+      });
+      
+      const hours = input.timeRange === '1h' ? 1 : input.timeRange === '24h' ? 24 : input.timeRange === '7d' ? 168 : 720;
+      
+      try {
+        // Execute all queries in parallel
+        const [recentEvents, modulationDist, anomalies, apiUsage, uploadStats, eventTypeDist, avgConfidence] = await Promise.all([
+          client.oneshotSearch(SplunkQueries.recentEvents(config.index || 'main', config.sourcetype || 'rf_signal_analysis', hours)),
+          client.oneshotSearch(SplunkQueries.modulationDistribution(config.index || 'main', config.sourcetype || 'rf_signal_analysis', hours)),
+          client.oneshotSearch(SplunkQueries.anomalyAlerts(config.index || 'main', config.sourcetype || 'rf_signal_analysis', hours)),
+          client.oneshotSearch(SplunkQueries.apiUsageTimeseries(config.index || 'main', config.sourcetype || 'rf_signal_analysis', hours)),
+          client.oneshotSearch(SplunkQueries.signalUploadStats(config.index || 'main', config.sourcetype || 'rf_signal_analysis', hours)),
+          client.oneshotSearch(SplunkQueries.eventTypeDistribution(config.index || 'main', config.sourcetype || 'rf_signal_analysis', hours)),
+          client.oneshotSearch(SplunkQueries.avgClassificationConfidence(config.index || 'main', config.sourcetype || 'rf_signal_analysis', hours)),
+        ]);
+        
+        return {
+          recentEvents: recentEvents.results,
+          modulationDistribution: modulationDist.results,
+          anomalyAlerts: anomalies.results,
+          apiUsageTimeseries: apiUsage.results,
+          uploadStats: uploadStats.results[0] || {},
+          eventTypeDistribution: eventTypeDist.results,
+          avgConfidence: avgConfidence.results[0]?.avg_confidence || 0,
+        };
+      } catch (error: any) {
+        console.error('[Splunk Dashboard] Query error:', error);
+        throw new Error(`Failed to fetch dashboard data: ${error.message}`);
+      }
+    }),
 });

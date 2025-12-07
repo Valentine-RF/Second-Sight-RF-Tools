@@ -1208,3 +1208,27 @@
 - [x] Add setup instructions in UI
 - [ ] Test integration with live Splunk Enterprise instance
 - [ ] Wire event logging into actual signal processing workflows
+
+## Real-Time Splunk Dashboard in Forensic Cockpit
+- [x] Implement Splunk Search API client for querying logs
+- [x] Add Splunk search credentials to configuration (schema updated)
+- [x] Create dashboard data fetching hooks (tRPC procedure getDashboardData)
+- [x] Design dashboard layout (grid with metric cards)
+- [x] Add recent events timeline component (table with 20 events)
+- [x] Add anomaly alerts list with severity indicators (color-coded)
+- [x] Add signal upload statistics (total uploads, avg file size, total data)
+- [x] Implement auto-refresh (configurable interval, 30s default)
+- [x] Add time range selector (last hour, 24h, 7d, 30d)
+- [x] Add loading states and error handling
+- [x] Integrate dashboard into Forensic Cockpit as new tab ("Splunk Dashboard")
+- [x] Add metric cards (Total Uploads, Avg Confidence, Anomalies, Total Events)
+- [x] Add refresh button with loading indicator
+- [x] Add auto-refresh toggle checkbox
+- [x] Implement SPL query helpers for common metrics
+- [x] Add parallel query execution for performance
+- [x] Install recharts dependency (removed charts temporarily)
+- [ ] Add modulation classification pie chart (recharts integration)
+- [ ] Add event type distribution bar chart (recharts integration)
+- [ ] Add API usage line chart (recharts integration)
+- [ ] Add export dashboard data to CSV
+- [ ] Test with live Splunk data

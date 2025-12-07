@@ -21,7 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
-import { ChevronDown, ChevronUp, Activity, Radio, Waves, Binary, FileDown, Loader2, Plus, Minus, Move, Download } from 'lucide-react';
+import { ChevronDown, ChevronUp, Activity, Radio, Waves, Binary, FileDown, Loader2, Plus, Minus, Move, Download, BarChart3 } from 'lucide-react';
 import { WVDHeatmap } from '@/components/WVDHeatmap';
 import { WaveformDisplay } from '@/components/WaveformDisplay';
 import { ReconstructedSignalPlot } from '@/components/ReconstructedSignalPlot';
@@ -36,6 +36,7 @@ import { trpc } from '@/lib/trpc';
 import { useStreamingPipeline } from '@/hooks/useStreamingPipeline';
 import { ModulationOverlay } from '@/components/ModulationOverlay';
 import { getModulationClassifier, type ClassificationResult } from '@/lib/modulationClassifier';
+import SplunkDashboard from '@/components/SplunkDashboard';
 
 /**
  * Forensic Cockpit - Main Signal Analysis Interface
@@ -1066,10 +1067,13 @@ export default function ForensicCockpit() {
                   <TabsTrigger value="streaming" className="gap-2">
                     <Radio className="w-4 h-4" />
                     Live Streaming
-                  </TabsTrigger>
-                  <TabsTrigger value="dspchain" className="gap-2">
+                  </TabsTrigger>                  <TabsTrigger value="dsp-chain" className="gap-2">
                     <Activity className="w-4 h-4" />
                     DSP Chain
+                  </TabsTrigger>
+                  <TabsTrigger value="splunk" className="gap-2">
+                    <BarChart3 className="w-4 h-4" />
+                    Splunk Dashboard
                   </TabsTrigger>
                 </TabsList>
 
@@ -1699,6 +1703,10 @@ export default function ForensicCockpit() {
                       toast.info(`Updated ${parameter} to ${value}`);
                     }}
                   />
+                </TabsContent>
+                
+                <TabsContent value="splunk" className="p-4 h-full overflow-auto">
+                  <SplunkDashboard />
                 </TabsContent>
               </Tabs>
             )}

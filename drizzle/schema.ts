@@ -190,6 +190,11 @@ export const splunkConfig = mysqlTable("splunk_config", {
   // Splunk HEC configuration
   hecUrl: varchar("hecUrl", { length: 512 }).notNull(), // e.g., https://splunk.example.com:8088/services/collector
   hecToken: varchar("hecToken", { length: 256 }).notNull(),
+  
+  // Splunk Search API configuration (for dashboard queries)
+  splunkUrl: varchar("splunkUrl", { length: 512 }), // Base URL for Search API (e.g., https://splunk.example.com:8089)
+  searchUsername: varchar("searchUsername", { length: 128 }),
+  searchPassword: varchar("searchPassword", { length: 256 }),
   index: varchar("index", { length: 128 }).default("main"),
   source: varchar("source", { length: 128 }).default("second-sight-rf"),
   sourcetype: varchar("sourcetype", { length: 128 }).default("rf_signal_analysis"),
