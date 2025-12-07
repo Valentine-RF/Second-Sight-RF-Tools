@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { UploadProgress, UploadTask } from '@/components/UploadProgress';
 import { FileListSkeleton } from '@/components/FileListSkeleton';
 import { DropZone } from '@/components/DropZone';
+import { SmartFileUpload } from '@/components/SmartFileUpload';
+import type { DetectedMetadata } from '@/lib/signalFormatDetector';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { trpc } from '@/lib/trpc';
 import { useSignalStore } from '@/store/signalStore';
@@ -32,7 +34,7 @@ export default function FileManager() {
 
   const [isUploading, setIsUploading] = useState(false);
   const [uploadTasks, setUploadTasks] = useState<UploadTask[]>([]);
-  const [uploadMode, setUploadMode] = useState<'sigmf' | 'raw'>('sigmf');
+  const [uploadMode, setUploadMode] = useState<'sigmf' | 'raw' | 'smart'>('smart');
   const [uploadForm, setUploadForm] = useState({
     name: '',
     description: '',
@@ -364,6 +366,13 @@ export default function FileManager() {
             <h2>Upload Signal Capture</h2>
             <div className="flex gap-2">
               <Button
+                variant={uploadMode === 'smart' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setUploadMode('smart')}
+              >
+                Smart Upload (Auto-Detect)
+              </Button>
+              <Button
                 variant={uploadMode === 'sigmf' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setUploadMode('sigmf')}
@@ -380,14 +389,30 @@ export default function FileManager() {
             </div>
           </div>
           
-          {/* Drag and Drop Zone */}
-          <DropZone onFilesDropped={handleFilesDropped} className="mb-6" />
-          
-          <div className="text-center my-4">
-            <span className="technical-label text-sm">or use manual file selection below</span>
-          </div>
-          
-          {uploadMode === 'sigmf' ? (
+          {uploadMode === 'smart' ? (
+            <SmartFileUpload
+              onUpload={async (file, metadata) => {
+                setIsUploading(true);
+                try {
+                  await uploadRawIQMutation.mutateAsync({
+                    name: metadata.suggestedName,
+                    description: undefined,
+                    datatype: metadata.datatype === 'unknown' ? 'cf32_le' : metadata.datatype,
+                    sampleRate: metadata.sampleRate!,
+                    centerFrequency: metadata.centerFrequency || undefined,
+                    hardware: metadata.hardware || undefined,
+                    dataFileSize: file.size,
+                  });
+                  toast.success('File uploaded successfully!');
+                } catch (error: any) {
+                  toast.error(`Upload failed: ${error.message}`);
+                } finally {
+                  setIsUploading(false);
+                }
+              }}
+              isUploading={isUploading}
+            />
+          ) : uploadMode === 'sigmf' ? (
             <div className="grid gap-4">
               <div>
                 <Label htmlFor="name">Capture Name *</Label>

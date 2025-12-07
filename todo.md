@@ -990,3 +990,23 @@
 - [ ] Integrate TileManager into render loop
 - [ ] Measure memory reduction (target 70%)
 - [ ] Test with large captures (>1GB files)
+
+## Seamless File Ingestion Workflow
+- [x] Analyze current file upload and metadata collection process
+- [x] Design automatic signal format detection (SigMF, WAV, IQ, raw binary)
+- [x] Implement file header parsing for common formats (WAV, SigMF)
+- [x] Create sample rate auto-detection algorithm (filename + file size heuristics)
+- [x] Add center frequency extraction from filename patterns
+- [x] Implement drag-and-drop file upload zone (SmartFileUpload component)
+- [x] Create upload progress tracking with confidence indicator
+- [x] Add automatic metadata extraction from SigMF headers
+- [x] Implement fallback prompts for missing metadata (editable fields)
+- [x] Create file validation and error handling
+- [x] Add comprehensive test suite (19/19 tests passing)
+- [x] Integrate SmartFileUpload into FileManager
+- [x] Support filename patterns: GQRX, HackRF, RTL-SDR, descriptive
+- [x] Hardware auto-detection from filename
+- [x] Datatype auto-detection (cf32, ci16, ci8, cu8, cu16)
+- [ ] Add multi-file batch upload support
+- [ ] Design signal preview during upload
+- [ ] Test with various signal file formats in browser
