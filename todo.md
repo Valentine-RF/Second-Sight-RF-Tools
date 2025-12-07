@@ -344,3 +344,46 @@
 
 ## Bug Fixes - Streaming Pipeline
 - [x] Fix infinite loop in ForensicCockpit useEffect (pipeline dependency issue)
+
+## Advanced DSP/ML Features - Priority Implementation
+
+### Cyclostationary Analysis (FAM Algorithm)
+- [x] Set up Python backend with child process bridge
+- [x] Install CuPy for GPU acceleration (or NumPy fallback)
+- [x] Implement FAM algorithm steps:
+  - [x] Channelization with Hamming window
+  - [x] Short-Time FFT on overlapping blocks
+  - [x] Down-conversion to baseband
+  - [x] Cyclic FFT along time axis
+  - [x] Magnitude calculation for SCF estimate
+- [x] Implement Cyclic Profile computation (max-hold along spectral frequency)
+- [x] Add Apache Arrow serialization for efficient data transport
+- [ ] Set up Celery/Redis task queue for async processing
+- [x] Create tRPC procedure for triggering FAM analysis
+- [ ] Build Three.js 3D surface plot with React-Three-Fiber
+- [ ] Add PlaneGeometry with Z-height displacement for SCF magnitude
+- [ ] Implement rotation, lighting, and cross-section slicing
+- [ ] Wire Cyclostationary tab to display 3D surface
+
+### Blind Modulation Classification (TorchSig ML)
+- [x] Install TorchSig and PyTorch dependencies
+- [x] Download pre-trained EfficientNet or XCiT model
+- [x] Create inference pipeline:
+  - [x] Extract IQ slice (1024 or 4096 samples)
+  - [x] Normalize to unit power
+  - [x] Run through TorchSig model
+  - [x] Return probability distribution (Softmax)
+- [x] Add tRPC procedure for classification
+- [ ] Update Classification panel to display real probabilities
+- [ ] Add bar chart visualization for class probabilities
+- [ ] Support modulation types: BPSK, QPSK, 8PSK, 16-QAM, 64-QAM, OFDM
+
+### Context Menu Integration
+- [ ] Add right-click handler to box selection in Main Workspace
+- [ ] Create "Forensic Actions" context menu
+- [ ] Add "Analyze Cycles" option → triggers FAM algorithm
+- [ ] Add "Classify Modulation" option → triggers TorchSig inference
+- [ ] Add "Save Annotation" option → writes to SigMF annotations
+- [ ] Display loading states during async operations
+- [ ] Show results in respective panels when complete
+

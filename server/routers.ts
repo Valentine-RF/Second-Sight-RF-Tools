@@ -34,6 +34,7 @@ import { promisify } from 'util';
 const execAsync = promisify(exec);
 import { nanoid } from 'nanoid';
 import { generateSigMFMetadata as generateRawIQMetadata, isValidDatatype, validateFileSize, type RawIQMetadata } from './sigmfGenerator';
+import { runFAMAnalysis, classifyModulation } from './pythonBridge';
 
 export const appRouter = router({
   system: systemRouter,
@@ -248,6 +249,79 @@ export const appRouter = router({
           sampleRate: capture.sampleRate,
           // data: arrowBuffer (to be implemented)
         };
+      }),
+
+    /**
+     * Run FAM (Cyclostationary) Analysis on a signal region
+     */
+    analyzeCycles: protectedProcedure
+      .input(z.object({
+        captureId: z.number(),
+        sampleStart: z.number(),
+        sampleCount: z.number(),
+        nfft: z.number().optional(),
+        overlap: z.number().optional(),
+        alphaMax: z.number().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const capture = await getSignalCaptureById(input.captureId);
+        if (!capture) throw new Error("Capture not found");
+
+        // TODO: Fetch IQ samples from S3 using HTTP Range request
+        // For now, return mock data
+        const iqReal = new Float32Array(input.sampleCount);
+        const iqImag = new Float32Array(input.sampleCount);
+        
+        // Run FAM algorithm via Python bridge
+        const result = await runFAMAnalysis(
+          iqReal,
+          iqImag,
+          capture.sampleRate || 1e6,  // Default to 1 MHz if null
+          {
+            nfft: input.nfft,
+            overlap: input.overlap,
+            alpha_max: input.alphaMax,
+          }
+        );
+
+        return {
+          scfMagnitude: Array.from(result.scf_magnitude),
+          spectralFreqs: Array.from(result.spectral_freqs),
+          cyclicFreqs: Array.from(result.cyclic_freqs),
+          cyclicProfile: Array.from(result.cyclic_profile),
+          shape: result.shape,
+        };
+      }),
+
+    /**
+     * Classify modulation type using TorchSig ML
+     */
+    classifyModulation: protectedProcedure
+      .input(z.object({
+        captureId: z.number(),
+        sampleStart: z.number(),
+        sampleCount: z.number(),
+        topK: z.number().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const capture = await getSignalCaptureById(input.captureId);
+        if (!capture) throw new Error("Capture not found");
+
+        // TODO: Fetch IQ samples from S3 using HTTP Range request
+        // For now, return mock data
+        const iqReal = new Float32Array(input.sampleCount);
+        const iqImag = new Float32Array(input.sampleCount);
+        
+        // Run TorchSig classification via Python bridge
+        const result = await classifyModulation(
+          iqReal,
+          iqImag,
+          {
+            top_k: input.topK,
+          }
+        );
+
+        return result;
       }),
   }),
 
