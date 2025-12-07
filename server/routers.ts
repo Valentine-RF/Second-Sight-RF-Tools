@@ -44,6 +44,7 @@ import { timeFrequencyRouter } from './routers/timeFrequency';
 import { compressiveSensingRouter } from './routers/compressiveSensing';
 import { rfFingerprintRouter } from './routers/rfFingerprint';
 import { advancedAnalysisRouter } from './routers/advancedAnalysis';
+import { gpuAnalysisRouter } from './routers/gpuAnalysis';
 import { detectFrequencyHopping } from './freqHopping';
 import { serializeIQSamples, streamIQSamplesArrow } from './arrow';
 
@@ -65,6 +66,9 @@ export const appRouter = router({
   compressiveSensing: compressiveSensingRouter,
   rfFingerprint: rfFingerprintRouter,
   advancedAnalysis: advancedAnalysisRouter,
+  
+  // GPU-Accelerated Analysis
+  gpuAnalysis: gpuAnalysisRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {

@@ -1,0 +1,29 @@
+# GPU Signal Processing Requirements - Second Sight RF Forensics
+# Install with: pip install -r requirements-gpu.txt
+
+# Core scientific computing
+numpy>=1.24.0
+scipy>=1.10.0
+
+# GPU acceleration (CUDA 12.x)
+# For CUDA 11.x, use: cupy-cuda11x
+cupy-cuda12x>=12.0.0
+
+# ZeroMQ for IPC with Node.js
+pyzmq>=25.0.0
+
+# Apache Arrow for zero-copy data transport
+pyarrow>=14.0.0
+
+# Deep learning (optional, for ML inference)
+torch>=2.0.0
+torchvision>=0.15.0
+
+# ONNX Runtime for optimized inference (optional)
+# onnxruntime-gpu>=1.16.0
+
+# Signal processing utilities
+pywavelets>=1.4.0
+
+# Type hints and validation
+typing-extensions>=4.5.0
