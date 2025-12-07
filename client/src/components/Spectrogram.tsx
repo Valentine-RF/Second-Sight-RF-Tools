@@ -306,6 +306,7 @@ export const Spectrogram = React.forwardRef<{ captureCanvas: () => string }, Spe
         width={width}
         height={height}
         className="absolute inset-0"
+        data-spectrogram="main"
         onContextMenu={handleContextMenu}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}

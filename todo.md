@@ -1091,3 +1091,23 @@
 - [x] Severity-based sorting (error → warning → info)
 - [x] Icon indicators (🔴 error, ⚠️ warning, ℹ️ info)
 - [ ] Test with various signal quality scenarios (synthetic data)
+
+## Export Analysis Report
+- [x] Create ReportGenerator class
+- [x] Design report structure (cover, metadata, spectrograms, FAM, annotations, metrics)
+- [x] Install jsPDF and html2canvas dependencies
+- [x] Implement PDF generation with jsPDF
+- [x] Add spectrogram screenshot capture (canvas.toDataURL)
+- [x] Add FAM plot screenshot capture (html2canvas)
+- [x] Include signal metrics table (SNR, power, dynamic range, bandwidth)
+- [x] Include annotations list with timestamps and frequencies
+- [x] Implement HTML report generation
+- [x] Add CSS styling for HTML reports (dark theme, responsive)
+- [x] Embed base64 images in HTML
+- [x] Add "Export Report" button to Forensic Cockpit
+- [x] Add format selection dropdown (PDF/HTML)
+- [x] Add loading state during generation (spinner + disabled button)
+- [x] Add data-spectrogram="main" attribute to canvas
+- [x] Map annotation fields correctly (sampleStart, freqLowerEdge, etc.)
+- [ ] Test report generation with sample data in browser
+- [ ] Add actual metrics extraction from analysis results

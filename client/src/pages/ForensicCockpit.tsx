@@ -30,7 +30,7 @@ import { PhaseTrackingPlot } from '@/components/PhaseTrackingPlot';
 import { CFODriftTimeline } from '@/components/CFODriftTimeline';
 import { SlicePlaneControls } from '@/components/SlicePlaneControls';
 import { SCFCrossSection2D } from '@/components/SCFCrossSection2D';
-import { generateForensicReport } from '@/lib/pdfExport';
+import { ReportGenerator, type ReportData } from '@/lib/reportGenerator';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
 import { useStreamingPipeline } from '@/hooks/useStreamingPipeline';
@@ -540,95 +540,80 @@ export default function ForensicCockpit() {
 
   const exportReportMutation = trpc.captures.exportReport.useMutation();
 
-  const handleExportPDF = async () => {
-    if (!currentCapture) return;
-    
-    setIsExporting(true);
-    
-    try {
-      const result = await exportReportMutation.mutateAsync({
-        captureId: currentCapture.id,
-        includeAnnotations: true,
-        includeClassification: false,
-        includeCyclicProfile: false,
-      });
+  const [exportFormat, setExportFormat] = useState<'pdf' | 'html'>('pdf');
 
-      // Download PDF
-      const blob = new Blob(
-        [Uint8Array.from(atob(result.pdf), c => c.charCodeAt(0))],
-        { type: 'application/pdf' }
-      );
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = result.filename;
-      a.click();
-      URL.revokeObjectURL(url);
-
-      toast.success('PDF report exported successfully');
-    } catch (error) {
-      console.error('PDF export failed:', error);
-      toast.error('Failed to export PDF report');
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
-  const handleExportPDFOld = async () => {
+  const handleExportReport = async () => {
     if (!currentCapture) return;
     
     setIsExporting(true);
     
     try {
       // Capture visualizations
-      const spectrogramImage = {} as any; // mainSpectrogramRef.current?.captureCanvas();
-      const constellationImage = {} as any; // constellationPlotRef.current?.captureCanvas();
-      const scfImage = {} as any; // scfSurfaceRef.current?.captureCanvas();
+      let spectrogramImage: string | undefined;
+      let famPlotImage: string | undefined;
       
-      await generateForensicReport({
-        metadata: {
-          name: currentCapture.name,
-          hardware: currentCapture.hardware || undefined,
-          author: currentCapture.author || undefined,
-          sampleRate: currentCapture.sampleRate || undefined,
-          datatype: currentCapture.datatype || undefined,
-          description: currentCapture.description || undefined,
-          uploadedAt: currentCapture.createdAt ? new Date(currentCapture.createdAt) : new Date(),
+      // Try to capture spectrogram canvas
+      const spectrogramCanvas = document.querySelector('canvas[data-spectrogram="main"]') as HTMLCanvasElement;
+      if (spectrogramCanvas) {
+        spectrogramImage = await ReportGenerator.captureCanvas(spectrogramCanvas);
+      }
+      
+      // Try to capture FAM plot
+      const famPlotElement = document.querySelector('[data-fam-plot]') as HTMLElement;
+      if (famPlotElement) {
+        famPlotImage = await ReportGenerator.captureElement(famPlotElement);
+      }
+      
+      // Build report data
+      const reportData: ReportData = {
+        captureName: currentCapture.name,
+        description: currentCapture.description || undefined,
+        sampleRate: currentCapture.sampleRate || 0,
+        centerFrequency: undefined,
+        datatype: currentCapture.datatype || 'unknown',
+        hardware: currentCapture.hardware || undefined,
+        captureDate: new Date(currentCapture.createdAt).toLocaleString(),
+        fileSize: 0,
+        duration: undefined,
+        spectrogramImage,
+        famPlotImage,
+        metrics: {
+          snr: undefined,
+          peakPower: undefined,
+          avgPower: undefined,
+          dynamicRange: undefined,
+          bandwidth: undefined,
         },
-        measurements: {
-          snr: 12.4,
-          cfo: -14000,
-          baudRate: 2.4e6,
-        },
-        classifications: [
-          { label: 'QPSK', probability: 90 },
-          { label: '8PSK', probability: 10 },
-          { label: '16-QAM', probability: 5 },
-        ],
-        annotations: savedAnnotations.map(a => ({
-          id: a.id,
-          label: a.label || '',
-          sampleStart: a.sampleStart,
-          sampleEnd: a.sampleCount ? a.sampleStart + a.sampleCount : a.sampleStart + 1000,
-          color: a.color || '#3b82f6',
+        annotations: savedAnnotations.map(ann => ({
+          id: String(ann.id),
+          timestamp: ann.sampleStart / (currentCapture.sampleRate || 1),
+          frequency: ann.freqLowerEdge && ann.freqUpperEdge ? (ann.freqLowerEdge + ann.freqUpperEdge) / 2 : 0,
+          label: ann.label || 'Annotation',
+          notes: undefined,
         })),
-        notes: 'Forensic analysis completed. Signal characteristics analyzed using advanced DSP techniques.',
-        analyst: currentCapture?.author || 'Forensic Analyst',
-        visualizations: {
-          spectrogram: spectrogramImage,
-          constellation: constellationImage,
-          scf: scfImage,
-        },
-      });
+        analysisNotes: undefined,
+      };
       
-      toast.success('PDF report generated successfully');
+      if (exportFormat === 'pdf') {
+        const blob = await ReportGenerator.generatePDF(reportData);
+        const filename = `${currentCapture.name.replace(/\s+/g, '_')}_Report_${Date.now()}.pdf`;
+        ReportGenerator.downloadBlob(blob, filename);
+        toast.success('PDF report generated successfully');
+      } else {
+        const html = ReportGenerator.generateHTML(reportData);
+        const filename = `${currentCapture.name.replace(/\s+/g, '_')}_Report_${Date.now()}.html`;
+        ReportGenerator.downloadHTML(html, filename);
+        toast.success('HTML report generated successfully');
+      }
     } catch (error) {
-      console.error('PDF export error:', error);
-      toast.error('Failed to generate PDF report');
+      console.error('Report export failed:', error);
+      toast.error(`Failed to generate ${exportFormat.toUpperCase()} report`);
     } finally {
       setIsExporting(false);
     }
   };
+
+
 
   if (loading) {
     return <CockpitSkeleton />;
@@ -661,19 +646,29 @@ export default function ForensicCockpit() {
             </div>
             <div className="flex gap-2">
               <span className="technical-label">Annotations: {savedAnnotations.length}</span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExportPDF}
-                disabled={isExporting}
-                className="ml-4"
-              >
-                {isExporting ? (
-                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Generating...</>
-                ) : (
-                  <><FileDown className="w-4 h-4 mr-2" /> Export PDF</>
-                )}
-              </Button>
+              <div className="flex gap-2 ml-4">
+                <Select value={exportFormat} onValueChange={(value: 'pdf' | 'html') => setExportFormat(value)}>
+                  <SelectTrigger className="w-24 h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pdf">PDF</SelectItem>
+                    <SelectItem value="html">HTML</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportReport}
+                  disabled={isExporting}
+                >
+                  {isExporting ? (
+                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Generating...</>
+                  ) : (
+                    <><FileDown className="w-4 h-4 mr-2" /> Export Report</>
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
           
