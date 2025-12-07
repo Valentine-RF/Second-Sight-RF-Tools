@@ -937,3 +937,27 @@
 - [x] Fix TypeScript errors (added isStreaming state and proper imports)
 - [x] Wire StreamingSpectrogram to active session (ready for WebSocket integration)
 - [ ] Document hardware setup for RTL-SDR/HackRF
+
+## Performance Optimization - LOD Rendering
+- [x] Create LODManager class for dynamic resolution scaling
+- [x] Implement viewport-based texture size calculation
+- [x] Add sample rate threshold detection (>10 MSps triggers LOD)
+- [x] Implement decimation algorithm for downsampling
+- [x] Add frame rate monitoring (target 60 FPS)
+- [x] Create adaptive quality settings (high/medium/low)
+- [x] Wire LOD system to Spectrogram component
+- [x] Add LOD quality indicator overlay with color-coded status
+- [x] Add FPS counter overlay for performance monitoring
+- [ ] Test with high sample rate files (20+ MSps)
+
+## DSP Chain Visualization
+- [x] Create DSPChainFlow component with React Flow
+- [x] Design node types (FFT, Window, PSD, Colormap, Filter)
+- [x] Add parameter controls for each node (FFT size, window type, colormap)
+- [x] Implement real-time parameter updates with callbacks
+- [x] Add visual connection lines between nodes with animated flow
+- [x] Create preset chains (Basic, Advanced, Custom)
+- [x] Integrate into Analysis Dock as new tab
+- [x] Add expandable parameter views on each node
+- [x] Color-coded nodes by processing stage
+- [ ] Wire to actual DSP pipeline parameters (backend integration)

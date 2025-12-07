@@ -12,6 +12,7 @@ import { AnnotationStatistics } from '@/components/AnnotationStatistics';
 import { HopPatternVisualization } from '@/components/HopPatternVisualization';
 import { SDRStreamingPanel } from '@/components/SDRStreamingPanel';
 import { SDRControls } from '@/components/SDRControls';
+import { DSPChainFlow } from '@/components/DSPChainFlow';
 import { AnnotationEditDialog } from '@/components/AnnotationEditDialog';
 import SignalContextMenu, { type SignalSelection } from '@/components/SignalContextMenu';
 import CyclicProfilePanel from '@/components/CyclicProfilePanel';
@@ -799,7 +800,15 @@ export default function ForensicCockpit() {
                     ref={mainSpectrogramRef}
                     width={window.innerWidth - 400} // Account for sidebar
                     height={isDockCollapsed ? window.innerHeight - 200 : window.innerHeight - 500}
+                    sampleRate={currentCapture?.sampleRate || 1e6}
+                    lodQuality="auto"
                     onBoxSelect={handleBoxSelect}
+                    onFPSUpdate={(fps) => {
+                      // FPS monitoring for performance tracking
+                      if (fps < 30) {
+                        console.warn('[Spectrogram] Low FPS detected:', fps);
+                      }
+                    }}
                   />
                 </WebGLErrorBoundary>
               </div>
@@ -1000,6 +1009,10 @@ export default function ForensicCockpit() {
                   <TabsTrigger value="streaming" className="gap-2">
                     <Radio className="w-4 h-4" />
                     Live Streaming
+                  </TabsTrigger>
+                  <TabsTrigger value="dspchain" className="gap-2">
+                    <Activity className="w-4 h-4" />
+                    DSP Chain
                   </TabsTrigger>
                 </TabsList>
 
@@ -1619,6 +1632,16 @@ export default function ForensicCockpit() {
                       <p className="mt-2">The spectrogram will update in real-time with FFT data from the SDR.</p>
                     </div>
                   </div>
+                </TabsContent>
+
+                <TabsContent value="dspchain" className="p-4 h-full overflow-y-auto">
+                  <DSPChainFlow
+                    onParameterChange={(nodeId, parameter, value) => {
+                      console.log(`[DSPChain] ${nodeId}.${parameter} = ${value}`);
+                      // TODO: Wire to actual DSP pipeline
+                      toast.info(`Updated ${parameter} to ${value}`);
+                    }}
+                  />
                 </TabsContent>
               </Tabs>
             )}
