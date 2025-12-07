@@ -52,8 +52,30 @@ class ModulationClassifier:
         else:
             # Use default EfficientNet-B4 architecture
             self.model = efficientnet_b4(pretrained=False, num_classes=len(MODULATION_CLASSES))
-            # In production, load pre-trained weights here
-            # self.model.load_state_dict(torch.load('path/to/weights.pth'))
+            
+            # Try to load pre-trained weights from standard locations
+            weight_paths = [
+                '/models/torchsig_efficientnet_b4.pth',
+                './models/torchsig_efficientnet_b4.pth',
+                '~/models/torchsig_efficientnet_b4.pth',
+            ]
+            
+            weights_loaded = False
+            for path in weight_paths:
+                try:
+                    import os
+                    expanded_path = os.path.expanduser(path)
+                    if os.path.exists(expanded_path):
+                        print(f"[Classifier] Loading weights from {expanded_path}", file=sys.stderr)
+                        self.model.load_state_dict(torch.load(expanded_path, map_location=self.device))
+                        weights_loaded = True
+                        break
+                except Exception as e:
+                    continue
+            
+            if not weights_loaded:
+                print("[Classifier] WARNING: No pre-trained weights found. Model will use random initialization.", file=sys.stderr)
+                print("[Classifier] Download weights from: https://github.com/TorchDSP/torchsig/releases", file=sys.stderr)
         
         self.model.to(self.device)
         self.model.eval()

@@ -37,6 +37,7 @@ import { generateSigMFMetadata as generateRawIQMetadata, isValidDatatype, valida
 import { runFAMAnalysis, classifyModulation } from './pythonBridge';
 import { fetchIQSamples, validateSampleRange } from './iqDataFetcher';
 import { parseIQData, computeSCF, classifyModulation as classifyModulationJS } from './dsp';
+import { runSNRCFOEstimation } from './snrCfoBridge';
 
 // Helper to convert flat array to 2D matrix
 function convertToNestedArray(flat: Float32Array, rows: number, cols: number): number[][] {
@@ -395,6 +396,51 @@ export const appRouter = router({
               probability: c.confidence / 100,
             })),
           };
+        }
+      }),
+
+    /**
+     * Estimate SNR and CFO using M2M4 and power methods
+     */
+    estimateSNRCFO: protectedProcedure
+      .input(z.object({
+        captureId: z.number(),
+        sampleStart: z.number(),
+        sampleCount: z.number(),
+        modulationType: z.string().optional(),
+        symbolRate: z.number().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const capture = await getSignalCaptureById(input.captureId);
+        if (!capture) throw new Error("Capture not found");
+        if (!capture.dataFileUrl) throw new Error("Data file not available");
+        if (!capture.sampleRate) throw new Error("Sample rate not available");
+
+        // Fetch IQ samples
+        const { iqReal, iqImag } = await fetchIQSamples(
+          capture.dataFileUrl,
+          capture.datatype || 'cf32_le',
+          input.sampleStart,
+          input.sampleCount
+        );
+
+        try {
+          // Run Python SNR/CFO estimation
+          const result = await runSNRCFOEstimation(
+            iqReal,
+            iqImag,
+            capture.sampleRate,
+            {
+              modulationType: input.modulationType,
+              symbolRate: input.symbolRate,
+              estimateCfo: true,
+            }
+          );
+
+          return result;
+        } catch (pythonError) {
+          console.warn('Python SNR/CFO estimation failed:', pythonError);
+          throw new Error('SNR/CFO estimation failed');
         }
       }),
 

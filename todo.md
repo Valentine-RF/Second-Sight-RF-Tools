@@ -475,3 +475,12 @@
 - [x] Add tRPC procedure for PDF export
 - [x] Create "Export Report" button in ForensicCockpit
 - [ ] Test PDF generation with real capture data
+
+## Critical Features Completed (Latest)
+- [x] Implement TorchSig model loading with pretrained weights
+- [x] Implement real FFT Accumulation Method (FAM) algorithm
+- [x] Implement M2M4 SNR estimator for blind signal quality assessment
+- [x] Implement CFO estimation using power method
+- [x] Implement Apache Arrow serialization for IQ sample transport
+- [x] Add tRPC procedure for SNR/CFO estimation
+- [x] Write and pass tests for SNR/CFO estimation
