@@ -8,6 +8,7 @@ import { ConstellationPlot } from '@/components/ConstellationPlot';
 import SCFSurface3D from '@/components/SCFSurface3D';
 import { FFTPSDPlot } from '@/components/FFTPSDPlot';
 import { HexView } from '@/components/HexView';
+import { AnnotationStatistics } from '@/components/AnnotationStatistics';
 import { SDRStreamingPanel } from '@/components/SDRStreamingPanel';
 import { AnnotationEditDialog } from '@/components/AnnotationEditDialog';
 import SignalContextMenu, { type SignalSelection } from '@/components/SignalContextMenu';
@@ -797,7 +798,49 @@ export default function ForensicCockpit() {
                   </WebGLErrorBoundary>
                 </TabsContent>
 
-                <TabsContent value="hex" className="p-0 h-full">
+                <TabsContent value="hex" className="p-0 h-full relative">
+                  {demodData && (
+                    <div className="absolute top-2 right-2 z-10 flex gap-1">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          const data = JSON.stringify(demodData, null, 2);
+                          const blob = new Blob([data], { type: 'application/json' });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = `demod_${demodData.mode}_${Date.now()}.json`;
+                          a.click();
+                          URL.revokeObjectURL(url);
+                          toast.success('Demodulation results downloaded (JSON)');
+                        }}
+                        className="h-7 px-2"
+                        title="Download JSON"
+                      >
+                        JSON
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          const data = `Mode: ${demodData.mode}\nConfidence: ${demodData.confidence}%\n\nDecoded Text:\n${demodData.decoded}\n\nBitstream:\n${demodData.bitstream}`;
+                          const blob = new Blob([data], { type: 'text/plain' });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = `demod_${demodData.mode}_${Date.now()}.txt`;
+                          a.click();
+                          URL.revokeObjectURL(url);
+                          toast.success('Demodulation results downloaded (TXT)');
+                        }}
+                        className="h-7 px-2"
+                        title="Download TXT"
+                      >
+                        TXT
+                      </Button>
+                    </div>
+                  )}
                   <HexView
                     bitstream={demodData?.bitstream || ''}
                     decoded={demodData?.decoded || ''}
@@ -1033,7 +1076,29 @@ export default function ForensicCockpit() {
 
             {/* Classification */}
             <Card className="p-4 data-panel">
-              <h4 className="font-black mb-3">Classification</h4>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="font-black">Classification</h4>
+                {classificationResults.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      const data = JSON.stringify(classificationResults, null, 2);
+                      const blob = new Blob([data], { type: 'application/json' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `classification_${currentCapture.name}_${Date.now()}.json`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                      toast.success('Classification results downloaded');
+                    }}
+                    className="h-7 px-2"
+                  >
+                    <FileDown className="w-3 h-3" />
+                  </Button>
+                )}
+              </div>
               {classificationResults.length > 0 ? (
                 <div className="space-y-2">
                   {classificationResults.slice(0, 5).map((item) => (
@@ -1067,6 +1132,11 @@ export default function ForensicCockpit() {
                 <div className="wireframe-cyan p-2">Decimate → 4x</div>
               </div>
             </Card>
+
+            {/* Annotation Statistics */}
+            {currentCapture && savedAnnotations.length > 0 && (
+              <AnnotationStatistics captureId={currentCapture.id} />
+            )}
           </div>
         </div>
       </div>

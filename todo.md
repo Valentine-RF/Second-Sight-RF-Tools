@@ -659,3 +659,26 @@
 - [x] Create metadata card in Signal Inspector showing core:hw, core:author, core:sample_rate
 - [x] Implement annotation drag handles for frequency/time bounds adjustment
 - [x] Add semi-transparent annotation overlays on spectrogram (20-30% opacity)
+
+## Medium Wins Implementation (Current Sprint)
+- [x] Add download button for classification results (JSON, CSV, TXT formats)
+- [x] Add download button for demodulation results with bitstream export
+- [x] Implement blob creation and browser download trigger
+- [x] Add format selector dropdown for export (JSON/CSV/TXT)
+- [x] Create annotation statistics dashboard component
+- [x] Calculate modulation type distribution from annotations
+- [x] Calculate average SNR across captures with time series
+- [x] Add bar charts for modulation distribution using Chart.js
+- [ ] Add line chart for temporal SNR analysis
+- [x] Implement HTTP Range request handler in server/dataRoutes.ts
+- [x] Add partial content support (206 status) for .sigmf-data files
+- [x] Parse Range header and calculate byte offsets
+- [x] Stream file chunks with proper Content-Range headers
+- [x] Implement frequency hopping detection algorithm
+- [x] Analyze time-frequency patterns for hop sequences
+- [x] Calculate hop rate and dwell time statistics
+- [ ] Add hop pattern visualization to Analysis Dock
+- [ ] Add interactive cross-section plane to SCF Surface 3D
+- [ ] Implement plane dragging with Three.js raycasting
+- [ ] Display 2D slice of SCF at selected cyclic frequency
+- [ ] Add axis labels and value readout for slice plane

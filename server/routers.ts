@@ -40,6 +40,7 @@ import { fetchIQSamples, validateSampleRange } from './iqDataFetcher';
 import { parseIQData, computeSCF, classifyModulation as classifyModulationJS } from './dsp';
 import { runSNRCFOEstimation } from './snrCfoBridge';
 import { sdrRouter } from './routers/sdr';
+import { detectFrequencyHopping } from './freqHopping';
 
 // Helper to convert flat array to 2D matrix
 function convertToNestedArray(flat: Float32Array, rows: number, cols: number): number[][] {
