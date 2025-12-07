@@ -40,6 +40,10 @@ import { fetchIQSamples, validateSampleRange } from './iqDataFetcher';
 import { parseIQData, computeSCF, classifyModulation as classifyModulationJS } from './dsp';
 import { runSNRCFOEstimation } from './snrCfoBridge';
 import { sdrRouter } from './routers/sdr';
+import { timeFrequencyRouter } from './routers/timeFrequency';
+import { compressiveSensingRouter } from './routers/compressiveSensing';
+import { rfFingerprintRouter } from './routers/rfFingerprint';
+import { advancedAnalysisRouter } from './routers/advancedAnalysis';
 import { detectFrequencyHopping } from './freqHopping';
 import { serializeIQSamples, streamIQSamplesArrow } from './arrow';
 
@@ -55,6 +59,12 @@ function convertToNestedArray(flat: Float32Array, rows: number, cols: number): n
 export const appRouter = router({
   system: systemRouter,
   sdr: sdrRouter,
+  
+  // Advanced RF Analysis
+  timeFrequency: timeFrequencyRouter,
+  compressiveSensing: compressiveSensingRouter,
+  rfFingerprint: rfFingerprintRouter,
+  advancedAnalysis: advancedAnalysisRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
