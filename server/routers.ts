@@ -36,6 +36,7 @@ import { nanoid } from 'nanoid';
 import { generateSigMFMetadata as generateRawIQMetadata, isValidDatatype, validateFileSize, type RawIQMetadata } from './sigmfGenerator';
 import { runFAMAnalysis, classifyModulation } from './pythonBridge';
 import { fetchIQSamples, validateSampleRange } from './iqDataFetcher';
+import { parseIQData, computeSCF, classifyModulation as classifyModulationJS } from './dsp';
 
 export const appRouter = router({
   system: systemRouter,
@@ -286,24 +287,17 @@ export const appRouter = router({
           input.sampleCount
         );
         
-        // Run FAM algorithm via Python bridge
-        const result = await runFAMAnalysis(
-          iqReal,
-          iqImag,
-          capture.sampleRate || 1e6,  // Default to 1 MHz if null
-          {
-            nfft: input.nfft,
-            overlap: input.overlap,
-            alpha_max: input.alphaMax,
-          }
-        );
+        // Convert to complex samples array
+        const samples = Array.from(iqReal).map((re, i) => ({ re, im: iqImag[i] }));
+        
+        // Run JavaScript FAM algorithm
+        const result = computeSCF(samples, 32, 64);
 
         return {
-          scfMagnitude: Array.from(result.scf_magnitude),
-          spectralFreqs: Array.from(result.spectral_freqs),
-          cyclicFreqs: Array.from(result.cyclic_freqs),
-          cyclicProfile: Array.from(result.cyclic_profile),
-          shape: result.shape,
+          alpha: result.alpha,
+          freq: result.freq,
+          scf: result.scf,
+          cyclicProfile: result.cyclicProfile,
         };
       }),
 
@@ -339,16 +333,19 @@ export const appRouter = router({
           input.sampleCount
         );
         
-        // Run TorchSig classification via Python bridge
-        const result = await classifyModulation(
-          iqReal,
-          iqImag,
-          {
-            top_k: input.topK,
-          }
-        );
-
-        return result;
+        // Convert to complex samples array
+        const samples = Array.from(iqReal).map((re, i) => ({ re, im: iqImag[i] }));
+        
+        // Run JavaScript modulation classification
+        const classifications = classifyModulationJS(samples);
+        
+        const topK = input.topK || 3;
+        return {
+          predictions: classifications.slice(0, topK).map(c => ({
+            modulation: c.modulation,
+            confidence: c.confidence,
+          })),
+        };
       }),
   }),
 

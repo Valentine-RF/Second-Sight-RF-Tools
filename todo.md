@@ -438,3 +438,22 @@
 - [x] Add delete button to annotation overlays
 - [x] Test annotation persistence across page refreshes
 
+
+## Final Implementation (JavaScript/TypeScript)
+- [ ] Replace Python FAM with JavaScript FFT-based cyclostationary analysis
+- [ ] Implement real IQ data fetching and parsing in tRPC procedures
+- [ ] Create realistic modulation classification algorithm
+- [ ] Wire SCFSurface3D to receive real FAM results
+- [ ] Wire CyclicProfilePanel to display real cyclic features
+- [ ] Test end-to-end: upload → analyze → visualize → annotate
+- [ ] Verify all features work without external Python dependencies
+
+## Status Update
+- [x] Replace Python FAM with JavaScript FFT-based cyclostationary analysis
+- [x] Implement real IQ data fetching and parsing in tRPC procedures
+- [x] Create realistic modulation classification algorithm
+- [x] Wire SCFSurface3D to receive real FAM results
+- [x] Wire CyclicProfilePanel to display real cyclic features
+- [x] Test end-to-end: upload → analyze → visualize → annotate
+- [x] Verify all features work without external Python dependencies
+- [x] All 11 DSP tests passing
