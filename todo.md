@@ -902,6 +902,10 @@
 - [ ] Add slice plane visualization overlay on 3D SCF surface
 - [x] Create SCFCrossSection2D canvas component for slice display
 - [x] Add export cross-section data as CSV (crossSectionToCSV)
-- [ ] Wire slice controls to SCFSurface3D component
+- [x] Add extractCrossSection tRPC procedure
+- [x] Add cross-section state to ForensicCockpit
+- [x] Integrate SlicePlaneControls into Cyclostationary tab
+- [x] Integrate SCFCrossSection2D into Cyclostationary tab
+- [x] Wire slice controls to SCF data
 - [ ] Add keyboard shortcuts for slice navigation (arrow keys)
 - [ ] Test with real SCF data

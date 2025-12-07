@@ -26,6 +26,8 @@ import { ReconstructedSignalPlot } from '@/components/ReconstructedSignalPlot';
 import { AlgorithmComparison } from '@/components/AlgorithmComparison';
 import { PhaseTrackingPlot } from '@/components/PhaseTrackingPlot';
 import { CFODriftTimeline } from '@/components/CFODriftTimeline';
+import { SlicePlaneControls } from '@/components/SlicePlaneControls';
+import { SCFCrossSection2D } from '@/components/SCFCrossSection2D';
 import { generateForensicReport } from '@/lib/pdfExport';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
@@ -103,6 +105,20 @@ export default function ForensicCockpit() {
   const [bssAlgorithm, setBssAlgorithm] = useState('fastica');
   const [numComponents, setNumComponents] = useState(2);
   const [bssResult, setBssResult] = useState<any>(null);
+  
+  // SCF cross-section state
+  const [sliceType, setSliceType] = useState<'alpha' | 'tau'>('alpha');
+  const [sliceValue, setSliceValue] = useState(0);
+  const [crossSectionData, setCrossSectionData] = useState<any>(null);
+  
+  const extractCrossSectionMutation = trpc.captures.extractCrossSection.useMutation({
+    onSuccess: (data) => {
+      setCrossSectionData(data);
+    },
+    onError: (error: any) => {
+      toast.error(`Cross-section extraction failed: ${error.message}`);
+    },
+  });
   
   const demodMutation = trpc.captures.demodulate.useMutation({
     onSuccess: (data) => {
@@ -998,16 +1014,100 @@ export default function ForensicCockpit() {
                   </WebGLErrorBoundary>
                 </TabsContent>
 
-                <TabsContent value="cyclostationary" className="p-0 h-full">
-                  <WebGLErrorBoundary fallbackMessage="Failed to render 3D SCF surface.">
-                    <SCFSurface3D
-                      scfMagnitude={scfData?.scfMagnitude || []}
-                      spectralFreqs={scfData?.spectralFreqs || []}
-                      cyclicFreqs={scfData?.cyclicFreqs || []}
-                      shape={scfData?.shape || { cyclic: 0, spectral: 0 }}
-                      colormap="viridis"
-                    />
-                  </WebGLErrorBoundary>
+                <TabsContent value="cyclostationary" className="p-4 h-full overflow-auto space-y-4">
+                  {scfData ? (
+                    <>
+                      {/* 3D SCF Surface */}
+                      <div className="space-y-2">
+                        <h3 className="text-sm font-semibold">3D Spectral Correlation Function</h3>
+                        <WebGLErrorBoundary fallbackMessage="Failed to render 3D SCF surface.">
+                          <SCFSurface3D
+                            scfMagnitude={scfData.scf || []}
+                            spectralFreqs={scfData.freq || []}
+                            cyclicFreqs={scfData.alpha || []}
+                            shape={{ cyclic: scfData.alpha?.length || 0, spectral: scfData.freq?.length || 0 }}
+                            colormap="viridis"
+                          />
+                        </WebGLErrorBoundary>
+                      </div>
+
+                      {/* Cross-Section Controls and Visualization */}
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                        {/* Slice Controls */}
+                        <div>
+                          <SlicePlaneControls
+                            sliceType={sliceType}
+                            minValue={sliceType === 'alpha' ? Math.min(...(scfData.alpha || [0])) : 0}
+                            maxValue={sliceType === 'alpha' ? Math.max(...(scfData.alpha || [0])) : (scfData.freq?.length || 1) - 1}
+                            currentValue={sliceValue}
+                            onValueChange={(value) => {
+                              setSliceValue(value);
+                              // Extract cross-section
+                              extractCrossSectionMutation.mutate({
+                                scfData: {
+                                  alpha: scfData.alpha || [],
+                                  tau: Array.from({ length: scfData.freq?.length || 0 }, (_, i) => i),
+                                  scf: scfData.scf || [],
+                                },
+                                sliceType,
+                                sliceValue: value,
+                                interpolate: true,
+                              });
+                            }}
+                            onSliceTypeChange={(type) => {
+                              setSliceType(type);
+                              // Reset slice value to center
+                              const newValue = type === 'alpha'
+                                ? (Math.min(...(scfData.alpha || [0])) + Math.max(...(scfData.alpha || [0]))) / 2
+                                : Math.floor((scfData.freq?.length || 1) / 2);
+                              setSliceValue(newValue);
+                            }}
+                            onExport={() => {
+                              if (crossSectionData) {
+                                const csv = `${sliceType === 'alpha' ? 'Tau' : 'Alpha'},SCF_Magnitude,${sliceType}=${crossSectionData.slicePosition}\n` +
+                                  crossSectionData.axis.map((v: number, i: number) => `${v},${crossSectionData.values[i]}`).join('\n');
+                                const blob = new Blob([csv], { type: 'text/csv' });
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = `scf_cross_section_${sliceType}_${crossSectionData.slicePosition.toFixed(2)}.csv`;
+                                a.click();
+                                URL.revokeObjectURL(url);
+                                toast.success('Cross-section exported to CSV');
+                              }
+                            }}
+                            disabled={extractCrossSectionMutation.isPending}
+                          />
+                        </div>
+
+                        {/* 2D Cross-Section Plot */}
+                        <div className="lg:col-span-2">
+                          {crossSectionData ? (
+                            <SCFCrossSection2D
+                              data={crossSectionData}
+                              width={700}
+                              height={400}
+                              showPeak={true}
+                            />
+                          ) : (
+                            <div className="flex items-center justify-center h-96 border border-border rounded bg-muted/20">
+                              <p className="text-muted-foreground text-sm">
+                                {extractCrossSectionMutation.isPending
+                                  ? 'Extracting cross-section...'
+                                  : 'Adjust the slice position to extract a cross-section'}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex items-center justify-center h-full">
+                      <p className="text-muted-foreground text-sm">
+                        Run cyclostationary analysis to view SCF data
+                      </p>
+                    </div>
+                  )}
                 </TabsContent>
 
                 <TabsContent value="hex" className="p-0 h-full relative">

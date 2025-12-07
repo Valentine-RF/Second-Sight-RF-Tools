@@ -48,6 +48,7 @@ import { batchRefineCFO, filterAnnotationsForCFO, estimateBatchDuration } from '
 import { sdrRouter } from './routers/sdr';
 import { detectFrequencyHopping } from './freqHopping';
 import { serializeIQSamples, streamIQSamplesArrow } from './arrow';
+import { extractAlphaSlice, extractTauSlice, crossSectionToCSV, type SCFData } from './scfCrossSection';
 import { orthogonalMatchingPursuit, compressiveSamplingMatchingPursuit, lasso, fista } from './compressiveSensing';
 import { wignerVilleDistribution, smoothedPseudoWVD, choiWilliamsDistribution } from './wignerVille';
 import { fastICA, nmf } from './blindSourceSeparation';
@@ -637,6 +638,36 @@ export const appRouter = router({
             cyclicProfile: jsResult.cyclicProfile,
           };
         }
+      }),
+
+    /**
+     * Extract cross-section slice from SCF data
+     */
+    extractCrossSection: protectedProcedure
+      .input(z.object({
+        scfData: z.object({
+          alpha: z.array(z.number()),
+          tau: z.array(z.number()),
+          scf: z.array(z.array(z.number())),
+        }),
+        sliceType: z.enum(['alpha', 'tau']),
+        sliceValue: z.number(),
+        interpolate: z.boolean().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { scfData, sliceType, sliceValue, interpolate = true } = input;
+
+        // Extract cross-section based on type
+        const crossSection = sliceType === 'alpha'
+          ? extractAlphaSlice(scfData, sliceValue, interpolate)
+          : extractTauSlice(scfData, sliceValue, interpolate);
+
+        return {
+          axis: crossSection.axis,
+          values: crossSection.values,
+          slicePosition: crossSection.slicePosition,
+          sliceType: crossSection.sliceType,
+        };
       }),
 
     /**
