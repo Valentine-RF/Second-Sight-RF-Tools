@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { trpc } from '../lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
@@ -13,6 +14,115 @@ interface SDRStreamingPanelProps {
 
 export function SDRStreamingPanel({ onStreamStart, onStreamStop }: SDRStreamingPanelProps) {
   const [isStreaming, setIsStreaming] = useState(false);
+  const [ws, setWs] = useState<WebSocket | null>(null);
+  
+  // Enumerate devices mutation
+  const enumerateDevicesMutation = trpc.sdr.enumerateDevices.useMutation({
+    onSuccess: (devices) => {
+      console.log('Enumerated devices:', devices);
+      toast.success(`Found ${devices.length} SDR device(s)`);
+    },
+    onError: (error) => {
+      toast.error(`Failed to enumerate devices: ${error.message}`);
+    },
+  });
+  
+  // Start stream mutation
+  const startStreamMutation = trpc.sdr.startStream.useMutation({
+    onSuccess: (result) => {
+      setIsStreaming(true);
+      toast.success('Stream started');
+      // Connect WebSocket
+      connectWebSocket(result.sessionId);
+      onStreamStart?.();
+    },
+    onError: (error) => {
+      toast.error(`Failed to start stream: ${error.message}`);
+    },
+  });
+  
+  // Stop stream mutation
+  const stopStreamMutation = trpc.sdr.stopStream.useMutation({
+    onSuccess: () => {
+      setIsStreaming(false);
+      setIsPaused(false);
+      setIsRecording(false);
+      toast.success('Stream stopped');
+      // Disconnect WebSocket
+      if (ws) {
+        ws.close();
+        setWs(null);
+      }
+      onStreamStop?.();
+    },
+    onError: (error) => {
+      toast.error(`Failed to stop stream: ${error.message}`);
+    },
+  });
+  
+  // Start recording mutation
+  const startRecordingMutation = trpc.sdr.startRecording.useMutation({
+    onSuccess: (result) => {
+      setIsRecording(true);
+      toast.success(`Recording started: ${result.filename}`);
+    },
+    onError: (error) => {
+      toast.error(`Failed to start recording: ${error.message}`);
+    },
+  });
+  
+  // Stop recording mutation
+  const stopRecordingMutation = trpc.sdr.stopRecording.useMutation({
+    onSuccess: (result) => {
+      setIsRecording(false);
+      toast.success(`Recording saved: ${result.filename}`);
+    },
+    onError: (error) => {
+      toast.error(`Failed to stop recording: ${error.message}`);
+    },
+  });
+  
+  // WebSocket connection
+  const connectWebSocket = (sessionId: string) => {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws/stream?token=${sessionId}`;
+    
+    const websocket = new WebSocket(wsUrl);
+    
+    websocket.onopen = () => {
+      console.log('[WebSocket] Connected');
+      websocket.send(JSON.stringify({ type: 'subscribe' }));
+    };
+    
+    websocket.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      
+      if (message.type === 'fft_data') {
+        // TODO: Pass FFT data to WaterfallDisplay
+        console.log('[WebSocket] Received FFT data:', message.data);
+      }
+    };
+    
+    websocket.onerror = (error) => {
+      console.error('[WebSocket] Error:', error);
+      toast.error('WebSocket connection error');
+    };
+    
+    websocket.onclose = () => {
+      console.log('[WebSocket] Disconnected');
+    };
+    
+    setWs(websocket);
+  };
+  
+  // Cleanup WebSocket on unmount
+  useEffect(() => {
+    return () => {
+      if (ws) {
+        ws.close();
+      }
+    };
+  }, [ws]);
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   
@@ -25,28 +135,26 @@ export function SDRStreamingPanel({ onStreamStart, onStreamStop }: SDRStreamingP
   const [bandwidth, setBandwidth] = useState(2.0); // MHz
   
   const handleStartStream = () => {
-    // TODO: Wire to your SoapySDR backend
-    setIsStreaming(true);
-    toast.success('SDR streaming started');
-    onStreamStart?.();
+    startStreamMutation.mutate({
+      deviceSerial: selectedDevice,
+      frequency: frequency * 1e6, // Convert MHz to Hz
+      sampleRate: sampleRate * 1e6, // Convert MSps to Sps
+      gain: gain,
+      antenna: antenna,
+      bandwidth: bandwidth * 1e6, // Convert MHz to Hz
+    });
   };
   
   const handleStopStream = () => {
-    setIsStreaming(false);
-    setIsRecording(false);
-    setIsPaused(false);
-    toast.success('SDR streaming stopped');
-    onStreamStop?.();
+    stopStreamMutation.mutate({ deviceSerial: selectedDevice });
   };
   
   const handleStartRecording = () => {
-    setIsRecording(true);
-    toast.success('Recording started');
+    startRecordingMutation.mutate({ deviceSerial: selectedDevice });
   };
   
   const handleStopRecording = () => {
-    setIsRecording(false);
-    toast.success('Recording saved');
+    stopRecordingMutation.mutate({ deviceSerial: selectedDevice });
   };
   
   // Preset frequency bands

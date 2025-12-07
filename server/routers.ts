@@ -39,6 +39,7 @@ import { runFAMAnalysis, classifyModulation } from './pythonBridge';
 import { fetchIQSamples, validateSampleRange } from './iqDataFetcher';
 import { parseIQData, computeSCF, classifyModulation as classifyModulationJS } from './dsp';
 import { runSNRCFOEstimation } from './snrCfoBridge';
+import { sdrRouter } from './routers/sdr';
 
 // Helper to convert flat array to 2D matrix
 function convertToNestedArray(flat: Float32Array, rows: number, cols: number): number[][] {
@@ -51,6 +52,7 @@ function convertToNestedArray(flat: Float32Array, rows: number, cols: number): n
 
 export const appRouter = router({
   system: systemRouter,
+  sdr: sdrRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {

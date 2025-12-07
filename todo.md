@@ -633,3 +633,21 @@
 - [x] Add sample rate and bandwidth selectors
 - [x] Implement gain slider with dB scale
 - [ ] Test with RTL-SDR, HackRF, and USRP devices
+
+## SDR Backend Implementation (Current Sprint)
+- [x] Create server/routers/sdr.ts with tRPC procedures
+- [x] Implement sdr.enumerateDevices procedure
+- [x] Implement sdr.startStream procedure with device config
+- [x] Implement sdr.stopStream procedure
+- [x] Implement sdr.startRecording procedure
+- [x] Implement sdr.stopRecording procedure
+- [x] Create server/_core/websocket.ts WebSocket server
+- [x] Add WebSocket connection handling and authentication
+- [x] Implement IQ sample streaming over WebSocket
+- [x] Create server/soapy.ts Python bridge module
+- [x] Add SoapySDR device enumeration wrapper
+- [x] Add SoapySDR stream configuration wrapper
+- [x] Implement streaming session management
+- [x] Wire WebSocket to frontend WaterfallDisplay
+- [ ] Add FFT computation for incoming IQ samples
+- [ ] Test with real SDR hardware
