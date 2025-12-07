@@ -2,6 +2,11 @@ import { z } from 'zod';
 import { router, protectedProcedure } from '../_core/trpc';
 import { TRPCError } from '@trpc/server';
 import { enumerateSoapyDevices, startSoapyStream, stopSoapyStream, configureSoapyDevice } from '../soapy';
+import { sessionManager } from '../streaming/sessionManager';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
 
 /**
  * SDR Router - SoapySDR device control and streaming
@@ -101,6 +106,39 @@ export const sdrRouter = router({
 
   /**
    * Stop SDR streaming session
+   */
+  stopSession: protectedProcedure
+    .input(z.object({
+      sessionId: z.string(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const session = sessionManager.getSession(input.sessionId);
+      if (!session) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Session not found',
+        });
+      }
+      
+      if (session.userId !== ctx.user.openId) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Unauthorized',
+        });
+      }
+      
+      const result = await sessionManager.stopSession(input.sessionId);
+      
+      return {
+        sessionId: input.sessionId,
+        samplesRecorded: session.samplesRecorded,
+        metaUrl: result.metaUrl,
+        dataUrl: result.dataUrl,
+      };
+    }),
+
+  /**
+   * Stop SDR streaming session (legacy)
    */
   stopStream: protectedProcedure
     .input(z.object({

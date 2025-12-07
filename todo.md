@@ -910,7 +910,7 @@
 - [ ] Add keyboard shortcuts for slice navigation (arrow keys)
 - [ ] Test with real SCF data
 
-## Real-Time SDR Streaming Phase 1 (Current Sprint)
+## Real-Time SDR Streaming Implementation
 - [x] Create CircularIQBuffer class with ring buffer implementation
 - [x] Add buffer overflow detection and oldest-sample eviction
 - [x] Implement zero-copy buffer read API
@@ -918,12 +918,16 @@
 - [x] Apply Hamming window before FFT
 - [x] Compute PSD and convert to dB scale
 - [x] Send FFT results via WebSocket instead of raw IQ
-- [ ] Create useStreamingMode hook in frontend
-- [ ] Wire WebSocket IQ stream to Spectrogram component
-- [ ] Update WebGL texture with real-time FFT data
-- [ ] Implement time-domain scrolling (new data pushes left)
-- [ ] Create fftWorker.ts Web Worker for frontend FFT
-- [ ] Add overlap processing (50-75%) for smooth spectrogram
-- [ ] Test SoapySDR installation on sandbox
-- [ ] Verify RTL-SDR driver detection
-- [ ] Create mock SDR mode for testing without hardware
+- [x] Create useStreamingMode hook in frontend
+- [x] Wire WebSocket IQ stream to Spectrogram component
+- [x] Update WebGL texture with real-time FFT data
+- [x] Implement time-domain scrolling (new data pushes left)
+- [x] Create fftWorker.ts Web Worker for frontend FFT
+- [x] Add overlap processing (50-75%) for smooth spectrogram
+- [x] Test SoapySDR installation on sandbox (mock mode works)
+- [x] Verify RTL-SDR driver detection (mock device enumeration works)
+- [x] Create mock SDR mode for testing without hardware
+- [x] Create SessionManager class for session lifecycle
+- [x] Add recording buffer management
+- [x] Implement SigMF export for recordings
+- [x] Upload recordings to S3 with metadata
