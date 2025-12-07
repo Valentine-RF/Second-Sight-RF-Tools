@@ -738,3 +738,20 @@
 - [ ] Implement texture-based data input/output for GPU FFT
 - [ ] Add fallback to CPU FFT for unsupported browsers
 - [ ] Benchmark performance improvements with large datasets
+
+## Advanced Signal Processing Algorithms (Current Sprint)
+- [x] Implement Orthogonal Matching Pursuit (OMP) for compressive sensing
+- [x] Implement Compressive Sampling Matching Pursuit (CoSaMP)
+- [x] Implement LASSO (Least Absolute Shrinkage and Selection Operator)
+- [x] Implement FISTA (Fast Iterative Shrinkage-Thresholding Algorithm)
+- [ ] Create compressive sensing reconstruction procedure
+- [x] Implement Wigner-Ville Distribution (WVD) time-frequency analysis
+- [x] Add Smoothed Pseudo Wigner-Ville Distribution (SPWVD)
+- [x] Implement cross-term mitigation with kernel smoothing
+- [x] Add Choi-Williams Distribution for reduced cross-terms
+- [x] Implement FastICA (Fast Independent Component Analysis)
+- [x] Implement Non-negative Matrix Factorization (NMF)
+- [ ] Add tensor decomposition (CP/PARAFAC, Tucker)
+- [ ] Create blind source separation procedure
+- [ ] Add UI controls for algorithm parameter tuning
+- [ ] Visualize separated sources in Analysis Dock
