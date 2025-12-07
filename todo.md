@@ -178,3 +178,90 @@
 - [x] Add waterfall/spectrogram toggle button
 - [x] Implement time-domain signal evolution visualization
 - [x] Add color-coded amplitude mapping for waterfall
+
+## Advanced RF Forensic Analysis Features
+
+### Higher-Order Statistics & Wavelet Analysis
+- [x] Implement 4th and 6th order cumulant calculation for sub-noise detection
+- [x] Add bispectrum and trispectrum analysis for phase coupling detection
+- [x] Create wavelet packet decomposition with Daubechies (db4-db8) wavelets
+- [x] Implement Morlet wavelet analysis for RF fingerprinting
+- [ ] Add compressive sensing with OMP, CoSaMP, LASSO, FISTA algorithms
+- [x] Create UI panel for higher-order statistics visualization
+
+### Time-Frequency Analysis
+- [ ] Implement Wigner-Ville Distribution (WVD) with cross-term mitigation
+- [ ] Add Smoothed Pseudo-WVD and DMD-WVD variants
+- [ ] Create Cohen's class distributions (Choi-Williams, Born-Jordan)
+- [x] Implement synchrosqueezing transforms for mode extraction
+- [ ] Add reassigned spectrogram visualization
+- [ ] Create time-frequency analysis comparison view
+
+### RF-DNA Fingerprinting & SEI
+- [x] Implement AFIT RF-DNA feature extraction (180 features)
+- [x] Add constellation-based DNA (CB-DNA) analysis
+- [ ] Create bispectrum-Radon transform feature extraction
+- [ ] Implement spectral regrowth analysis
+- [ ] Add transient analysis with General Linear Chirplet Transform
+- [ ] Create complex-valued CNN architecture for device classification
+- [ ] Implement temperature-aware classification (TeRFF)
+- [ ] Add cross-collection robustness mitigation
+- [ ] Create RF fingerprint database and matching UI
+
+### Protocol Identification
+- [x] Implement preamble detection for 802.11, LTE, 5G NR
+- [ ] Add Zadoff-Chu sequence correlation for LTE/5G
+- [ ] Implement Schmidl-Cox OFDM synchronization algorithm
+- [ ] Create clustering-based unknown waveform categorization
+- [ ] Add DRCaG architecture for modulation + protocol classification
+- [ ] Create protocol identification results panel
+
+### Blind Source Separation
+- [ ] Implement complex-valued FastICA for co-channel separation
+- [ ] Add NMF spectrogram decomposition for interference detection
+- [ ] Create tensor decomposition (CP/PARAFAC) for multi-dimensional data
+- [ ] Implement self-interference cancellation with Volterra models
+- [ ] Add blind source separation visualization
+
+### Geolocation
+- [ ] Implement TDOA with GCC-PHAT algorithm
+- [ ] Add MUSIC algorithm for AOA/DOA estimation
+- [ ] Create ESPRIT for efficient direction finding
+- [ ] Implement hybrid TDOA/AOA fusion
+- [ ] Add NLOS mitigation with ML classification
+- [ ] Create geolocation map visualization with uncertainty ellipses
+
+### ML-Based Anomaly Detection
+- [x] Implement LSTM autoencoder for temporal I/Q anomaly detection
+- [ ] Add variational autoencoder for spectrogram anomalies
+- [ ] Create WANDA framework for unknown signal detection
+- [ ] Implement XGBoost jamming detection classifier
+- [ ] Add GPS spoofing detection with PCA-CNN-LSTM
+- [ ] Create ADS-B spoofing detection (SODA framework)
+- [ ] Implement IMSI catcher detection heuristics
+- [ ] Add anomaly detection dashboard
+
+### Advanced ML Architectures
+- [ ] Implement CNN-Transformer hybrid for AMC
+- [ ] Add causal attention mechanism for inference speedup
+- [ ] Create prototypical networks for few-shot learning
+- [ ] Implement MoCo self-supervised pre-training
+- [ ] Add SimCLR contrastive learning for spectrograms
+- [ ] Create complex-valued neural network layers
+- [ ] Implement federated learning for distributed sensing
+
+### GPU Acceleration & Deployment
+- [ ] Integrate cuSignal for GPU-accelerated signal processing
+- [ ] Add TorchSig 2.0 models and datasets
+- [ ] Implement TensorRT optimization for inference
+- [ ] Create model quantization (FP16/INT8) pipeline
+- [ ] Add ONNX Runtime backend for ML models
+- [ ] Create GPU processing status monitor
+
+### Advanced Analysis UI
+- [ ] Create tabbed analysis panel (Higher-Order Stats, RF-DNA, Protocol ID, Geolocation, Anomaly Detection)
+- [ ] Add parameter configuration panels for each analysis type
+- [ ] Implement real-time processing progress indicators
+- [ ] Create results export in multiple formats (JSON, CSV, PDF)
+- [ ] Add batch processing queue for multiple captures
+- [ ] Create analysis templates for common forensic workflows

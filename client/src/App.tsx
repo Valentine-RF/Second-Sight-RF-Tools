@@ -6,11 +6,12 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import ComparisonMode from "./pages/ComparisonMode";
+import AdvancedAnalysis from "./pages/AdvancedAnalysis";
 import FileManager from "./pages/FileManager";
 import ForensicCockpit from "./pages/ForensicCockpit";
 import { useAuth } from "./_core/hooks/useAuth";
 import { Button } from "./components/ui/button";
-import { Radio, Upload, LogOut, Menu, Moon, Sun } from 'lucide-react';
+import { Radio, Upload, LogOut, Menu, Moon, Sun, Activity } from 'lucide-react';
 import { useState } from "react";
 
 /**
@@ -61,6 +62,12 @@ function Navigation() {
               <Link href="/compare">
                 <Menu className="w-4 h-4" />
                 Compare
+              </Link>
+            </Button>
+            <Button variant="ghost" className="gap-2" asChild>
+              <Link href="/advanced">
+                <Activity className="w-4 h-4" />
+                Advanced
               </Link>
             </Button>
             <div className="h-6 w-px bg-border" />
@@ -146,7 +153,8 @@ function Router() {
        <Route path={"/"} component={Home} />
       <Route path={"/files"} component={FileManager} />
       <Route path={"/cockpit"} component={ForensicCockpit} />
-      <Route path={"/compare"} component={ComparisonMode} />
+       <Route path="/compare" component={ComparisonMode} />
+      <Route path="/advanced" component={AdvancedAnalysis} />
       <Route path={"/404"} component={NotFound} />
       <Route path="/cockpit" component={ForensicCockpit} />
       <Route path="/404" component={NotFound} />

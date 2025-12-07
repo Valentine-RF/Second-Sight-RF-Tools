@@ -28,6 +28,10 @@ import {
 import { parseSigMFMetadata, annotationToSigMF, generateSigMFMetadata } from "./sigmf";
 import { storagePut, storageGet } from "./storage";
 import { invokeLLM } from "./_core/llm";
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
 import { nanoid } from "nanoid";
 
 export const appRouter = router({
@@ -504,6 +508,192 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         await deleteComparisonSession(input.id);
         return { success: true };
+      }),
+  }),
+
+  // Advanced signal processing routers
+  advancedProcessing: router({
+    // Higher-order statistics
+    calculateCumulants: protectedProcedure
+      .input(z.object({
+        captureId: z.number(),
+        orders: z.array(z.number()).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        // Mock I/Q data - in production would load from S3
+        const mockSignal = Array.from({ length: 1000 }, (_, i) => ({
+          real: Math.cos(2 * Math.PI * i / 100) + Math.random() * 0.1,
+          imag: Math.sin(2 * Math.PI * i / 100) + Math.random() * 0.1,
+        }));
+        
+        const signalJson = JSON.stringify(mockSignal).replace(/'/g, "\\'");
+        const { stdout } = await execAsync(
+          `python3.11 server/signal_processing.py cumulants '${signalJson}'`
+        );
+        
+        return JSON.parse(stdout);
+      }),
+    
+    // Wavelet packet decomposition
+    waveletDecomposition: protectedProcedure
+      .input(z.object({
+        captureId: z.number(),
+        wavelet: z.enum(['db4', 'db6', 'db8', 'morlet']).optional(),
+        level: z.number().min(1).max(5).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const mockSignal = Array.from({ length: 1024 }, (_, i) => 
+          Math.cos(2 * Math.PI * i / 64) + Math.random() * 0.2
+        );
+        
+        const wavelet = input.wavelet || 'db4';
+        const signalJson = JSON.stringify(mockSignal).replace(/'/g, "\\'");
+        const { stdout } = await execAsync(
+          `python3.11 server/signal_processing.py wavelet '${signalJson}' ${wavelet}`
+        );
+        
+        return JSON.parse(stdout);
+      }),
+    
+    // Synchrosqueezing transform
+    synchrosqueezingTransform: protectedProcedure
+      .input(z.object({
+        captureId: z.number(),
+        sampleRate: z.number().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const mockSignal = Array.from({ length: 512 }, (_, i) => ({
+          real: Math.cos(2 * Math.PI * i / 32),
+          imag: Math.sin(2 * Math.PI * i / 32),
+        }));
+        
+        const sampleRate = input.sampleRate || 1e6;
+        const signalJson = JSON.stringify(mockSignal).replace(/'/g, "\\'");
+        const { stdout } = await execAsync(
+          `python3.11 server/signal_processing.py synchrosqueeze '${signalJson}' ${sampleRate}`
+        );
+        
+        return JSON.parse(stdout);
+      }),
+    
+    // Bispectrum analysis
+    bispectrumAnalysis: protectedProcedure
+      .input(z.object({
+        captureId: z.number(),
+      }))
+      .mutation(async ({ input }) => {
+        const mockSignal = Array.from({ length: 256 }, (_, i) => ({
+          real: Math.cos(2 * Math.PI * i / 16) * (1 + 0.3 * Math.cos(2 * Math.PI * i / 8)),
+          imag: Math.sin(2 * Math.PI * i / 16) * (1 + 0.3 * Math.cos(2 * Math.PI * i / 8)),
+        }));
+        
+        const signalJson = JSON.stringify(mockSignal).replace(/'/g, "\\'");
+        const { stdout } = await execAsync(
+          `python3.11 server/signal_processing.py bispectrum '${signalJson}'`
+        );
+        
+        return JSON.parse(stdout);
+      }),
+  }),
+  
+  // RF-DNA fingerprinting and ML classification
+  rfDna: router({
+    // Extract RF-DNA features
+    extractFeatures: protectedProcedure
+      .input(z.object({
+        captureId: z.number(),
+        regions: z.number().min(5).max(50).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const mockSignal = Array.from({ length: 2000 }, (_, i) => ({
+          real: Math.cos(2 * Math.PI * i / 100) * (1 + 0.05 * Math.random()),
+          imag: Math.sin(2 * Math.PI * i / 100) * (1 + 0.05 * Math.random()),
+        }));
+        
+        const signalJson = JSON.stringify(mockSignal).replace(/'/g, "\\'");
+        const { stdout } = await execAsync(
+          `python3.11 server/rf_dna.py rf_dna '${signalJson}'`
+        );
+        
+        return JSON.parse(stdout);
+      }),
+    
+    // Constellation-Based DNA
+    constellationDna: protectedProcedure
+      .input(z.object({
+        captureId: z.number(),
+        modulation: z.enum(['QPSK', 'QAM16', 'QAM64']).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const mockSignal = Array.from({ length: 1000 }, (_, i) => ({
+          real: Math.cos(2 * Math.PI * i / 4) + Math.random() * 0.1,
+          imag: Math.sin(2 * Math.PI * i / 4) + Math.random() * 0.1,
+        }));
+        
+        const modulation = input.modulation || 'QPSK';
+        const signalJson = JSON.stringify(mockSignal).replace(/'/g, "\\'");
+        const { stdout } = await execAsync(
+          `python3.11 server/rf_dna.py cb_dna '${signalJson}' ${modulation}`
+        );
+        
+        return JSON.parse(stdout);
+      }),
+    
+    // Preamble detection
+    detectPreamble: protectedProcedure
+      .input(z.object({
+        captureId: z.number(),
+        preambleType: z.enum(['802.11', 'LTE', '5G_NR']).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const mockSignal = Array.from({ length: 512 }, (_, i) => ({
+          real: Math.cos(2 * Math.PI * i / 16),
+          imag: Math.sin(2 * Math.PI * i / 16),
+        }));
+        
+        const preambleType = input.preambleType || '802.11';
+        const signalJson = JSON.stringify(mockSignal).replace(/'/g, "\\'");
+        const { stdout } = await execAsync(
+          `python3.11 server/rf_dna.py preamble '${signalJson}' ${preambleType}`
+        );
+        
+        return JSON.parse(stdout);
+      }),
+    
+    // Anomaly detection
+    detectAnomaly: protectedProcedure
+      .input(z.object({
+        captureId: z.number(),
+        threshold: z.number().min(0).max(1).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const mockSignal = Array.from({ length: 1000 }, (_, i) => ({
+          real: Math.cos(2 * Math.PI * i / 50) + (Math.random() - 0.5) * 0.5,
+          imag: Math.sin(2 * Math.PI * i / 50) + (Math.random() - 0.5) * 0.5,
+        }));
+        
+        const threshold = input.threshold || 0.5;
+        const signalJson = JSON.stringify(mockSignal).replace(/'/g, "\\'");
+        const { stdout } = await execAsync(
+          `python3.11 server/rf_dna.py anomaly '${signalJson}' ${threshold}`
+        );
+        
+        return JSON.parse(stdout);
+      }),
+    
+    // Device classification
+    classifyDevice: protectedProcedure
+      .input(z.object({
+        features: z.array(z.number()),
+        numDevices: z.number().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const featuresJson = JSON.stringify(input.features).replace(/'/g, "\\'");
+        const { stdout } = await execAsync(
+          `python3.11 server/rf_dna.py classify '${featuresJson}'`
+        );
+        
+        return JSON.parse(stdout);
       }),
   }),
 });
