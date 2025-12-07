@@ -5,7 +5,7 @@
  * as an interactive 3D surface plot using Three.js
  */
 
-import { useRef, useMemo } from 'react';
+import { useRef, useMemo, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Grid } from '@react-three/drei';
 import * as THREE from 'three';
@@ -50,6 +50,60 @@ function magnitudeToColor(value: number, colormap: string = 'viridis'): THREE.Co
     const b = v < 0.5 ? v * 2 : 1 - (v - 0.5) * 2;
     return new THREE.Color(r, g, b);
   }
+}
+
+/**
+ * Cross-section Slicing Plane Component
+ */
+function SlicingPlane({ shape, scfMagnitude }: { shape: { cyclic: number; spectral: number }; scfMagnitude: number[] }) {
+  const [slicePosition, setSlicePosition] = useState(0);
+  const planeRef = useRef<THREE.Mesh>(null);
+
+  // Create 2D slice geometry
+  const sliceGeometry = useMemo(() => {
+    const geo = new THREE.PlaneGeometry(10, 3, shape.spectral - 1, 1);
+    const positions = geo.attributes.position;
+    const colors = new Float32Array(positions.count * 3);
+
+    // Sample SCF at slice position
+    const sliceIdx = Math.floor(slicePosition * shape.cyclic);
+    for (let i = 0; i < shape.spectral; i++) {
+      const idx = sliceIdx * shape.spectral + i;
+      const magnitude = scfMagnitude[idx] || 0;
+      
+      // Set Z-height
+      positions.setZ(i, magnitude * 3);
+      positions.setZ(i + shape.spectral, magnitude * 3);
+      
+      // Set color
+      const color = new THREE.Color(magnitude, magnitude * 0.5, 1 - magnitude);
+      colors[i * 3] = color.r;
+      colors[i * 3 + 1] = color.g;
+      colors[i * 3 + 2] = color.b;
+      colors[(i + shape.spectral) * 3] = color.r;
+      colors[(i + shape.spectral) * 3 + 1] = color.g;
+      colors[(i + shape.spectral) * 3 + 2] = color.b;
+    }
+
+    geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    return geo;
+  }, [slicePosition, shape, scfMagnitude]);
+
+  return (
+    <mesh
+      ref={planeRef}
+      geometry={sliceGeometry}
+      position={[0, (slicePosition - 0.5) * 10, 0]}
+      rotation={[-Math.PI / 4, 0, 0]}
+    >
+      <meshBasicMaterial
+        vertexColors
+        side={THREE.DoubleSide}
+        transparent
+        opacity={0.7}
+      />
+    </mesh>
+  );
 }
 
 /**
@@ -134,6 +188,9 @@ export default function SCFSurface3D(props: SCFSurface3DProps) {
         
         {/* 3D Surface */}
         <SurfaceMesh {...props} />
+        
+        {/* Cross-section slicing plane */}
+        <SlicingPlane shape={props.shape} scfMagnitude={props.scfMagnitude} />
         
         {/* Grid helper */}
         <Grid

@@ -9,6 +9,7 @@ import SCFSurface3D from '@/components/SCFSurface3D';
 import { FFTPSDPlot } from '@/components/FFTPSDPlot';
 import { HexView } from '@/components/HexView';
 import { AnnotationStatistics } from '@/components/AnnotationStatistics';
+import { HopPatternVisualization } from '@/components/HopPatternVisualization';
 import { SDRStreamingPanel } from '@/components/SDRStreamingPanel';
 import { AnnotationEditDialog } from '@/components/AnnotationEditDialog';
 import SignalContextMenu, { type SignalSelection } from '@/components/SignalContextMenu';

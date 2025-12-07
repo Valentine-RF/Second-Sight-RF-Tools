@@ -141,6 +141,82 @@ export function AnnotationStatistics({ captureId }: AnnotationStatisticsProps) {
         </Card>
       )}
 
+      {/* Temporal SNR Chart */}
+      {stats.avgSNR !== null && annotations && annotations.length > 1 && (
+        <Card className="p-4">
+          <h4 className="font-black mb-3">SNR Over Time</h4>
+          <div className="space-y-2">
+            <svg width="100%" height="120" className="overflow-visible">
+              {(() => {
+                const snrData = annotations
+                  .map((ann: any, idx: number) => ({
+                    index: idx,
+                    snr: ann.metadata?.snr || 0,
+                    time: ann.sampleStart || 0,
+                  }))
+                  .filter((d: any) => d.snr > 0)
+                  .sort((a: any, b: any) => a.time - b.time);
+
+                if (snrData.length === 0) return null;
+
+                const width = 280;
+                const height = 100;
+                const padding = 20;
+
+                const minSNR = Math.min(...snrData.map((d: any) => d.snr));
+                const maxSNR = Math.max(...snrData.map((d: any) => d.snr));
+                const snrRange = maxSNR - minSNR || 1;
+
+                const points = snrData.map((d: any, i: number) => {
+                  const x = padding + (i / (snrData.length - 1)) * (width - 2 * padding);
+                  const y = height - padding - ((d.snr - minSNR) / snrRange) * (height - 2 * padding);
+                  return `${x},${y}`;
+                }).join(' ');
+
+                return (
+                  <>
+                    {/* Grid lines */}
+                    <line x1={padding} y1={padding} x2={padding} y2={height - padding} stroke="currentColor" strokeOpacity="0.2" />
+                    <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} stroke="currentColor" strokeOpacity="0.2" />
+                    
+                    {/* SNR line */}
+                    <polyline
+                      points={points}
+                      fill="none"
+                      stroke="hsl(var(--primary))"
+                      strokeWidth="2"
+                    />
+                    
+                    {/* Data points */}
+                    {snrData.map((d: any, i: number) => {
+                      const x = padding + (i / (snrData.length - 1)) * (width - 2 * padding);
+                      const y = height - padding - ((d.snr - minSNR) / snrRange) * (height - 2 * padding);
+                      return (
+                        <circle
+                          key={i}
+                          cx={x}
+                          cy={y}
+                          r="3"
+                          fill="hsl(var(--primary))"
+                        />
+                      );
+                    })}
+                    
+                    {/* Axis labels */}
+                    <text x={padding} y={height - 5} fontSize="10" fill="currentColor" opacity="0.6">
+                      {minSNR.toFixed(0)} dB
+                    </text>
+                    <text x={padding} y={padding + 5} fontSize="10" fill="currentColor" opacity="0.6">
+                      {maxSNR.toFixed(0)} dB
+                    </text>
+                  </>
+                );
+              })()}
+            </svg>
+          </div>
+        </Card>
+      )}
+
       {/* Coverage */}
       <Card className="p-4">
         <h4 className="font-black mb-3">Coverage</h4>

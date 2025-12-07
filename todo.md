@@ -682,3 +682,17 @@
 - [ ] Implement plane dragging with Three.js raycasting
 - [ ] Display 2D slice of SCF at selected cyclic frequency
 - [ ] Add axis labels and value readout for slice plane
+
+## Remaining Medium Wins (Final Sprint)
+- [x] Add temporal SNR line chart to annotation statistics dashboard
+- [x] Plot SNR values over time for all annotations
+- [x] Add time axis labels and grid lines
+- [ ] Wire frequency hopping detection to tRPC procedure
+- [ ] Add "Detect Hopping" button to context menu
+- [x] Create hop pattern visualization component with timeline
+- [x] Display hop rate, dwell time, and pattern type
+- [x] Show frequency transitions on timeline chart
+- [x] Implement SCF cross-section slicing plane in Three.js
+- [ ] Add raycasting for interactive plane dragging
+- [x] Display 2D slice of SCF at selected cyclic frequency
+- [x] Add axis labels and value readout for slice plane
