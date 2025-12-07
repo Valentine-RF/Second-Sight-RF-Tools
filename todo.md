@@ -1134,3 +1134,31 @@
 - [x] Implement PSD calculation from IQ samples
 - [x] Implement SNR calculation from IQ samples
 - [x] Handle edge cases (empty data, single values, extreme sample rates)
+
+## Vite HMR WebSocket Fix
+- [x] Fix Vite HMR WebSocket configuration for Manus environment
+- [x] Update vite.config.ts with correct HMR settings (WSS protocol, port 443)
+- [x] Restart dev server to apply changes
+
+## TensorFlow.js Automatic Modulation Classifier
+- [x] Install @tensorflow/tfjs and @tensorflow/tfjs-vis dependencies
+- [x] Create ModulationClassifier class
+- [x] Design CNN model architecture (3 Conv1D layers + Dense layers)
+- [x] Implement feature extraction (amplitude, phase, spectral flatness)
+- [x] Add preprocessing pipeline (normalization, padding/truncation to 1024 samples)
+- [x] Create synthetic training data generator for common modulations
+- [x] Define modulation classes (AM, FM, BPSK, QPSK, 8PSK, 16QAM, 64QAM, FSK, GMSK, OOK)
+- [x] Implement model training workflow (trainWithSyntheticData method)
+- [x] Add model save/load functionality (localStorage)
+- [x] Create inference pipeline for real-time classification
+- [x] Design overlay UI component (ModulationOverlay)
+- [x] Add confidence score visualization with color coding
+- [x] Add modulation type label display with all scores
+- [x] Add feature summary display (amplitude, phase, spectral flatness)
+- [x] Integrate into Forensic Cockpit
+- [x] Add "Classify Modulation" button in Signal Inspector
+- [x] Add overlay on main spectrogram
+- [x] Implement FFT for feature extraction
+- [x] Add singleton pattern for classifier instance
+- [ ] Test with known modulation samples
+- [ ] Train model with real data or pre-trained weights

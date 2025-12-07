@@ -34,6 +34,8 @@ import { ReportGenerator, type ReportData } from '@/lib/reportGenerator';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
 import { useStreamingPipeline } from '@/hooks/useStreamingPipeline';
+import { ModulationOverlay } from '@/components/ModulationOverlay';
+import { getModulationClassifier, type ClassificationResult } from '@/lib/modulationClassifier';
 
 /**
  * Forensic Cockpit - Main Signal Analysis Interface
@@ -60,6 +62,8 @@ export default function ForensicCockpit() {
   const [scfData, setScfData] = useState<any>(null);  const [showCyclicProfile, setShowCyclicProfile] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [annotationDialogOpen, setAnnotationDialogOpen] = useState(false);
+  const [modulationResult, setModulationResult] = useState<ClassificationResult | null>(null);
+  const [isClassifying, setIsClassifying] = useState(false);
   
   // Load annotations for current capture from database
   const { data: savedAnnotations = [] } = trpc.annotations.list.useQuery(
@@ -433,7 +437,7 @@ export default function ForensicCockpit() {
     setContextMenuPos(null);
   };
 
-  const handleClassifyModulation = () => {
+  const handleClassifyModulationOld = () => {
     if (!selection || !currentCapture) return;
     
     const sampleCount = selection.sampleEnd - selection.sampleStart;
@@ -542,6 +546,49 @@ export default function ForensicCockpit() {
   const exportReportMutation = trpc.captures.exportReport.useMutation();
 
   const [exportFormat, setExportFormat] = useState<'pdf' | 'html'>('pdf');
+
+  const handleClassifyModulation = async () => {
+    if (!selection || !currentCapture) {
+      toast.error('Please select a signal region first');
+      return;
+    }
+    
+    setIsClassifying(true);
+    setModulationResult(null);
+    
+    try {
+      // Get IQ samples from selection
+      const sampleStart = selection.sampleStart;
+      const sampleCount = Math.min(selection.sampleEnd - selection.sampleStart, 2048);
+      
+      // Fetch IQ data from server
+      const response = await fetch(
+        `/api/trpc/captures.getIQSamples?input=${encodeURIComponent(
+          JSON.stringify({ captureId: currentCapture.id, sampleStart, sampleCount })
+        )}`
+      );
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch IQ samples');
+      }
+      
+      const data = await response.json();
+      const iqSamples = new Float32Array(data.result.data.samples);
+      
+      // Run classification
+      const classifier = getModulationClassifier();
+      await classifier.initialize();
+      const result = await classifier.classify(iqSamples);
+      
+      setModulationResult(result);
+      toast.success(`Detected: ${result.modulation} (${(result.confidence * 100).toFixed(1)}% confidence)`);
+    } catch (error) {
+      console.error('Modulation classification failed:', error);
+      toast.error('Classification failed - model may need training');
+    } finally {
+      setIsClassifying(false);
+    }
+  };
 
   const handleExportReport = async () => {
     if (!currentCapture) return;
@@ -813,6 +860,14 @@ export default function ForensicCockpit() {
                     }}
                   />
                 </WebGLErrorBoundary>
+                
+                {/* Modulation Classification Overlay */}
+                <ModulationOverlay
+                  result={modulationResult}
+                  isClassifying={isClassifying}
+                  position="top-right"
+                  showAllScores={true}
+                />
               </div>
             </SignalContextMenu>
             
@@ -1710,6 +1765,43 @@ export default function ForensicCockpit() {
                 </div>
               </Card>
             )}
+
+            {/* Modulation Classification */}
+            <Card className="p-4 data-panel">
+              <h4 className="font-black mb-3">Modulation Classifier</h4>
+              <div className="space-y-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleClassifyModulation}
+                  disabled={isClassifying || !selection}
+                  className="w-full"
+                >
+                  {isClassifying ? (
+                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Classifying...</>
+                  ) : (
+                    <><Radio className="w-4 h-4 mr-2" /> Classify Modulation</>
+                  )}
+                </Button>
+                
+                {modulationResult && (
+                  <div className="space-y-2 text-sm pt-2 border-t border-border">
+                    <div className="flex justify-between items-center">
+                      <span className="technical-label">Detected:</span>
+                      <span className="font-mono text-cyan-400 text-lg font-bold">{modulationResult.modulation}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="technical-label">Confidence:</span>
+                      <span className="font-mono">{(modulationResult.confidence * 100).toFixed(1)}%</span>
+                    </div>
+                  </div>
+                )}
+                
+                <p className="text-xs text-muted-foreground">
+                  Select a signal region and click to classify modulation type using TensorFlow.js CNN.
+                </p>
+              </div>
+            </Card>
 
             {/* Measurements */}
             <Card className="p-4 data-panel">
