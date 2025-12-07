@@ -41,7 +41,10 @@ import { generateSigMFMetadata as generateRawIQMetadata, isValidDatatype, valida
 import { runFAMAnalysis, classifyModulation } from './pythonBridge';
 import { fetchIQSamples, validateSampleRange } from './iqDataFetcher';
 import { parseIQData, computeSCF, classifyModulation as classifyModulationJS } from './dsp';
-import { runSNRCFOEstimation, refineCFOWithCostasLoop } from './snrCfoBridge';
+import { runSNRCFOEstimation } from './snrCfoBridge';
+import { refineCFOWithCostasLoop } from './snrCfoBridge';
+import { calculateAdaptiveLoopBandwidth } from './adaptiveLoopBandwidth';
+import { batchRefineCFO, filterAnnotationsForCFO, estimateBatchDuration } from './batchCFO';
 import { sdrRouter } from './routers/sdr';
 import { detectFrequencyHopping } from './freqHopping';
 import { serializeIQSamples, streamIQSamplesArrow } from './arrow';
@@ -1117,6 +1120,8 @@ export const appRouter = router({
         coarseCfoHz: z.number().optional(),
         modulationOrder: z.number().optional(),
         loopBandwidth: z.number().optional(),
+        snrDb: z.number().optional(),
+        useAdaptiveBandwidth: z.boolean().optional(),
       }))
       .mutation(async ({ input }) => {
         const capture = await getSignalCaptureById(input.captureId);
@@ -1141,6 +1146,26 @@ export const appRouter = router({
           Math.min(input.sampleCount, 32768) // Limit to 32k samples for PLL convergence
         );
 
+        // Calculate adaptive loop bandwidth if enabled
+        let loopBandwidth = input.loopBandwidth || 0.01;
+        let adaptiveInfo: any = null;
+        
+        if (input.useAdaptiveBandwidth && input.snrDb !== undefined) {
+          const adaptiveResult = calculateAdaptiveLoopBandwidth({
+            snrDb: input.snrDb,
+            lockDetected: false, // Initial acquisition
+            currentBandwidth: loopBandwidth,
+          });
+          
+          loopBandwidth = adaptiveResult.bandwidth;
+          adaptiveInfo = {
+            mode: adaptiveResult.mode,
+            reason: adaptiveResult.reason,
+            originalBandwidth: input.loopBandwidth || 0.01,
+            adaptedBandwidth: loopBandwidth,
+          };
+        }
+
         // Run Costas loop refinement
         const result = await refineCFOWithCostasLoop(
           iqReal,
@@ -1149,11 +1174,14 @@ export const appRouter = router({
           {
             coarseCfoHz: input.coarseCfoHz,
             modulationOrder: input.modulationOrder || 4,
-            loopBandwidth: input.loopBandwidth || 0.01,
+            loopBandwidth,
           }
         );
 
-        return result;
+        return {
+          ...result,
+          adaptiveInfo,
+        };
       }),
   }),
 
@@ -1215,6 +1243,11 @@ export const appRouter = router({
         sampleEnd: z.number().optional(),
         freqStart: z.number().optional(),
         freqEnd: z.number().optional(),
+        cfoRefinedHz: z.number().optional(),
+        cfoMethod: z.string().optional(),
+        cfoTimestamp: z.date().optional(),
+        cfoLockDetected: z.boolean().optional(),
+        cfoPhaseErrorVar: z.number().optional(),
       }))
       .mutation(async ({ input }) => {
         const { id, ...updates } = input;
@@ -1230,6 +1263,80 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         await deleteAnnotation(input.id);
         return { success: true };
+      }),
+
+    /**
+     * Batch refine CFO for all annotations in a capture
+     */
+    batchRefineCFO: protectedProcedure
+      .input(z.object({
+        captureId: z.number(),
+        modulationOrder: z.number().optional(),
+        loopBandwidth: z.number().optional(),
+        useAdaptiveBandwidth: z.boolean().optional(),
+        filterByCFO: z.boolean().optional(), // Only process annotations with CFO > 10 Hz
+      }))
+      .mutation(async ({ input }) => {
+        const capture = await getSignalCaptureById(input.captureId);
+        if (!capture) throw new Error("Capture not found");
+
+        // Get all annotations for this capture
+        let annotations = await getCaptureAnnotations(input.captureId);
+        
+        // Filter annotations if requested
+        if (input.filterByCFO) {
+          annotations = filterAnnotationsForCFO(annotations);
+        }
+
+        if (annotations.length === 0) {
+          return {
+            total: 0,
+            processed: 0,
+            failed: 0,
+            results: [],
+            message: "No annotations to process"
+          };
+        }
+
+        // Estimate duration
+        const avgSamples = annotations.reduce((sum, a) => sum + a.sampleCount, 0) / annotations.length;
+        const estimatedDuration = estimateBatchDuration(annotations.length, avgSamples);
+
+        // Process batch
+        const results = await batchRefineCFO(
+          annotations,
+          capture,
+          {
+            modulationOrder: input.modulationOrder,
+            loopBandwidth: input.loopBandwidth,
+            useAdaptiveBandwidth: input.useAdaptiveBandwidth,
+            maxConcurrent: 3,
+          }
+        );
+
+        // Update annotations with results
+        for (const result of results) {
+          if (result.success) {
+            await updateAnnotation(result.annotationId, {
+              cfoRefinedHz: result.cfoRefinedHz,
+              cfoMethod: result.cfoMethod,
+              cfoTimestamp: new Date(),
+              cfoLockDetected: result.cfoLockDetected,
+              cfoPhaseErrorVar: result.cfoPhaseErrorVar,
+            });
+          }
+        }
+
+        const processed = results.filter(r => r.success).length;
+        const failed = results.filter(r => !r.success).length;
+
+        return {
+          total: annotations.length,
+          processed,
+          failed,
+          results,
+          estimatedDuration,
+        };
       }),
 
     /**

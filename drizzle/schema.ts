@@ -75,8 +75,15 @@ export const annotations = mysqlTable("annotations", {
   modulationType: varchar("modulationType", { length: 64 }), // QPSK, BPSK, 16-QAM, etc.
   confidence: float("confidence"), // 0.0 to 1.0
   estimatedSNR: float("estimatedSNR"), // dB
-  estimatedCFO: float("estimatedCFO"), // Hz
+  estimatedCFO: float("estimatedCFO"), // Hz (coarse FFT-based estimate)
   estimatedBaud: float("estimatedBaud"), // symbols/sec
+  
+  // CFO refinement tracking (Costas loop)
+  cfoRefinedHz: float("cfoRefinedHz"), // Hz (fine Costas loop estimate)
+  cfoMethod: varchar("cfoMethod", { length: 64 }), // "FFT" or "Costas Loop"
+  cfoTimestamp: timestamp("cfoTimestamp"), // When CFO was measured
+  cfoLockDetected: boolean("cfoLockDetected"), // Costas loop lock status
+  cfoPhaseErrorVar: float("cfoPhaseErrorVar"), // Phase error variance
   
   // Color coding for UI
   color: varchar("color", { length: 32 }).default("#3b82f6"), // Hex color for flag/overlay

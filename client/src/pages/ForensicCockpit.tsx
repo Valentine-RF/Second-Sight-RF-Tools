@@ -25,6 +25,7 @@ import { WaveformDisplay } from '@/components/WaveformDisplay';
 import { ReconstructedSignalPlot } from '@/components/ReconstructedSignalPlot';
 import { AlgorithmComparison } from '@/components/AlgorithmComparison';
 import { PhaseTrackingPlot } from '@/components/PhaseTrackingPlot';
+import { CFODriftTimeline } from '@/components/CFODriftTimeline';
 import { generateForensicReport } from '@/lib/pdfExport';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';

@@ -870,3 +870,26 @@
 - [ ] Add zoom/pan controls for phase plot
 - [x] Display loop bandwidth and modulation order in plot legend
 - [ ] Test all features with real signal data
+
+## CFO History Tracking & Batch Processing (Current Sprint)
+- [x] Add cfoHz, cfoRefinedHz, cfoMethod fields to annotations schema
+- [x] Add cfoTimestamp field to track when CFO was measured
+- [x] Update annotations.create to accept CFO metadata (schema ready)
+- [x] Update annotations.update to accept CFO metadata
+- [ ] Create getCFOHistory procedure to fetch CFO timeline
+- [x] Implement adaptive loop bandwidth algorithm
+- [x] Calculate optimal bandwidth based on SNR (wide for low SNR, narrow for high SNR)
+- [x] Adjust bandwidth based on lock status (wide for acquisition, narrow after lock)
+- [x] Add bandwidth adaptation logic to refineCFO procedure
+- [x] Create batchRefineCFO procedure for processing multiple annotations
+- [x] Add progress tracking for batch operations
+- [x] Implement parallel processing for batch CFO correction
+- [ ] Add "Apply to All Annotations" button in Signal Inspector
+- [ ] Show batch progress dialog with cancel option
+- [x] Update annotation CFO metadata after batch processing
+- [x] Create CFODriftTimeline canvas component
+- [x] Plot CFO values over time with annotation labels
+- [x] Add frequency instability detection (highlight drift > threshold)
+- [x] Show carrier drift rate (Hz/s) between annotations
+- [ ] Add export CFO history as CSV
+- [ ] Test all features with real signal data
