@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { useSignalStore } from '@/store/signalStore';
 
 /**
@@ -51,7 +51,8 @@ interface SpectrogramProps {
  * IMPORTANT: FFT data is stored in useRef, NOT React state, to avoid re-renders
  * during high-frequency updates. Use requestAnimationFrame for smooth animation.
  */
-export function Spectrogram({ width, height, onBoxSelect }: SpectrogramProps) {
+export const Spectrogram = React.forwardRef<{ captureCanvas: () => string }, SpectrogramProps>(
+  ({ width, height, onBoxSelect }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const glRef = useRef<WebGLRenderingContext | null>(null);
   const programRef = useRef<WebGLProgram | null>(null);
@@ -66,6 +67,16 @@ export function Spectrogram({ width, height, onBoxSelect }: SpectrogramProps) {
   const minColorLevel = useSignalStore((state) => state.minColorLevel);
   const maxColorLevel = useSignalStore((state) => state.maxColorLevel);
   const setSelection = useSignalStore((state) => state.setSelection);
+
+  // Expose capture method via ref
+  React.useImperativeHandle(ref, () => ({
+    captureCanvas: () => {
+      if (canvasRef.current) {
+        return canvasRef.current.toDataURL('image/png');
+      }
+      return '';
+    }
+  }));
 
   // Box selection state
   const [isSelecting, setIsSelecting] = useState(false);
@@ -279,4 +290,6 @@ export function Spectrogram({ width, height, onBoxSelect }: SpectrogramProps) {
       )}
     </div>
   );
-}
+});
+
+Spectrogram.displayName = 'Spectrogram';

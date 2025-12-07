@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 
 interface WaterfallDisplayProps {
   width: number;
@@ -18,7 +18,8 @@ interface WaterfallDisplayProps {
  * - Update rate: 60 FPS via requestAnimationFrame
  * - Data storage: useRef to avoid re-renders (per best practices)
  */
-export function WaterfallDisplay({ width, height, data, colormap = 'viridis' }: WaterfallDisplayProps) {
+export const WaterfallDisplay = React.forwardRef<{ captureCanvas: () => string }, WaterfallDisplayProps>(
+  ({ width, height, data, colormap = 'viridis' }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const glRef = useRef<WebGLRenderingContext | null>(null);
   const programRef = useRef<WebGLProgram | null>(null);
@@ -26,6 +27,16 @@ export function WaterfallDisplay({ width, height, data, colormap = 'viridis' }: 
   const animationRef = useRef<number | null>(null);
   const dataBufferRef = useRef<Uint8Array | null>(null);
   const scrollOffsetRef = useRef(0);
+
+  // Expose capture method via ref
+  React.useImperativeHandle(ref, () => ({
+    captureCanvas: () => {
+      if (canvasRef.current) {
+        return canvasRef.current.toDataURL('image/png');
+      }
+      return '';
+    }
+  }));
 
   // Vertex shader for fullscreen quad
   const vertexShaderSource = `
@@ -230,4 +241,6 @@ export function WaterfallDisplay({ width, height, data, colormap = 'viridis' }: 
       style={{ imageRendering: 'pixelated' }}
     />
   );
-}
+});
+
+WaterfallDisplay.displayName = 'WaterfallDisplay';

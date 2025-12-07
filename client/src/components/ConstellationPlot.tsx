@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import React, { useRef, useEffect } from 'react';
 
 interface ConstellationPlotProps {
   width: number;
@@ -18,7 +18,8 @@ interface ConstellationPlotProps {
  * @param width - Canvas width in pixels
  * @param height - Canvas height in pixels
  */
-export function ConstellationPlot({ width, height }: ConstellationPlotProps) {
+export const ConstellationPlot = React.forwardRef<{ captureCanvas: () => string }, ConstellationPlotProps>(
+  ({ width, height }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const glRef = useRef<WebGLRenderingContext | null>(null);
   const programRef = useRef<WebGLProgram | null>(null);
@@ -32,6 +33,16 @@ export function ConstellationPlot({ width, height }: ConstellationPlotProps) {
 
   // High-frequency IQ data stored in ref (NOT state)
   const iqDataRef = useRef<Float32Array>(new Float32Array(0));
+  
+  // Expose capture method via ref
+  React.useImperativeHandle(ref, () => ({
+    captureCanvas: () => {
+      if (canvasRef.current) {
+        return canvasRef.current.toDataURL('image/png');
+      }
+      return '';
+    }
+  }));
   const animationFrameRef = useRef<number>(0);
 
   // Initialize WebGL context and ping-pong framebuffers
@@ -275,4 +286,6 @@ export function ConstellationPlot({ width, height }: ConstellationPlotProps) {
       </div>
     </div>
   );
-}
+});
+
+ConstellationPlot.displayName = 'ConstellationPlot';

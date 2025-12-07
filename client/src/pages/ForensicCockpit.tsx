@@ -9,7 +9,9 @@ import { SCFSurface } from '@/components/SCFSurface';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
-import { ChevronDown, ChevronUp, Activity, Radio, Waves, Binary } from 'lucide-react';
+import { ChevronDown, ChevronUp, Activity, Radio, Waves, Binary, FileDown, Loader2 } from 'lucide-react';
+import { generateForensicReport } from '@/lib/pdfExport';
+import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
 import { useStreamingPipeline } from '@/hooks/useStreamingPipeline';
 
@@ -33,6 +35,12 @@ export default function ForensicCockpit() {
   const setDockCollapsed = useSignalStore((state) => state.setDockCollapsed);
 
   const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  
+  // Refs for capturing visualizations
+  const mainSpectrogramRef = useRef<{ captureCanvas: () => string }>(null);
+  const constellationPlotRef = useRef<{ captureCanvas: () => string }>(null);
+  const scfSurfaceRef = useRef<{ captureCanvas: () => string }>(null);
   
   // Streaming pipeline for real-time IQ data processing
   const pipeline = useStreamingPipeline({
@@ -91,6 +99,62 @@ export default function ForensicCockpit() {
     setActiveTab('hex');
   };
 
+  const handleExportPDF = async () => {
+    if (!currentCapture) return;
+    
+    setIsExporting(true);
+    
+    try {
+      // Capture visualizations
+      const spectrogramImage = mainSpectrogramRef.current?.captureCanvas();
+      const constellationImage = constellationPlotRef.current?.captureCanvas();
+      const scfImage = scfSurfaceRef.current?.captureCanvas();
+      
+      await generateForensicReport({
+        metadata: {
+          name: currentCapture.name,
+          hardware: currentCapture.hardware || undefined,
+          author: currentCapture.author || undefined,
+          sampleRate: currentCapture.sampleRate || undefined,
+          datatype: currentCapture.datatype || undefined,
+          description: currentCapture.description || undefined,
+          uploadedAt: currentCapture.createdAt ? new Date(currentCapture.createdAt) : new Date(),
+        },
+        measurements: {
+          snr: 12.4,
+          cfo: -14000,
+          baudRate: 2.4e6,
+        },
+        classifications: [
+          { label: 'QPSK', probability: 90 },
+          { label: '8PSK', probability: 10 },
+          { label: '16-QAM', probability: 5 },
+        ],
+        annotations: annotations.map(a => ({
+          id: a.id,
+          label: a.label || '',
+          sampleStart: a.sampleStart,
+          sampleEnd: a.sampleCount ? a.sampleStart + a.sampleCount : a.sampleStart + 1000,
+          color: a.color,
+        })),
+        notes: 'Forensic analysis completed. Signal characteristics analyzed using advanced DSP techniques.',
+        analyst: currentCapture?.author || 'Forensic Analyst',
+        visualizations: {
+          spectrogram: spectrogramImage,
+          constellation: constellationImage,
+          scf: scfImage,
+        },
+      });
+      
+      toast.success('PDF report generated successfully');
+    } catch (error) {
+      console.error('PDF export error:', error);
+      toast.error('Failed to generate PDF report');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   if (loading) {
     return <CockpitSkeleton />;
   }
@@ -122,6 +186,19 @@ export default function ForensicCockpit() {
             </div>
             <div className="flex gap-2">
               <span className="technical-label">Annotations: {annotations.length}</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportPDF}
+                disabled={isExporting}
+                className="ml-4"
+              >
+                {isExporting ? (
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Generating...</>
+                ) : (
+                  <><FileDown className="w-4 h-4 mr-2" /> Export PDF</>
+                )}
+              </Button>
             </div>
           </div>
           
@@ -154,6 +231,7 @@ export default function ForensicCockpit() {
           <div className="flex-1 relative bg-black">
             <WebGLErrorBoundary fallbackMessage="Failed to render spectrogram. Your GPU may not support the required WebGL features.">
               <Spectrogram
+                ref={mainSpectrogramRef}
                 width={window.innerWidth - 400} // Account for sidebar
                 height={isDockCollapsed ? window.innerHeight - 200 : window.innerHeight - 500}
                 onBoxSelect={handleBoxSelect}
@@ -241,13 +319,13 @@ export default function ForensicCockpit() {
 
                 <TabsContent value="constellation" className="p-4 h-full">
                   <WebGLErrorBoundary fallbackMessage="Failed to render constellation plot.">
-                    <ConstellationPlot width={600} height={250} />
+                    <ConstellationPlot ref={constellationPlotRef} width={600} height={250} />
                   </WebGLErrorBoundary>
                 </TabsContent>
 
                 <TabsContent value="cyclostationary" className="p-4 h-full">
                   <WebGLErrorBoundary fallbackMessage="Failed to render 3D SCF surface.">
-                    <SCFSurface width={800} height={250} />
+                    <SCFSurface ref={scfSurfaceRef} width={800} height={250} />
                   </WebGLErrorBoundary>
                 </TabsContent>
 

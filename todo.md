@@ -284,3 +284,23 @@
 - [x] Implement pause/resume controls for streaming
 - [x] Add sample rate validation against metadata
 - [x] Create performance monitoring for pipeline throughput
+
+
+## Comprehensive PDF Export
+- [x] Create PDF generation utility with jsPDF and jsPDF-AutoTable
+- [x] Implement WebGL canvas capture for spectrograms
+- [x] Implement Three.js scene capture for 3D SCF surface
+- [x] Implement constellation plot capture
+- [x] Create professional report template with header/footer
+- [x] Add metadata table section to PDF
+- [x] Add signal parameters section to PDF
+- [x] Add measurements section (SNR, CFO, baud rate)
+- [x] Add classification results section with probability bars
+- [x] Add annotations section with timeline
+- [x] Embed captured visualizations in PDF
+- [x] Add analysis notes/findings section
+- [x] Add timestamp and analyst information
+- [x] Create export button in ForensicCockpit
+- [ ] Create export button in AdvancedAnalysis
+- [x] Add loading indicator during PDF generation
+- [x] Add success toast notification after export

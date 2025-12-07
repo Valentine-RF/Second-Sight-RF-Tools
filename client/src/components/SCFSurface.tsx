@@ -1,4 +1,4 @@
-import { useRef, useMemo } from 'react';
+import React, { useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Grid } from '@react-three/drei';
 import * as THREE from 'three';
@@ -93,15 +93,23 @@ function SCFMesh({
  * @param spectralFreqCount - Number of spectral frequency bins
  * @param cyclicFreqCount - Number of cyclic frequency bins
  */
-export function SCFSurface({ 
-  width, 
-  height, 
-  scfData,
-  spectralFreqCount = 128,
-  cyclicFreqCount = 128
-}: SCFSurfaceProps) {
+export const SCFSurface = React.forwardRef<{ captureCanvas: () => string }, SCFSurfaceProps>(
+  ({ width, height, scfData, spectralFreqCount = 128, cyclicFreqCount = 128 }, ref) => {
+  const canvasRef = useRef<HTMLDivElement>(null);
+  
+  // Expose capture method via ref
+  React.useImperativeHandle(ref, () => ({
+    captureCanvas: () => {
+      // Find the canvas element within the Three.js container
+      const canvas = canvasRef.current?.querySelector('canvas');
+      if (canvas) {
+        return canvas.toDataURL('image/png');
+      }
+      return '';
+    }
+  }));
   return (
-    <div style={{ width, height }} className="bg-gray-900">
+    <div ref={canvasRef} style={{ width, height }} className="bg-gray-900">
       <Canvas
         camera={{
           position: [15, 15, 15],
@@ -174,4 +182,6 @@ export function SCFSurface({
       </div>
     </div>
   );
-}
+});
+
+SCFSurface.displayName = 'SCFSurface';
