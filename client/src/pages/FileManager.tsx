@@ -3,6 +3,8 @@ import { UploadProgress, UploadTask } from '@/components/UploadProgress';
 import { FileListSkeleton } from '@/components/FileListSkeleton';
 import { DropZone } from '@/components/DropZone';
 import { SmartFileUpload } from '@/components/SmartFileUpload';
+import { BatchUploadQueue } from '@/components/BatchUploadQueue';
+import { LearningStatsDashboard } from '@/components/LearningStatsDashboard';
 import type { DetectedMetadata } from '@/lib/signalFormatDetector';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { trpc } from '@/lib/trpc';
@@ -34,7 +36,7 @@ export default function FileManager() {
 
   const [isUploading, setIsUploading] = useState(false);
   const [uploadTasks, setUploadTasks] = useState<UploadTask[]>([]);
-  const [uploadMode, setUploadMode] = useState<'sigmf' | 'raw' | 'smart'>('smart');
+  const [uploadMode, setUploadMode] = useState<'sigmf' | 'raw' | 'smart' | 'batch' | 'stats'>('smart');
   const [uploadForm, setUploadForm] = useState({
     name: '',
     description: '',
@@ -365,27 +367,11 @@ export default function FileManager() {
           <div className="flex items-center justify-between mb-4">
             <h2>Upload Signal Capture</h2>
             <div className="flex gap-2">
-              <Button
-                variant={uploadMode === 'smart' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setUploadMode('smart')}
-              >
-                Smart Upload (Auto-Detect)
-              </Button>
-              <Button
-                variant={uploadMode === 'sigmf' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setUploadMode('sigmf')}
-              >
-                SigMF Upload
-              </Button>
-              <Button
-                variant={uploadMode === 'raw' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setUploadMode('raw')}
-              >
-                Raw IQ Upload
-              </Button>
+              <Button variant={uploadMode === 'smart' ? 'default' : 'outline'} size="sm" onClick={() => setUploadMode('smart')}>Smart Upload</Button>
+              <Button variant={uploadMode === 'batch' ? 'default' : 'outline'} size="sm" onClick={() => setUploadMode('batch')}>Batch Upload</Button>
+              <Button variant={uploadMode === 'sigmf' ? 'default' : 'outline'} size="sm" onClick={() => setUploadMode('sigmf')}>SigMF</Button>
+              <Button variant={uploadMode === 'raw' ? 'default' : 'outline'} size="sm" onClick={() => setUploadMode('raw')}>Raw IQ</Button>
+              <Button variant={uploadMode === 'stats' ? 'default' : 'outline'} size="sm" onClick={() => setUploadMode('stats')}>Learning Stats</Button>
             </div>
           </div>
           
@@ -476,7 +462,7 @@ export default function FileManager() {
                 {isUploading ? 'Uploading...' : 'Upload Signal Capture'}
               </Button>
             </div>
-          ) : (
+          ) : uploadMode === 'raw' ? (
             <div className="grid gap-4">
               <div>
                 <Label htmlFor="rawName">Capture Name *</Label>
@@ -575,7 +561,23 @@ export default function FileManager() {
                 {isUploading ? 'Uploading...' : 'Upload Raw IQ File'}
               </Button>
             </div>
-          )}
+          ) : uploadMode === 'batch' ? (
+            <BatchUploadQueue
+              onUpload={async (file, metadata) => {
+                await uploadRawIQMutation.mutateAsync({
+                  name: metadata.suggestedName,
+                  description: undefined,
+                  datatype: metadata.datatype === 'unknown' ? 'cf32_le' : metadata.datatype,
+                  sampleRate: metadata.sampleRate!,
+                  centerFrequency: metadata.centerFrequency || undefined,
+                  hardware: metadata.hardware || undefined,
+                  dataFileSize: file.size,
+                });
+              }}
+            />
+          ) : uploadMode === 'stats' ? (
+            <LearningStatsDashboard />
+          ) : null}
         </Card>
 
         {/* Captures List */}

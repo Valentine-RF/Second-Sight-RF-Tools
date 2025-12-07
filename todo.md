@@ -1043,3 +1043,51 @@
 - [ ] Add learning statistics dashboard UI
 - [ ] Add privacy controls UI (clear learning data button)
 - [ ] Test learning accuracy improvement over time with real uploads
+
+## Learning Statistics Dashboard
+- [x] Create LearningStatsDashboard component
+- [x] Display total patterns and corrections count
+- [x] Show average confidence score
+- [x] List most used patterns with match counts
+- [x] Display recent corrections with before/after comparison
+- [x] Implement "Clear Learning Data" button with confirmation
+- [x] Add export/import learning data buttons
+- [x] Integrate into FileManager as "Learning Stats" mode
+- [x] Show overview cards (patterns, corrections, avg confidence)
+- [x] Color-coded confidence indicators
+- [x] Empty state for new users
+- [ ] Add accuracy trend chart over time
+- [ ] Test dashboard with real learning data
+
+## Batch Upload Queue
+- [x] Create BatchUploadQueue component
+- [x] Implement multi-file drag-and-drop handler
+- [x] Add parallel preview generation (Promise.all)
+- [x] Create upload queue state management
+- [x] Design side-by-side preview grid layout (responsive grid)
+- [x] Add combined progress bar (total bytes uploaded)
+- [x] Implement individual file status tracking (pending/analyzing/ready/uploading/completed/error)
+- [x] Add remove file button for individual files
+- [x] Show batch upload summary (total/completed/ready/errors)
+- [x] Integrate into FileManager as "Batch Upload" mode
+- [x] Show mini-previews with SNR in grid
+- [x] "Clear Completed" button
+- [x] "Upload All" button with count
+- [ ] Add cancel/retry for individual files
+- [ ] Test with 10+ files simultaneously
+
+## Signal Quality Alerts
+- [x] Create SignalQualityAnalyzer class
+- [x] Implement low SNR detection (<10 dB warning, <5 dB error)
+- [x] Add clipped signal detection (peak near max)
+- [x] Implement dynamic range checks (low/high)
+- [x] Add power level checks (very low power, crest factor)
+- [x] Create alert severity levels (warning, error, info)
+- [x] Design alert UI with color-coded borders and icons
+- [x] Add actionable recommendations for each issue type
+- [x] Integrate into SmartFileUpload preview pipeline
+- [x] Show critical alerts as toast notifications
+- [x] Display all alerts below preview with full details
+- [x] Severity-based sorting (error → warning → info)
+- [x] Icon indicators (🔴 error, ⚠️ warning, ℹ️ info)
+- [ ] Test with various signal quality scenarios (synthetic data)

@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { SignalFormatDetector, type DetectedMetadata } from '@/lib/signalFormatDetector';
 import { SignalPreviewGenerator, type SignalPreview } from '@/lib/signalPreviewGenerator';
 import { MetadataLearningDB } from '@/lib/metadataLearningDB';
+import { SignalQualityAnalyzer, type QualityAlert } from '@/lib/signalQualityAnalyzer';
 import { toast } from 'sonner';
 
 /**
@@ -37,6 +38,7 @@ export const SmartFileUpload: React.FC<SmartFileUploadProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
+  const [qualityAlerts, setQualityAlerts] = useState<QualityAlert[]>([]);
 
   /**
    * Handle file selection
@@ -97,6 +99,15 @@ export const SmartFileUpload: React.FC<SmartFileUploadProps> = ({
             boostedMetadata.sampleRate
           );
           setPreview(signalPreview);
+          
+          // Analyze signal quality
+          const alerts = SignalQualityAnalyzer.analyze(signalPreview);
+          setQualityAlerts(alerts);
+          
+          // Show critical alerts as toasts
+          alerts.filter(a => a.severity === 'error').forEach(alert => {
+            toast.error(alert.title, { description: alert.description });
+          });
           
           toast.success('Signal preview generated', {
             description: `SNR: ${signalPreview.metrics.snrEstimate.toFixed(1)} dB, Peak: ${signalPreview.metrics.peakPower.toFixed(1)} dB`,
@@ -375,6 +386,33 @@ export const SmartFileUpload: React.FC<SmartFileUploadProps> = ({
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Quality Alerts */}
+          {qualityAlerts.length > 0 && (
+            <div className="space-y-2">
+              {qualityAlerts.map((alert) => (
+                <div
+                  key={alert.id}
+                  className={`p-3 rounded-lg border ${
+                    alert.severity === 'error' ? 'bg-red-950/30 border-red-500/50' :
+                    alert.severity === 'warning' ? 'bg-yellow-950/30 border-yellow-500/50' :
+                    'bg-blue-950/30 border-blue-500/50'
+                  }`}
+                >
+                  <div className="flex items-start gap-2">
+                    <span className="text-lg">{SignalQualityAnalyzer.getSeverityIcon(alert.severity)}</span>
+                    <div className="flex-1">
+                      <p className={`text-sm font-semibold ${SignalQualityAnalyzer.getSeverityColor(alert.severity)}`}>
+                        {alert.title}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">{alert.description}</p>
+                      <p className="text-xs mt-2 italic">{alert.recommendation}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 
