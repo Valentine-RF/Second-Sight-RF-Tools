@@ -8,6 +8,7 @@ import { ConstellationPlot } from '@/components/ConstellationPlot';
 import SCFSurface3D from '@/components/SCFSurface3D';
 import SignalContextMenu, { type SignalSelection } from '@/components/SignalContextMenu';
 import CyclicProfilePanel from '@/components/CyclicProfilePanel';
+import AnnotationDialog from '@/components/AnnotationDialog';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
@@ -29,7 +30,7 @@ import { useStreamingPipeline } from '@/hooks/useStreamingPipeline';
 export default function ForensicCockpit() {
   const { loading } = useAuth();
   const currentCapture = useSignalStore((state) => state.currentCapture);
-  const annotations = useSignalStore((state) => state.annotations);
+  // const annotations = useSignalStore((state) => state.annotations); // Replaced by tRPC query
   const selection = useSignalStore((state) => state.selection);
   const activeTab = useSignalStore((state) => state.activeTab);
   const setActiveTab = useSignalStore((state) => state.setActiveTab);
@@ -40,6 +41,14 @@ export default function ForensicCockpit() {
   const [isExporting, setIsExporting] = useState(false);
   const [scfData, setScfData] = useState<any>(null);
   const [showCyclicProfile, setShowCyclicProfile] = useState(true);
+  const [annotationDialogOpen, setAnnotationDialogOpen] = useState(false);
+  const [pendingAnnotation, setPendingAnnotation] = useState<SignalSelection | null>(null);
+  
+  // Load annotations for current capture from database
+  const { data: savedAnnotations = [] } = trpc.annotations.list.useQuery(
+    { captureId: currentCapture?.id || 0 },
+    { enabled: !!currentCapture }
+  );
   
   // tRPC mutations for FAM and classification
   const analyzeCyclesMutation = trpc.captures.analyzeCycles.useMutation({
@@ -60,6 +69,17 @@ export default function ForensicCockpit() {
     },
     onError: (error) => {
       toast.error(`Classification failed: ${error.message}`);
+    },
+  });
+  
+  const createAnnotationMutation = trpc.annotations.create.useMutation({
+    onSuccess: () => {
+      toast.success('Annotation saved successfully!');
+      // Invalidate annotations list to refresh
+      trpc.useUtils().annotations.list.invalidate();
+    },
+    onError: (error) => {
+      toast.error(`Failed to save annotation: ${error.message}`);
     },
   });
   
@@ -168,12 +188,12 @@ export default function ForensicCockpit() {
           { label: '8PSK', probability: 10 },
           { label: '16-QAM', probability: 5 },
         ],
-        annotations: annotations.map(a => ({
+        annotations: savedAnnotations.map(a => ({
           id: a.id,
           label: a.label || '',
           sampleStart: a.sampleStart,
           sampleEnd: a.sampleCount ? a.sampleStart + a.sampleCount : a.sampleStart + 1000,
-          color: a.color,
+          color: a.color || '#3b82f6',
         })),
         notes: 'Forensic analysis completed. Signal characteristics analyzed using advanced DSP techniques.',
         analyst: currentCapture?.author || 'Forensic Analyst',
@@ -223,7 +243,7 @@ export default function ForensicCockpit() {
               </div>
             </div>
             <div className="flex gap-2">
-              <span className="technical-label">Annotations: {annotations.length}</span>
+              <span className="technical-label">Annotations: {savedAnnotations.length}</span>
               <Button
                 variant="outline"
                 size="sm"
@@ -247,13 +267,13 @@ export default function ForensicCockpit() {
             </WebGLErrorBoundary>
             
             {/* Annotation markers as colored flags */}
-            {annotations.map((ann) => (
+            {savedAnnotations.map((ann) => (
               <div
                 key={ann.id}
                 className="absolute top-0 w-1 h-full opacity-70"
                 style={{
                   left: `${(ann.sampleStart / 1000000) * 100}%`, // Placeholder calculation
-                  backgroundColor: ann.color,
+                  backgroundColor: ann.color || '#3b82f6',
                 }}
                 title={ann.label || 'Annotation'}
               />
@@ -297,7 +317,8 @@ export default function ForensicCockpit() {
                 });
               }}
               onSaveAnnotation={(sel) => {
-                toast.info('Save annotation feature coming soon!');
+                setPendingAnnotation(sel);
+                setAnnotationDialogOpen(true);
               }}
               onViewDetails={(sel) => {
                 toast.info(`Selection: ${sel.sampleCount} samples, ${(sel.timeEnd - sel.timeStart).toFixed(3)}s`);
@@ -325,6 +346,48 @@ export default function ForensicCockpit() {
                 height={450}
               />
             )}
+            
+            {/* Saved Annotations Overlay */}
+            {savedAnnotations.map((annotation) => (
+              <div
+                key={annotation.id}
+                className="absolute border-2 pointer-events-auto cursor-pointer hover:opacity-80 transition-opacity"
+                style={{
+                  left: `${(annotation.sampleStart / 1000000) * 100}%`,  // TODO: Calculate proper position from sample rate
+                  width: `${(annotation.sampleCount / 1000000) * 100}%`,
+                  top: 0,
+                  height: '100%',
+                  borderColor: annotation.color || '#3b82f6',
+                  backgroundColor: `${annotation.color || '#3b82f6'}20`,
+                }}
+                title={annotation.label || 'Annotation'}
+              >
+                {/* Annotation Label */}
+                <div
+                  className="absolute top-0 left-0 px-2 py-1 text-xs font-semibold rounded-br"
+                  style={{
+                    backgroundColor: annotation.color || '#3b82f6',
+                    color: '#ffffff',
+                  }}
+                >
+                  {annotation.label}
+                </div>
+                
+                {/* Delete Button */}
+                <button
+                  className="absolute top-0 right-0 p-1 bg-red-500 text-white rounded-bl hover:bg-red-600"
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    if (confirm(`Delete annotation "${annotation.label}"?`)) {
+                      await trpc.annotations.delete.useMutation().mutateAsync({ id: annotation.id });
+                      toast.success('Annotation deleted');
+                    }
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
             
             {/* Selection overlay */}
             {selection && (
@@ -525,6 +588,31 @@ export default function ForensicCockpit() {
           </div>
         </div>
       </div>
+      
+      {/* Annotation Dialog */}
+      <AnnotationDialog
+        open={annotationDialogOpen}
+        onOpenChange={setAnnotationDialogOpen}
+        onSave={async ({ label, color }) => {
+          if (!currentCapture || !pendingAnnotation) return;
+          
+          await createAnnotationMutation.mutateAsync({
+            captureId: currentCapture.id,
+            sampleStart: pendingAnnotation.sampleStart,
+            sampleCount: pendingAnnotation.sampleCount,
+            freqLowerEdge: pendingAnnotation.freqStart,
+            freqUpperEdge: pendingAnnotation.freqEnd,
+            label,
+            color,
+          });
+        }}
+        selectionInfo={pendingAnnotation ? {
+          sampleStart: pendingAnnotation.sampleStart,
+          sampleCount: pendingAnnotation.sampleCount,
+          timeStart: pendingAnnotation.timeStart,
+          timeEnd: pendingAnnotation.timeEnd,
+        } : undefined}
+      />
     </div>
   );
 }

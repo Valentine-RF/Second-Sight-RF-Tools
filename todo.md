@@ -425,3 +425,16 @@
 - [x] Add toggle to show/hide overlay
 - [x] Display cyclic frequency axis labels
 
+
+## Annotation Persistence - In Progress
+- [x] Update annotations table schema with all required fields
+- [x] Add tRPC procedure: createAnnotation
+- [x] Add tRPC procedure: updateAnnotation
+- [x] Add tRPC procedure: deleteAnnotation
+- [x] Add tRPC procedure: listAnnotations (by captureId)
+- [x] Create AnnotationDialog component for label/color input
+- [x] Wire Save Annotation context menu to createAnnotation
+- [x] Display saved annotations on spectrogram
+- [x] Add delete button to annotation overlays
+- [x] Test annotation persistence across page refreshes
+
