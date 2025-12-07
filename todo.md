@@ -10,23 +10,19 @@
 ## SigMF File Processing
 - [x] Implement SigMF metadata parser with schema validation
 - [x] Implement SigMF data file handler with binary reading support
-- [x] Create file upload endpoint with multipart form handling (captures.initUpload, captures.uploadRawIQ)
-- [x] Implement S3 upload for .sigmf-meta and .sigmf-data files (storagePut integration)
+- [ ] Create file upload endpoint with multipart form handling
+- [ ] Implement S3 upload for .sigmf-meta and .sigmf-data files
 - [x] Add SHA512 integrity checking for uploaded files
-- [x] Create HTTP Range request handler for streaming large signal files (server/rangeRequest.ts)
-- [x] Implement Apache Arrow zero-copy serialization for IQ data (server/arrowSerializer.ts)
-- [x] Integrate Range requests with getDataRange procedure
-- [x] Add byte range calculations for all SigMF datatypes (cf32_le, ci16_le, cu8, etc.)
-- [x] Implement IQ data parsing with proper normalization
+- [ ] Create HTTP Range request handler for streaming large signal files
 
 ## Signal Processing Algorithms
-- [x] Implement FFT Accumulation Method (FAM) for Spectral Correlation Function
-- [x] Implement CFO estimation using power method
-- [x] Implement Costas loop for fine-tuning CFO
-- [x] Implement M2M4 SNR estimator
-- [x] Integrate TorchSig model loading for blind modulation classification
-- [x] Create demodulation pipeline with matched filter and timing recovery
-- [x] Implement Apache Arrow serialization for IQ sample transport
+- [ ] Implement FFT Accumulation Method (FAM) for Spectral Correlation Function
+- [ ] Implement CFO estimation using power method
+- [ ] Implement Costas loop for fine-tuning CFO
+- [ ] Implement M2M4 SNR estimator
+- [ ] Integrate TorchSig model loading for blind modulation classification
+- [ ] Create demodulation pipeline with matched filter and timing recovery
+- [ ] Implement Apache Arrow serialization for IQ sample transport
 
 ## WebGL Visualizations
 - [x] Create WebGL spectrogram renderer with texture-based rendering
@@ -43,7 +39,7 @@
 - [x] Add Z-height mapping from SCF magnitude data
 - [x] Implement rotation controls with OrbitControls
 - [x] Add lighting and material shaders for surface
-- [x] Create cross-section slicing functionality
+- [ ] Create cross-section slicing functionality
 
 ## Forensic Cockpit UI Layout
 - [x] Design mathematical blueprint aesthetic with white grid background
@@ -58,29 +54,29 @@
 
 ## Main Workspace Features
 - [ ] Implement box select with right-click drag for time-frequency regions
-- [x] Create context menu with "Analyze Cycles", "Classify Modulation", "Demodulate" actions
-- [x] Add semi-transparent annotation overlays on spectrogram
-- [x] Implement zoom and pan controls for spectrogram
+- [ ] Create context menu with "Analyze Cycles", "Classify Modulation", "Demodulate" actions
+- [ ] Add semi-transparent annotation overlays on spectrogram
+- [ ] Implement zoom and pan controls for spectrogram
 
 ## Analysis Dock Tabs
-- [x] Tab 1: Spectrum/FFT PSD plot with frequency axis
-- [x] Tab 2: Constellation plot with WebGL persistence
-- [x] Tab 3: Cyclostationary 3D SCF surface with Three.js
-- [x] Tab 4: Hex view for demodulated bitstream output
+- [ ] Tab 1: Spectrum/FFT PSD plot with frequency axis
+- [ ] Tab 2: Constellation plot with WebGL persistence
+- [ ] Tab 3: Cyclostationary 3D SCF surface with Three.js
+- [ ] Tab 4: Hex view for demodulated bitstream output
 
 ## Signal Inspector Sidebar
-- [x] Create metadata card displaying core:hw, core:author, core:sample_rate
-- [x] Add measurements panel with Est. SNR, Est. Baud, CFO readouts
-- [x] Create classification bar chart showing probability distribution
+- [ ] Create metadata card displaying core:hw, core:author, core:sample_rate
+- [ ] Add measurements panel with Est. SNR, Est. Baud, CFO readouts
+- [ ] Create classification bar chart showing probability distribution
 - [ ] Build DSP chain visualization showing processing pipeline
 - [ ] Add parameter adjustment controls for filter bandwidth, decimation
 
 ## Annotation System
-- [x] Create annotation creation workflow from box selection
-- [x] Implement annotation persistence to database and SigMF format
-- [x] Add annotation editing and deletion functionality
-- [x] Create annotation export to SigMF annotations array
-- [x] Implement color picker for annotation flags
+- [ ] Create annotation creation workflow from box selection
+- [ ] Implement annotation persistence to database and SigMF format
+- [ ] Add annotation editing and deletion functionality
+- [ ] Create annotation export to SigMF annotations array
+- [ ] Implement color picker for annotation flags
 
 ## Real-time Processing & WebSocket
 - [ ] Set up WebSocket server for real-time status updates
@@ -101,7 +97,7 @@
 ## File Management
 - [x] Create file upload interface with drag-and-drop
 - [x] Build file list view with signal capture metadata
-- [x] Add file deletion with S3 cleanup
+- [ ] Add file deletion with S3 cleanup
 - [ ] Implement file download for processed results
 - [ ] Create SigMF export functionality with annotations
 
@@ -729,12 +725,12 @@
 - [ ] Test with RTL-SDR, HackRF, and USRP devices
 
 ## Performance Optimizations (Current Sprint)
-- [x] Implement Apache Arrow IPC for zero-copy data transport
-- [x] Add Arrow buffer serialization for IQ samples
-- [x] Create Arrow streaming endpoint in server
+- [ ] Implement Apache Arrow IPC for zero-copy data transport
+- [ ] Add Arrow buffer serialization for IQ samples
+- [ ] Create Arrow streaming endpoint in server
 - [ ] Wire Arrow deserialization in frontend
-- [x] Optimize WebGL spectrogram rendering for 60 FPS
-- [x] Implement frame rate monitoring for performance tracking
+- [ ] Optimize WebGL spectrogram rendering for 60 FPS
+- [ ] Implement texture atlasing for efficient GPU memory usage
 - [ ] Add level-of-detail (LOD) rendering for large datasets
 - [ ] Implement viewport culling to skip off-screen rendering
 - [ ] Add GPU-accelerated FFT computation with WebGL shaders
@@ -743,558 +739,16 @@
 - [ ] Add fallback to CPU FFT for unsupported browsers
 - [ ] Benchmark performance improvements with large datasets
 
-## Advanced Signal Processing Algorithms (Current Sprint)
-- [x] Implement Orthogonal Matching Pursuit (OMP) for compressive sensing
-- [x] Implement Compressive Sampling Matching Pursuit (CoSaMP)
-- [x] Implement LASSO (Least Absolute Shrinkage and Selection Operator)
-- [x] Implement FISTA (Fast Iterative Shrinkage-Thresholding Algorithm)
-- [ ] Create compressive sensing reconstruction procedure
-- [x] Implement Wigner-Ville Distribution (WVD) time-frequency analysis
-- [x] Add Smoothed Pseudo Wigner-Ville Distribution (SPWVD)
-- [x] Implement cross-term mitigation with kernel smoothing
-- [x] Add Choi-Williams Distribution for reduced cross-terms
-- [x] Implement FastICA (Fast Independent Component Analysis)
-- [x] Implement Non-negative Matrix Factorization (NMF)
-- [ ] Add tensor decomposition (CP/PARAFAC, Tucker)
-- [ ] Create blind source separation procedure
-- [ ] Add UI controls for algorithm parameter tuning
-- [ ] Visualize separated sources in Analysis Dock
-
-## Advanced Signal Processing Integration (Current Sprint)
-- [x] Create captures.reconstructSparse tRPC procedure with algorithm selection (OMP/CoSaMP/LASSO/FISTA)
-- [x] Create captures.computeWVD tRPC procedure with distribution type (WVD/SPWVD/Choi-Williams)
-- [x] Create captures.separateSources tRPC procedure with algorithm selection (FastICA/NMF)
-- [x] Add Compressive Sensing tab to Analysis Dock with algorithm selector and sparsity slider
-- [x] Add Time-Frequency tab to Analysis Dock with distribution selector and window size controls
-- [x] Add Source Separation tab to Analysis Dock with algorithm selector and component count slider
-- [x] Add "Reconstruct Sparse" action to context menu
-- [x] Add "Time-Frequency Analysis" action to context menu
-- [x] Add "Separate Sources" action to context menu
-- [ ] Create visualization component for reconstructed sparse signals
-- [ ] Create WVD heatmap visualization component
-- [ ] Create separated sources waveform display component
-- [ ] Test all algorithms with real IQ data
-- [x] Add loading states and error handling for all procedures
-
-## Advanced Signal Processing Enhancements (Current Sprint)
-- [x] Create WVDHeatmap canvas component for time-frequency visualization
-- [x] Create WaveformDisplay canvas component for separated sources
-- [x] Create ReconstructedSignalPlot canvas component for compressive sensing results
-- [x] Add CSV export for reconstructed signals
-- [x] Add JSON export for WVD matrices
-- [x] Add CSV export for separated sources
-- [x] Create AlgorithmComparison component with side-by-side display
-- [x] Add comparison mode toggle to Compressive Sensing tab
-- [x] Display RMSE/iterations comparison metrics
-- [ ] Test all visualizations with real signal data
-- [ ] Test export functionality for all formats
-
-## Core Forensic Features (Current Sprint)
-- [x] Enhance HexView component with demodulated bitstream display
-- [x] Add ASCII representation column to hex view
-- [x] Add byte offset and address display
-- [x] Wire hex view to demodulation results
-- [x] Add "Analyze Cycles" context menu action
-- [x] Add "Classify Modulation" context menu action
-- [x] Add "Demodulate" context menu action
-- [x] Wire context menu actions to tRPC procedures
-- [x] Add double-click handler to annotation boxes
-- [x] Implement annotation drag handles (8-point resize)
-- [x] Add annotation position update procedure (annotations.update with startTime/endTime/startFreq/endFreq)
-- [x] Add visual feedback for selected/hovered annotations
-- [x] Create file deletion tRPC procedure (captures.delete with S3 cleanup)
-- [x] Add S3 file cleanup on deletion (storageDelete for metadata and data files)
-- [x] Add confirmation dialog for file deletion
-- [x] Wire delete button to deletion procedure
-- [ ] Test all features with real signal data
-
-## UX Enhancements (Current Sprint)
-- [x] Create AnnotationBox component with 8-point resize handles
-- [x] Implement drag-to-move functionality for annotations
-- [x] Implement resize handles (top-left, top, top-right, right, bottom-right, bottom, bottom-left, left)
-- [x] Add cursor styles for each resize handle (nw-resize, n-resize, etc.)
-- [x] Wire annotation position updates to tRPC procedure
-- [x] Add demodulation mode selector to context menu
-- [x] Create submenu for Demodulate action with RTTY/PSK31/CW options
-- [x] Update onDemodulate handler to accept mode parameter
-- [x] Add checkbox selection to FileManager capture cards (already exists)
-- [x] Add "Select All" / "Deselect All" buttons to FileManager (already exists)
-- [x] Create batch delete button with count indicator
-- [x] Implement batch delete confirmation dialog
-- [x] Create captures.batchDelete tRPC procedure
-- [x] Handle S3 cleanup for multiple files in batch
-- [ ] Test all features with real signal data
-
-## HTTP Range Request Handler (Current Sprint)
-- [x] Install Apache Arrow JavaScript library (apache-arrow)
-- [x] Create rangeRequestHandler module for byte-range calculations
-- [x] Implement calculateByteRange function for sample-to-byte conversion
-- [x] Add HTTP Range header parsing and validation
-- [x] Implement fetchDataRange function with Range request to S3
-- [x] Create Arrow Table schema for IQ sample data
-- [x] Implement Arrow serialization for complex float32/int16/uint8 data
-- [x] Update getDataRange procedure to use Range requests
-- [x] Add Arrow buffer response with proper content-type
-- [ ] Test with large signal files (>1GB)
-- [ ] Validate zero-copy performance vs full file loading
-- [x] Add error handling for invalid range requests
-
-## Costas Loop CFO Refinement (Current Sprint)
-- [x] Implement Costas loop PLL algorithm in Python
-- [x] Add phase detector for BPSK/QPSK/8PSK modulations
-- [x] Implement loop filter with proportional and integral gains
-- [x] Add NCO (Numerically Controlled Oscillator) for phase correction
-- [x] Create carrier tracking state machine
-- [x] Add lock detection based on phase error variance
-- [x] Integrate with existing CFO estimation pipeline
-- [x] Create TypeScript bridge for Costas loop (refineCFOWithCostasLoop)
-- [x] Add tRPC procedure for refined CFO estimation (captures.refineCFO)
-- [ ] Test with real QPSK/PSK signals
-- [ ] Validate phase tracking performance
-- [ ] Compare coarse vs fine CFO accuracy
-
-## Costas Loop UI Integration (Current Sprint)
-- [x] Add "Refine CFO" button to Signal Inspector measurements panel
-- [x] Display Costas loop results (total CFO, lock status, convergence time)
-- [x] Add modulation order selector (BPSK/QPSK/8PSK) for Costas loop
-- [x] Add loop bandwidth slider with presets (narrow/medium/wide)
-- [x] Show lock indicator icon (green checkmark or red X)
-- [x] Display convergence time in milliseconds
-- [x] Integrate Costas loop with demodulation pipeline
-- [x] Auto-apply CFO correction before RTTY demodulation
-- [x] Auto-apply CFO correction before PSK31 demodulation
-- [x] Auto-apply CFO correction before CW demodulation
-- [x] Create PhaseTrackingPlot canvas component
-- [x] Plot phase error variance over time
-- [x] Add lock threshold indicator line
-- [ ] Add zoom/pan controls for phase plot
-- [x] Display loop bandwidth and modulation order in plot legend
-- [ ] Test all features with real signal data
-
-## CFO History Tracking & Batch Processing (Current Sprint)
-- [x] Add cfoHz, cfoRefinedHz, cfoMethod fields to annotations schema
-- [x] Add cfoTimestamp field to track when CFO was measured
-- [x] Update annotations.create to accept CFO metadata (schema ready)
-- [x] Update annotations.update to accept CFO metadata
-- [ ] Create getCFOHistory procedure to fetch CFO timeline
-- [x] Implement adaptive loop bandwidth algorithm
-- [x] Calculate optimal bandwidth based on SNR (wide for low SNR, narrow for high SNR)
-- [x] Adjust bandwidth based on lock status (wide for acquisition, narrow after lock)
-- [x] Add bandwidth adaptation logic to refineCFO procedure
-- [x] Create batchRefineCFO procedure for processing multiple annotations
-- [x] Add progress tracking for batch operations
-- [x] Implement parallel processing for batch CFO correction
-- [ ] Add "Apply to All Annotations" button in Signal Inspector
-- [ ] Show batch progress dialog with cancel option
-- [x] Update annotation CFO metadata after batch processing
-- [x] Create CFODriftTimeline canvas component
-- [x] Plot CFO values over time with annotation labels
-- [x] Add frequency instability detection (highlight drift > threshold)
-- [x] Show carrier drift rate (Hz/s) between annotations
-- [ ] Add export CFO history as CSV
-- [ ] Test all features with real signal data
-
-## SCF Cross-Section Slicing (Current Sprint)
-- [x] Create extractSCFCrossSection function for alpha-slice (fixed cyclic frequency)
-- [x] Create extractSCFCrossSection function for tau-slice (fixed lag)
-- [x] Add interpolation for non-grid-aligned slice positions
-- [x] Create SlicePlaneControls component with alpha/tau slider
-- [ ] Add slice plane visualization overlay on 3D SCF surface
-- [x] Create SCFCrossSection2D canvas component for slice display
-- [x] Add export cross-section data as CSV (crossSectionToCSV)
-- [x] Add extractCrossSection tRPC procedure
-- [x] Add cross-section state to ForensicCockpit
-- [x] Integrate SlicePlaneControls into Cyclostationary tab
-- [x] Integrate SCFCrossSection2D into Cyclostationary tab
-- [x] Wire slice controls to SCF data
-- [ ] Add keyboard shortcuts for slice navigation (arrow keys)
-- [ ] Test with real SCF data
-
-## Real-Time SDR Streaming Implementation
-- [x] Create CircularIQBuffer class with ring buffer implementation
-- [x] Add buffer overflow detection and oldest-sample eviction
-- [x] Implement zero-copy buffer read API
-- [x] Add backend FFT computation in soapy_bridge.py
-- [x] Apply Hamming window before FFT
-- [x] Compute PSD and convert to dB scale
-- [x] Send FFT results via WebSocket instead of raw IQ
-- [x] Create useStreamingMode hook in frontend
-- [x] Wire WebSocket IQ stream to Spectrogram component
-- [x] Update WebGL texture with real-time FFT data
-- [x] Implement time-domain scrolling (new data pushes left)
-- [x] Create fftWorker.ts Web Worker for frontend FFT
-- [x] Add overlap processing (50-75%) for smooth spectrogram
-- [x] Test SoapySDR installation on sandbox (mock mode works)
-- [x] Verify RTL-SDR driver detection (mock device enumeration works)
-- [x] Create mock SDR mode for testing without hardware
-- [x] Create SessionManager class for session lifecycle
-- [x] Add recording buffer management
-- [x] Implement SigMF export for recordings
-- [x] Upload recordings to S3 with metadata
-- [x] Add startSession procedure to SDR router
-- [x] Fix TypeScript errors in SDRControls component
-- [x] Integrate SDRControls into ForensicCockpit Live Streaming tab
-- [x] Fix TypeScript errors (added isStreaming state and proper imports)
-- [x] Wire StreamingSpectrogram to active session (ready for WebSocket integration)
-- [ ] Document hardware setup for RTL-SDR/HackRF
-
-## Performance Optimization - LOD Rendering
-- [x] Create LODManager class for dynamic resolution scaling
-- [x] Implement viewport-based texture size calculation
-- [x] Add sample rate threshold detection (>10 MSps triggers LOD)
-- [x] Implement decimation algorithm for downsampling
-- [x] Add frame rate monitoring (target 60 FPS)
-- [x] Create adaptive quality settings (high/medium/low)
-- [x] Wire LOD system to Spectrogram component
-- [x] Add LOD quality indicator overlay with color-coded status
-- [x] Add FPS counter overlay for performance monitoring
-- [ ] Test with high sample rate files (20+ MSps)
-
-## DSP Chain Visualization
-- [x] Create DSPChainFlow component with React Flow
-- [x] Design node types (FFT, Window, PSD, Colormap, Filter)
-- [x] Add parameter controls for each node (FFT size, window type, colormap)
-- [x] Implement real-time parameter updates with callbacks
-- [x] Add visual connection lines between nodes with animated flow
-- [x] Create preset chains (Basic, Advanced, Custom)
-- [x] Integrate into Analysis Dock as new tab
-- [x] Add expandable parameter views on each node
-- [x] Color-coded nodes by processing stage
-- [ ] Wire to actual DSP pipeline parameters (backend integration)
-
-## GPU FFT Shader Implementation
-- [x] Create GPUFFT class with WebGL2 compute-style shaders
-- [x] Implement Cooley-Tukey FFT algorithm in fragment shader
-- [x] Add texture ping-pong for butterfly operations
-- [x] Implement bit-reversal permutation shader
-- [x] Add windowing function shader (Hamming/Hann/Blackman/Rectangular)
-- [x] Create PSD calculation shader (magnitude to dB)
-- [x] Add complex number multiplication in shaders
-- [x] Implement twiddle factor calculation
-- [x] Add props to Spectrogram component (enableGPUFFT)
-- [ ] Integrate GPU FFT into render loop
-- [ ] Benchmark performance vs CPU FFT
-- [ ] Test with 20+ MSps sample rates
-
-## Viewport Culling & Tile-Based Rendering
-- [x] Create TileManager class for spectrogram tiling
-- [x] Implement frustum culling algorithm
-- [x] Add visible tile detection based on viewport
-- [x] Create tile cache with LRU eviction
-- [x] Implement lazy tile loading
-- [x] Add tile boundary rendering (debug mode)
-- [x] Implement predictive tile preloading
-- [x] Add memory usage statistics tracking
-- [x] Add props to Spectrogram component (enableTiling, totalSamples)
-- [x] Create comprehensive test suite (19/19 tests passing)
-- [ ] Integrate TileManager into render loop
-- [ ] Measure memory reduction (target 70%)
-- [ ] Test with large captures (>1GB files)
-
-## Seamless File Ingestion Workflow
-- [x] Analyze current file upload and metadata collection process
-- [x] Design automatic signal format detection (SigMF, WAV, IQ, raw binary)
-- [x] Implement file header parsing for common formats (WAV, SigMF)
-- [x] Create sample rate auto-detection algorithm (filename + file size heuristics)
-- [x] Add center frequency extraction from filename patterns
-- [x] Implement drag-and-drop file upload zone (SmartFileUpload component)
-- [x] Create upload progress tracking with confidence indicator
-- [x] Add automatic metadata extraction from SigMF headers
-- [x] Implement fallback prompts for missing metadata (editable fields)
-- [x] Create file validation and error handling
-- [x] Add comprehensive test suite (19/19 tests passing)
-- [x] Integrate SmartFileUpload into FileManager
-- [x] Support filename patterns: GQRX, HackRF, RTL-SDR, descriptive
-- [x] Hardware auto-detection from filename
-- [x] Datatype auto-detection (cf32, ci16, ci8, cu8, cu16)
-- [ ] Add multi-file batch upload support
-- [ ] Design signal preview during upload
-- [ ] Test with various signal file formats in browser
-
-## Signal Preview Thumbnail
-- [x] Create SignalPreviewGenerator class
-- [x] Implement file chunk reading (first 1-2 MB)
-- [x] Add FFT computation for preview (Cooley-Tukey algorithm)
-- [x] Create 256×128px canvas renderer
-- [x] Implement colormap application (Viridis)
-- [x] Add signal quality metrics (SNR estimate, peak power, avg power, dynamic range)
-- [x] Integrate into SmartFileUpload component
-- [x] Add loading state during preview generation
-- [x] Support all datatypes (cf32_le, ci16_le, ci8, cu8, cu16_le)
-- [x] Implement Hamming window for FFT
-- [x] Add bit-reversal permutation for FFT
-- [x] Create comprehensive test suite (16/16 tests passing)
-- [ ] Test with various file formats and sizes in browser
-
-## Metadata Learning System
-- [x] Create MetadataLearningDB class with localStorage
-- [x] Implement pattern tracking (filename → metadata)
-- [x] Add correction recording (auto-detected → user-corrected)
-- [x] Create confidence boost algorithm (up to +20% based on pattern confidence)
-- [x] Implement pattern matching for similar filenames
-- [x] Add pattern extraction (dates, timestamps, frequencies to regex)
-- [x] Implement LRU pattern storage (max 1000 patterns)
-- [x] Add correction history (max 500 corrections)
-- [x] Integrate into SmartFileUpload component
-- [x] Record corrections on upload
-- [x] Boost confidence for matching patterns
-- [x] Add export/import learning data
-- [x] Create comprehensive test suite (16/16 tests passing)
-- [ ] Add learning statistics dashboard UI
-- [ ] Add privacy controls UI (clear learning data button)
-- [ ] Test learning accuracy improvement over time with real uploads
-
-## Learning Statistics Dashboard
-- [x] Create LearningStatsDashboard component
-- [x] Display total patterns and corrections count
-- [x] Show average confidence score
-- [x] List most used patterns with match counts
-- [x] Display recent corrections with before/after comparison
-- [x] Implement "Clear Learning Data" button with confirmation
-- [x] Add export/import learning data buttons
-- [x] Integrate into FileManager as "Learning Stats" mode
-- [x] Show overview cards (patterns, corrections, avg confidence)
-- [x] Color-coded confidence indicators
-- [x] Empty state for new users
-- [ ] Add accuracy trend chart over time
-- [ ] Test dashboard with real learning data
-
-## Batch Upload Queue
-- [x] Create BatchUploadQueue component
-- [x] Implement multi-file drag-and-drop handler
-- [x] Add parallel preview generation (Promise.all)
-- [x] Create upload queue state management
-- [x] Design side-by-side preview grid layout (responsive grid)
-- [x] Add combined progress bar (total bytes uploaded)
-- [x] Implement individual file status tracking (pending/analyzing/ready/uploading/completed/error)
-- [x] Add remove file button for individual files
-- [x] Show batch upload summary (total/completed/ready/errors)
-- [x] Integrate into FileManager as "Batch Upload" mode
-- [x] Show mini-previews with SNR in grid
-- [x] "Clear Completed" button
-- [x] "Upload All" button with count
-- [ ] Add cancel/retry for individual files
-- [ ] Test with 10+ files simultaneously
-
-## Signal Quality Alerts
-- [x] Create SignalQualityAnalyzer class
-- [x] Implement low SNR detection (<10 dB warning, <5 dB error)
-- [x] Add clipped signal detection (peak near max)
-- [x] Implement dynamic range checks (low/high)
-- [x] Add power level checks (very low power, crest factor)
-- [x] Create alert severity levels (warning, error, info)
-- [x] Design alert UI with color-coded borders and icons
-- [x] Add actionable recommendations for each issue type
-- [x] Integrate into SmartFileUpload preview pipeline
-- [x] Show critical alerts as toast notifications
-- [x] Display all alerts below preview with full details
-- [x] Severity-based sorting (error → warning → info)
-- [x] Icon indicators (🔴 error, ⚠️ warning, ℹ️ info)
-- [ ] Test with various signal quality scenarios (synthetic data)
-
-## Export Analysis Report
-- [x] Create ReportGenerator class
-- [x] Design report structure (cover, metadata, spectrograms, FAM, annotations, metrics)
-- [x] Install jsPDF and html2canvas dependencies
-- [x] Implement PDF generation with jsPDF
-- [x] Add spectrogram screenshot capture (canvas.toDataURL)
-- [x] Add FAM plot screenshot capture (html2canvas)
-- [x] Include signal metrics table (SNR, power, dynamic range, bandwidth)
-- [x] Include annotations list with timestamps and frequencies
-- [x] Implement HTML report generation
-- [x] Add CSS styling for HTML reports (dark theme, responsive)
-- [x] Embed base64 images in HTML
-- [x] Add "Export Report" button to Forensic Cockpit
-- [x] Add format selection dropdown (PDF/HTML)
-- [x] Add loading state during generation (spinner + disabled button)
-- [x] Add data-spectrogram="main" attribute to canvas
-- [x] Map annotation fields correctly (sampleStart, freqLowerEdge, etc.)
-- [ ] Test report generation with sample data in browser
-- [ ] Add actual metrics extraction from analysis results
-
-## Automatic Metrics Extraction for Reports
-- [x] Create SignalMetricsExtractor class
-- [x] Implement SNR calculation from FFT/PSD data
-- [x] Implement bandwidth calculation (occupied bandwidth method)
-- [x] Implement peak power calculation
-- [x] Implement average power calculation
-- [x] Implement dynamic range calculation
-- [x] Implement crest factor calculation
-- [x] Implement RMS level calculation
-- [x] Implement noise floor estimation
-- [x] Implement 99% power containment bandwidth
-- [x] Add metrics storage in Zustand store (signalMetrics field)
-- [x] Create metrics calculation hook (useSignalMetrics)
-- [x] Trigger metrics calculation from FFTPSDPlot component
-- [x] Update metrics on analysis operations (automatic via hook)
-- [x] Integrate metrics into report generation (ForensicCockpit)
-- [x] Add metrics display in Forensic Cockpit UI (Signal Metrics card)
-- [x] Test metrics accuracy with known signals (15/15 tests passing)
-- [x] Support multiple window functions (Hamming, Hann, Blackman)
-- [x] Implement PSD calculation from IQ samples
-- [x] Implement SNR calculation from IQ samples
-- [x] Handle edge cases (empty data, single values, extreme sample rates)
-
-## Vite HMR WebSocket Fix
-- [x] Fix Vite HMR WebSocket configuration for Manus environment
-- [x] Update vite.config.ts with correct HMR settings (WSS protocol, port 443)
-- [x] Restart dev server to apply changes
-
-## TensorFlow.js Automatic Modulation Classifier
-- [x] Install @tensorflow/tfjs and @tensorflow/tfjs-vis dependencies
-- [x] Create ModulationClassifier class
-- [x] Design CNN model architecture (3 Conv1D layers + Dense layers)
-- [x] Implement feature extraction (amplitude, phase, spectral flatness)
-- [x] Add preprocessing pipeline (normalization, padding/truncation to 1024 samples)
-- [x] Create synthetic training data generator for common modulations
-- [x] Define modulation classes (AM, FM, BPSK, QPSK, 8PSK, 16QAM, 64QAM, FSK, GMSK, OOK)
-- [x] Implement model training workflow (trainWithSyntheticData method)
-- [x] Add model save/load functionality (localStorage)
-- [x] Create inference pipeline for real-time classification
-- [x] Design overlay UI component (ModulationOverlay)
-- [x] Add confidence score visualization with color coding
-- [x] Add modulation type label display with all scores
-- [x] Add feature summary display (amplitude, phase, spectral flatness)
-- [x] Integrate into Forensic Cockpit
-- [x] Add "Classify Modulation" button in Signal Inspector
-- [x] Add overlay on main spectrogram
-- [x] Implement FFT for feature extraction
-- [x] Add singleton pattern for classifier instance
-- [ ] Test with known modulation samples
-- [ ] Train model with real data or pre-trained weights
-
-## Public API for Modulation Classification
-- [x] Design REST API endpoint structure (POST /api/public/classify, GET /api/public/status)
-- [x] Define request/response schemas (IQ samples, sample rate, metadata)
-- [x] Implement API key authentication (X-API-Key header)
-- [x] Create API key generation and management UI (APIDocumentation page)
-- [x] Add rate limiting (per API key, in-memory store)
-- [x] Implement server-side TensorFlow.js classification
-- [x] Add input validation and error handling
-- [x] Support multiple input formats (array, base64)
-- [x] Create API documentation with examples (cURL, Python)
-- [x] Add usage statistics tracking (requestCount, lastUsed)
-- [x] Add API key CRUD operations (create, list, update, delete)
-- [x] Add API keys database table with expiration support
-- [x] Add API route to navigation (/api)
-- [x] Create tRPC procedures for API key management
-- [ ] Add CORS configuration for cross-origin requests
-- [ ] Test endpoint with curl and Python examples
-- [ ] Add Redis for distributed rate limiting (production)
-
-## Splunk Enterprise Integration
-- [x] Design Splunk HEC (HTTP Event Collector) integration architecture
-- [x] Define event schema for RF signal analysis events
-- [x] Create SplunkClient class for HEC API communication
-- [x] Implement event batching and retry logic (configurable batch size, flush interval)
-- [x] Add Splunk configuration in database (HEC URL, token, index)
-- [x] Create event formatters for different event types
-- [x] Add signal capture events (upload, analysis start/complete)
-- [x] Add modulation classification events with confidence scores
-- [x] Add anomaly detection events (frequency hopping, unusual patterns)
-- [x] Add annotation events (user markings, signal identification)
-- [x] Add API usage events (public API calls, rate limit hits)
-- [x] Create Splunk configuration UI in Settings (/splunk route)
-- [x] Add test connection button with status display
-- [x] Add event type filtering (choose which events to send)
-- [x] Implement automatic event streaming with configurable intervals
-- [x] Add Splunk dashboard templates (SPL queries for common use cases)
-- [x] Create alert examples (high confidence unknown signals)
-- [x] Add error handling and retry logic (3 attempts with exponential backoff)
-- [x] Add SSL verification toggle for self-signed certificates
-- [x] Add helper functions (logSignalUpload, logModulationClassification, etc.)
-- [x] Add singleton pattern for Splunk client
-- [x] Create tRPC router for Splunk configuration management
-- [x] Add setup instructions in UI
-- [ ] Test integration with live Splunk Enterprise instance
-- [ ] Wire event logging into actual signal processing workflows
-
-## Real-Time Splunk Dashboard in Forensic Cockpit
-- [x] Implement Splunk Search API client for querying logs
-- [x] Add Splunk search credentials to configuration (schema updated)
-- [x] Create dashboard data fetching hooks (tRPC procedure getDashboardData)
-- [x] Design dashboard layout (grid with metric cards)
-- [x] Add recent events timeline component (table with 20 events)
-- [x] Add anomaly alerts list with severity indicators (color-coded)
-- [x] Add signal upload statistics (total uploads, avg file size, total data)
-- [x] Implement auto-refresh (configurable interval, 30s default)
-- [x] Add time range selector (last hour, 24h, 7d, 30d)
-- [x] Add loading states and error handling
-- [x] Integrate dashboard into Forensic Cockpit as new tab ("Splunk Dashboard")
-- [x] Add metric cards (Total Uploads, Avg Confidence, Anomalies, Total Events)
-- [x] Add refresh button with loading indicator
-- [x] Add auto-refresh toggle checkbox
-- [x] Implement SPL query helpers for common metrics
-- [x] Add parallel query execution for performance
-- [x] Install recharts dependency (removed charts temporarily)
-- [ ] Add modulation classification pie chart (recharts integration)
-- [ ] Add event type distribution bar chart (recharts integration)
-- [ ] Add API usage line chart (recharts integration)
-- [ ] Add export dashboard data to CSV
-- [ ] Test with live Splunk data
-
-## Complete Splunk Integration
-- [x] Add recharts modulation classification pie chart to dashboard
-- [x] Add recharts event type distribution bar chart to dashboard
-- [x] Add recharts API usage line chart to dashboard
-- [x] Wire logSignalUpload into file upload handlers (FileManager)
-- [x] Wire logModulationClassification into TensorFlow.js inference (ForensicCockpit)
-- [x] Wire logApiRequest into public API middleware (publicApi.ts)
-- [x] Create Splunk logging API endpoints (/api/splunk/log-upload, log-classification, log-anomaly)
-- [x] Register Splunk logging router in server/_core/index.ts
-- [x] Add response time tracking to API logging
-- [ ] Wire logAnomalyDetection into signal quality analyzer
-- [ ] Wire logAnnotationCreated into annotation creation workflow
-- [ ] Test event logging with real workflows
-- [ ] Verify events appear in Splunk dashboard with live server
-
-## Modulation Classifier Training System - Phase 1: Training UI
-- [x] Create training dataset database schema (dataset name, samples, labels, format)
-- [ ] Create /training route in App.tsx
-- [ ] Build TrainingPage component with tabs (Datasets, Train Model, Model History)
-- [ ] Add dataset upload form with file picker and drag-drop
-- [ ] Create training configuration form (epochs, batch size, learning rate, validation split)
-- [ ] Add dataset list with preview cards
-- [ ] Create tRPC procedures for dataset CRUD operations
-- [ ] Add training start/stop controls
-- [ ] Implement training progress bar with epoch counter
-- [ ] Add real-time loss/accuracy line charts (recharts)
-- [ ] Create model version comparison table
-- [ ] Add model activation toggle (set as active model)
-
-## RadioML HDF5 Parser - Phase 2
-- [ ] Create RadioMLParser class using h5wasm
-- [ ] Implement HDF5 file reading and structure parsing
-- [ ] Extract IQ samples from RadioML2016.10a format
-- [ ] Extract IQ samples from RadioML2018.01a format
-- [ ] Parse modulation labels and SNR values
-- [ ] Create sample batching for training
-- [ ] Add progress callback for large datasets
-- [ ] Upload parsed dataset to S3
-- [ ] Populate training_datasets table automatically
-- [ ] Test with sample RadioML files
-
-## Training Progress Tracking - Phase 3
-- [ ] Create TrainingSession state management
-- [ ] Implement WebSocket for real-time progress updates
-- [ ] Add server-side training worker (separate thread)
-- [ ] Stream epoch metrics (loss, accuracy, val_loss, val_accuracy)
-- [ ] Update progress charts in real-time
-- [ ] Add training cancellation support
-- [ ] Save model checkpoints after each epoch
-- [ ] Generate confusion matrix on training completion
-- [ ] Store final model in S3 and model_versions table
-
-## GPU-Accelerated Waterfall Display
-- [ ] Create WaterfallDisplay component with WebGL renderer
-- [ ] Implement texture scrolling for time-frequency evolution
-- [ ] Add GPU shader for FFT line rendering
-- [ ] Implement circular buffer for waterfall history
-- [ ] Add configurable scroll speed (lines per second)
-- [ ] Add colormap support (Viridis, Jet, Grayscale)
-- [ ] Implement zoom and pan controls
-- [ ] Add time axis with timestamps
-- [ ] Add frequency axis synchronized with spectrogram
-- [ ] Integrate into Forensic Cockpit below spectrogram
-- [ ] Add waterfall export to PNG
-- [ ] Test with high sample rate signals (10+ MSps)
+## ✅ Batch Queue Worker Implementation (COMPLETED)
+- [x] Fix batch_jobs schema to use integer ID
+- [x] Install and configure Redis for BullMQ
+- [x] Create BullMQ job queue with sequential concurrency (concurrency: 1)
+- [x] Implement job processors for WVD, fingerprinting, protocol, classification, demodulation, FAM
+- [x] Add WebSocket progress notifications (job started, progress %, completed, failed)
+- [x] Create tRPC batch router (submit, list, get, stats, cancel)
+- [x] Integrate worker with server startup
+- [x] Add retry logic (max 3 attempts with exponential backoff)
+- [x] Add job cancellation functionality
+- [x] Write vitest tests for batch queue system
+- [ ] Create batch job submission UI in ForensicCockpit
+- [ ] Add batch job status panel with real-time progress bars

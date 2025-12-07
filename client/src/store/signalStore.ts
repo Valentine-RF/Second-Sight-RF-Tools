@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import type { SignalMetrics } from '@/lib/signalMetricsExtractor';
 
 /**
  * Signal capture metadata
@@ -56,7 +55,7 @@ export interface Viewport {
 /**
  * Active tab in analysis dock
  */
-export type AnalysisTab = 'spectrum' | 'constellation' | 'cyclostationary' | 'hex' | 'compressive' | 'timefreq' | 'separation';
+export type AnalysisTab = 'spectrum' | 'constellation' | 'cyclostationary' | 'hex';
 
 /**
  * Colormap options for spectrogram
@@ -67,10 +66,6 @@ interface SignalStore {
   // Current signal capture
   currentCapture: SignalCapture | null;
   setCurrentCapture: (capture: SignalCapture | null) => void;
-
-  // Signal metrics
-  signalMetrics: SignalMetrics | null;
-  setSignalMetrics: (metrics: SignalMetrics | null) => void;
 
   // Annotations
   annotations: Annotation[];
@@ -115,10 +110,6 @@ export const useSignalStore = create<SignalStore>((set) => ({
   // Current capture
   currentCapture: null,
   setCurrentCapture: (capture) => set({ currentCapture: capture }),
-
-  // Signal metrics
-  signalMetrics: null,
-  setSignalMetrics: (metrics) => set({ signalMetrics: metrics }),
 
   // Annotations
   annotations: [],

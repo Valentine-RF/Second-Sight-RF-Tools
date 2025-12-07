@@ -11,8 +11,6 @@ import { HexView } from '@/components/HexView';
 import { AnnotationStatistics } from '@/components/AnnotationStatistics';
 import { HopPatternVisualization } from '@/components/HopPatternVisualization';
 import { SDRStreamingPanel } from '@/components/SDRStreamingPanel';
-import { SDRControls } from '@/components/SDRControls';
-import { DSPChainFlow } from '@/components/DSPChainFlow';
 import { AnnotationEditDialog } from '@/components/AnnotationEditDialog';
 import SignalContextMenu, { type SignalSelection } from '@/components/SignalContextMenu';
 import CyclicProfilePanel from '@/components/CyclicProfilePanel';
@@ -21,22 +19,11 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
-import { ChevronDown, ChevronUp, Activity, Radio, Waves, Binary, FileDown, Loader2, Plus, Minus, Move, Download, BarChart3 } from 'lucide-react';
-import { WVDHeatmap } from '@/components/WVDHeatmap';
-import { WaveformDisplay } from '@/components/WaveformDisplay';
-import { ReconstructedSignalPlot } from '@/components/ReconstructedSignalPlot';
-import { AlgorithmComparison } from '@/components/AlgorithmComparison';
-import { PhaseTrackingPlot } from '@/components/PhaseTrackingPlot';
-import { CFODriftTimeline } from '@/components/CFODriftTimeline';
-import { SlicePlaneControls } from '@/components/SlicePlaneControls';
-import { SCFCrossSection2D } from '@/components/SCFCrossSection2D';
-import { ReportGenerator, type ReportData } from '@/lib/reportGenerator';
+import { ChevronDown, ChevronUp, Activity, Radio, Waves, Binary, FileDown, Loader2, Plus, Minus, Move } from 'lucide-react';
+import { generateForensicReport } from '@/lib/pdfExport';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
 import { useStreamingPipeline } from '@/hooks/useStreamingPipeline';
-import { ModulationOverlay } from '@/components/ModulationOverlay';
-import { getModulationClassifier, type ClassificationResult } from '@/lib/modulationClassifier';
-import SplunkDashboard from '@/components/SplunkDashboard';
 
 /**
  * Forensic Cockpit - Main Signal Analysis Interface
@@ -50,7 +37,6 @@ import SplunkDashboard from '@/components/SplunkDashboard';
 export default function ForensicCockpit() {
   const { loading } = useAuth();
   const currentCapture = useSignalStore((state) => state.currentCapture);
-  const signalMetrics = useSignalStore((state) => state.signalMetrics);
   // const annotations = useSignalStore((state) => state.annotations); // Replaced by tRPC query
   const selection = useSignalStore((state) => state.selection);
   const activeTab = useSignalStore((state) => state.activeTab);
@@ -60,11 +46,9 @@ export default function ForensicCockpit() {
 
   const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
   const [isExporting, setIsExporting] = useState(false);
-  const [scfData, setScfData] = useState<any>(null);  const [showCyclicProfile, setShowCyclicProfile] = useState(false);
-  const [isStreaming, setIsStreaming] = useState(false);
+  const [scfData, setScfData] = useState<any>(null);
+  const [showCyclicProfile, setShowCyclicProfile] = useState(true);
   const [annotationDialogOpen, setAnnotationDialogOpen] = useState(false);
-  const [modulationResult, setModulationResult] = useState<ClassificationResult | null>(null);
-  const [isClassifying, setIsClassifying] = useState(false);
   
   // Load annotations for current capture from database
   const { data: savedAnnotations = [] } = trpc.annotations.list.useQuery(
@@ -96,37 +80,6 @@ export default function ForensicCockpit() {
   const [annotationEditOpen, setAnnotationEditOpen] = useState(false);
   const [selectedAnnotationId, setSelectedAnnotationId] = useState<number | null>(null);
   const [pendingAnnotation, setPendingAnnotation] = useState<SignalSelection | null>(null);
-  
-  // Advanced signal processing state
-  const [csAlgorithm, setCsAlgorithm] = useState('omp');
-  const [sparsityLevel, setSparsityLevel] = useState(10);
-  const [measurementRatio, setMeasurementRatio] = useState(0.5);
-  const [csResult, setCsResult] = useState<any>(null);
-  const [comparisonMode, setComparisonMode] = useState(false);
-  const [comparisonResults, setComparisonResults] = useState<any[]>([]);
-  
-  const [wvdType, setWvdType] = useState('wvd');
-  const [windowSize, setWindowSize] = useState(64);
-  const [sigma, setSigma] = useState(1.0);
-  const [wvdResult, setWvdResult] = useState<any>(null);
-  
-  const [bssAlgorithm, setBssAlgorithm] = useState('fastica');
-  const [numComponents, setNumComponents] = useState(2);
-  const [bssResult, setBssResult] = useState<any>(null);
-  
-  // SCF cross-section state
-  const [sliceType, setSliceType] = useState<'alpha' | 'tau'>('alpha');
-  const [sliceValue, setSliceValue] = useState(0);
-  const [crossSectionData, setCrossSectionData] = useState<any>(null);
-  
-  const extractCrossSectionMutation = trpc.captures.extractCrossSection.useMutation({
-    onSuccess: (data) => {
-      setCrossSectionData(data);
-    },
-    onError: (error: any) => {
-      toast.error(`Cross-section extraction failed: ${error.message}`);
-    },
-  });
   
   const demodMutation = trpc.captures.demodulate.useMutation({
     onSuccess: (data) => {
@@ -197,66 +150,12 @@ export default function ForensicCockpit() {
       toast.success('Annotation deleted');
       trpc.useUtils().annotations.list.invalidate();
     },
-  });
-  
-  // Advanced signal processing mutations
-  const reconstructSparseMutation = trpc.captures.reconstructSparse.useMutation({
-    onSuccess: (data) => {
-      if (comparisonMode) {
-        // Add to comparison results
-        setComparisonResults(prev => {
-          // Remove existing result for same algorithm
-          const filtered = prev.filter(r => r.algorithm !== data.algorithm);
-          return [...filtered, data];
-        });
-        toast.success(`${data.algorithm.toUpperCase()} added to comparison (RMSE: ${data.rmse.toFixed(6)})`);
-      } else {
-        setCsResult(data);
-        toast.success(`Sparse reconstruction complete (RMSE: ${data.rmse.toFixed(6)})`);
-      }
-      setActiveTab('compressive');
-    },
-    onError: (error) => {
-      toast.error(`Reconstruction failed: ${error.message}`);
-    },
-  });
-  
-  const computeWVDMutation = trpc.captures.computeWVD.useMutation({
-    onSuccess: (data) => {
-      setWvdResult(data);
-      setActiveTab('timefreq');
-      toast.success(`Time-frequency analysis complete (${data.distributionType.toUpperCase()})`);
-    },
-    onError: (error) => {
-      toast.error(`WVD computation failed: ${error.message}`);
-    },
-  });
-  
-  const separateSourcesMutation = trpc.captures.separateSources.useMutation({
-    onSuccess: (data) => {
-      setBssResult(data);
-      setActiveTab('separation');
-      toast.success(`Separated ${data.numComponents} sources using ${data.algorithm.toUpperCase()}`);
-    },
-    onError: (error) => {
-      toast.error(`Source separation failed: ${error.message}`);
-    },
-  });
-  
-  const deleteAnnotationMutation2 = trpc.annotations.delete.useMutation({
-    onSuccess: () => {
-      toast.success('Annotation deleted');
-      trpc.useUtils().annotations.list.invalidate();
-    },
     onError: (error) => {
       toast.error(`Failed to save annotation: ${error.message}`);
     },
   });
   
   const [measurementsData, setMeasurementsData] = useState<any>(null);
-  const [costasResult, setCostasResult] = useState<any>(null);
-  const [costasModOrder, setCostasModOrder] = useState(4);
-  const [costasLoopBW, setCostasLoopBW] = useState(0.01);
   
   // Keyboard shortcuts
   useEffect(() => {
@@ -297,17 +196,6 @@ export default function ForensicCockpit() {
       console.error('SNR/CFO estimation failed:', error);
       toast.error(`Measurement failed: ${error.message}`);
       setMeasurementsData(null);
-    },
-  });
-  
-  const refineCFOMutation = trpc.captures.refineCFO.useMutation({
-    onSuccess: (data) => {
-      setCostasResult(data);
-      toast.success(`CFO refined: ${data.total_cfo_hz.toFixed(1)} Hz ${data.lock_detected ? '(Locked)' : '(No Lock)'}`);
-    },
-    onError: (error) => {
-      toast.error(`CFO refinement failed: ${error.message}`);
-      setCostasResult(null);
     },
   });
   
@@ -438,7 +326,7 @@ export default function ForensicCockpit() {
     setContextMenuPos(null);
   };
 
-  const handleClassifyModulationOld = () => {
+  const handleClassifyModulation = () => {
     if (!selection || !currentCapture) return;
     
     const sampleCount = selection.sampleEnd - selection.sampleStart;
@@ -447,56 +335,6 @@ export default function ForensicCockpit() {
       captureId: currentCapture.id,
       sampleStart: selection.sampleStart,
       sampleCount,
-    });
-    
-    setContextMenuPos(null);
-  };
-  
-  const handleReconstructSparse = () => {
-    if (!selection || !currentCapture) return;
-    
-    const sampleCount = selection.sampleEnd - selection.sampleStart;
-    
-    reconstructSparseMutation.mutate({
-      captureId: currentCapture.id,
-      sampleStart: selection.sampleStart,
-      sampleCount,
-      algorithm: csAlgorithm as 'omp' | 'cosamp' | 'lasso' | 'fista',
-      sparsityLevel,
-      measurementRatio,
-    });
-    
-    setContextMenuPos(null);
-  };
-  
-  const handleTimeFreqAnalysis = () => {
-    if (!selection || !currentCapture) return;
-    
-    const sampleCount = selection.sampleEnd - selection.sampleStart;
-    
-    computeWVDMutation.mutate({
-      captureId: currentCapture.id,
-      sampleStart: selection.sampleStart,
-      sampleCount,
-      distributionType: wvdType as 'wvd' | 'spwvd' | 'choi-williams',
-      windowSize: wvdType === 'spwvd' ? windowSize : undefined,
-      sigma: wvdType === 'choi-williams' ? sigma : undefined,
-    });
-    
-    setContextMenuPos(null);
-  };
-  
-  const handleSeparateSources = () => {
-    if (!selection || !currentCapture) return;
-    
-    const sampleCount = selection.sampleEnd - selection.sampleStart;
-    
-    separateSourcesMutation.mutate({
-      captureId: currentCapture.id,
-      sampleStart: selection.sampleStart,
-      sampleCount,
-      algorithm: bssAlgorithm as 'fastica' | 'nmf',
-      numComponents,
     });
     
     setContextMenuPos(null);
@@ -546,145 +384,95 @@ export default function ForensicCockpit() {
 
   const exportReportMutation = trpc.captures.exportReport.useMutation();
 
-  const [exportFormat, setExportFormat] = useState<'pdf' | 'html'>('pdf');
-
-  const handleClassifyModulation = async () => {
-    if (!selection || !currentCapture) {
-      toast.error('Please select a signal region first');
-      return;
-    }
+  const handleExportPDF = async () => {
+    if (!currentCapture) return;
     
-    setIsClassifying(true);
-    setModulationResult(null);
+    setIsExporting(true);
     
     try {
-      // Get IQ samples from selection
-      const sampleStart = selection.sampleStart;
-      const sampleCount = Math.min(selection.sampleEnd - selection.sampleStart, 2048);
-      
-      // Fetch IQ data from server
-      const response = await fetch(
-        `/api/trpc/captures.getIQSamples?input=${encodeURIComponent(
-          JSON.stringify({ captureId: currentCapture.id, sampleStart, sampleCount })
-        )}`
+      const result = await exportReportMutation.mutateAsync({
+        captureId: currentCapture.id,
+        includeAnnotations: true,
+        includeClassification: false,
+        includeCyclicProfile: false,
+      });
+
+      // Download PDF
+      const blob = new Blob(
+        [Uint8Array.from(atob(result.pdf), c => c.charCodeAt(0))],
+        { type: 'application/pdf' }
       );
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch IQ samples');
-      }
-      
-      const data = await response.json();
-      const iqSamples = new Float32Array(data.result.data.samples);
-      
-      // Run classification
-      const classifier = getModulationClassifier();
-      await classifier.initialize();
-      const result = await classifier.classify(iqSamples);
-      
-      setModulationResult(result);
-      toast.success(`Detected: ${result.modulation} (${(result.confidence * 100).toFixed(1)}% confidence)`);
-      
-      // Log to Splunk
-      try {
-        await fetch('/api/splunk/log-classification', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            captureName: currentCapture.name,
-            modulationType: result.modulation,
-            confidence: result.confidence,
-            features: result.features,
-          }),
-        });
-      } catch (err) {
-        console.error('Failed to log to Splunk:', err);
-      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = result.filename;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      toast.success('PDF report exported successfully');
     } catch (error) {
-      console.error('Modulation classification failed:', error);
-      toast.error('Classification failed - model may need training');
+      console.error('PDF export failed:', error);
+      toast.error('Failed to export PDF report');
     } finally {
-      setIsClassifying(false);
+      setIsExporting(false);
     }
   };
 
-  const handleExportReport = async () => {
+  const handleExportPDFOld = async () => {
     if (!currentCapture) return;
     
     setIsExporting(true);
     
     try {
       // Capture visualizations
-      let spectrogramImage: string | undefined;
-      let famPlotImage: string | undefined;
+      const spectrogramImage = {} as any; // mainSpectrogramRef.current?.captureCanvas();
+      const constellationImage = {} as any; // constellationPlotRef.current?.captureCanvas();
+      const scfImage = {} as any; // scfSurfaceRef.current?.captureCanvas();
       
-      // Try to capture spectrogram canvas
-      const spectrogramCanvas = document.querySelector('canvas[data-spectrogram="main"]') as HTMLCanvasElement;
-      if (spectrogramCanvas) {
-        spectrogramImage = await ReportGenerator.captureCanvas(spectrogramCanvas);
-      }
-      
-      // Try to capture FAM plot
-      const famPlotElement = document.querySelector('[data-fam-plot]') as HTMLElement;
-      if (famPlotElement) {
-        famPlotImage = await ReportGenerator.captureElement(famPlotElement);
-      }
-      
-      // Build report data
-      const reportData: ReportData = {
-        captureName: currentCapture.name,
-        description: currentCapture.description || undefined,
-        sampleRate: currentCapture.sampleRate || 0,
-        centerFrequency: undefined,
-        datatype: currentCapture.datatype || 'unknown',
-        hardware: currentCapture.hardware || undefined,
-        captureDate: new Date(currentCapture.createdAt).toLocaleString(),
-        fileSize: 0,
-        duration: undefined,
-        spectrogramImage,
-        famPlotImage,
-        metrics: signalMetrics ? {
-          snr: signalMetrics.snr,
-          peakPower: signalMetrics.peakPower,
-          avgPower: signalMetrics.avgPower,
-          dynamicRange: signalMetrics.dynamicRange,
-          bandwidth: signalMetrics.bandwidth,
-        } : {
-          snr: undefined,
-          peakPower: undefined,
-          avgPower: undefined,
-          dynamicRange: undefined,
-          bandwidth: undefined,
+      await generateForensicReport({
+        metadata: {
+          name: currentCapture.name,
+          hardware: currentCapture.hardware || undefined,
+          author: currentCapture.author || undefined,
+          sampleRate: currentCapture.sampleRate || undefined,
+          datatype: currentCapture.datatype || undefined,
+          description: currentCapture.description || undefined,
+          uploadedAt: currentCapture.createdAt ? new Date(currentCapture.createdAt) : new Date(),
         },
-        annotations: savedAnnotations.map(ann => ({
-          id: String(ann.id),
-          timestamp: ann.sampleStart / (currentCapture.sampleRate || 1),
-          frequency: ann.freqLowerEdge && ann.freqUpperEdge ? (ann.freqLowerEdge + ann.freqUpperEdge) / 2 : 0,
-          label: ann.label || 'Annotation',
-          notes: undefined,
+        measurements: {
+          snr: 12.4,
+          cfo: -14000,
+          baudRate: 2.4e6,
+        },
+        classifications: [
+          { label: 'QPSK', probability: 90 },
+          { label: '8PSK', probability: 10 },
+          { label: '16-QAM', probability: 5 },
+        ],
+        annotations: savedAnnotations.map(a => ({
+          id: a.id,
+          label: a.label || '',
+          sampleStart: a.sampleStart,
+          sampleEnd: a.sampleCount ? a.sampleStart + a.sampleCount : a.sampleStart + 1000,
+          color: a.color || '#3b82f6',
         })),
-        analysisNotes: undefined,
-      };
+        notes: 'Forensic analysis completed. Signal characteristics analyzed using advanced DSP techniques.',
+        analyst: currentCapture?.author || 'Forensic Analyst',
+        visualizations: {
+          spectrogram: spectrogramImage,
+          constellation: constellationImage,
+          scf: scfImage,
+        },
+      });
       
-      if (exportFormat === 'pdf') {
-        const blob = await ReportGenerator.generatePDF(reportData);
-        const filename = `${currentCapture.name.replace(/\s+/g, '_')}_Report_${Date.now()}.pdf`;
-        ReportGenerator.downloadBlob(blob, filename);
-        toast.success('PDF report generated successfully');
-      } else {
-        const html = ReportGenerator.generateHTML(reportData);
-        const filename = `${currentCapture.name.replace(/\s+/g, '_')}_Report_${Date.now()}.html`;
-        ReportGenerator.downloadHTML(html, filename);
-        toast.success('HTML report generated successfully');
-      }
+      toast.success('PDF report generated successfully');
     } catch (error) {
-      console.error('Report export failed:', error);
-      toast.error(`Failed to generate ${exportFormat.toUpperCase()} report`);
+      console.error('PDF export error:', error);
+      toast.error('Failed to generate PDF report');
     } finally {
       setIsExporting(false);
     }
   };
-
-
 
   if (loading) {
     return <CockpitSkeleton />;
@@ -717,29 +505,19 @@ export default function ForensicCockpit() {
             </div>
             <div className="flex gap-2">
               <span className="technical-label">Annotations: {savedAnnotations.length}</span>
-              <div className="flex gap-2 ml-4">
-                <Select value={exportFormat} onValueChange={(value: 'pdf' | 'html') => setExportFormat(value)}>
-                  <SelectTrigger className="w-24 h-9">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pdf">PDF</SelectItem>
-                    <SelectItem value="html">HTML</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleExportReport}
-                  disabled={isExporting}
-                >
-                  {isExporting ? (
-                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Generating...</>
-                  ) : (
-                    <><FileDown className="w-4 h-4 mr-2" /> Export Report</>
-                  )}
-                </Button>
-              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportPDF}
+                disabled={isExporting}
+                className="ml-4"
+              >
+                {isExporting ? (
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Generating...</>
+                ) : (
+                  <><FileDown className="w-4 h-4 mr-2" /> Export PDF</>
+                )}
+              </Button>
             </div>
           </div>
           
@@ -753,19 +531,12 @@ export default function ForensicCockpit() {
             {savedAnnotations.map((ann) => (
               <div
                 key={ann.id}
-                className={`absolute top-0 w-1 h-full opacity-70 cursor-pointer transition-all hover:opacity-100 hover:w-2 ${
-                  selectedAnnotationId === ann.id ? 'ring-2 ring-white w-2' : ''
-                }`}
+                className="absolute top-0 w-1 h-full opacity-70"
                 style={{
                   left: `${(ann.sampleStart / 1000000) * 100}%`, // Placeholder calculation
                   backgroundColor: ann.color || '#3b82f6',
                 }}
                 title={ann.label || 'Annotation'}
-                onClick={() => setSelectedAnnotationId(ann.id)}
-                onDoubleClick={() => {
-                  setSelectedAnnotationId(ann.id);
-                  setAnnotationDialogOpen(true);
-                }}
               />
             ))}
           </div>
@@ -814,16 +585,6 @@ export default function ForensicCockpit() {
                   sampleCount: Math.min(sel.sampleCount, 4096),  // Limit to 4096 samples
                 });
               }}
-              onDemodulate={(sel, mode) => {
-                if (!currentCapture) return;
-                demodMutation.mutate({
-                  captureId: currentCapture.id,
-                  sampleStart: sel.sampleStart,
-                  sampleCount: sel.sampleCount,
-                  mode: mode,
-                  coarseCfoHz: measurementsData?.cfo?.cfo_hz,
-                });
-              }}
               onSaveAnnotation={(sel) => {
                 setPendingAnnotation(sel);
                 setAnnotationDialogOpen(true);
@@ -866,25 +627,9 @@ export default function ForensicCockpit() {
                     ref={mainSpectrogramRef}
                     width={window.innerWidth - 400} // Account for sidebar
                     height={isDockCollapsed ? window.innerHeight - 200 : window.innerHeight - 500}
-                    sampleRate={currentCapture?.sampleRate || 1e6}
-                    lodQuality="auto"
                     onBoxSelect={handleBoxSelect}
-                    onFPSUpdate={(fps) => {
-                      // FPS monitoring for performance tracking
-                      if (fps < 30) {
-                        console.warn('[Spectrogram] Low FPS detected:', fps);
-                      }
-                    }}
                   />
                 </WebGLErrorBoundary>
-                
-                {/* Modulation Classification Overlay */}
-                <ModulationOverlay
-                  result={modulationResult}
-                  isClassifying={isClassifying}
-                  position="top-right"
-                  showAllScores={true}
-                />
               </div>
             </SignalContextMenu>
             
@@ -1019,19 +764,6 @@ export default function ForensicCockpit() {
                   <Binary className="w-4 h-4 mr-2" />
                   Demodulate
                 </Button>
-                <div className="border-t border-border my-1" />
-                <Button variant="ghost" size="sm" className="w-full justify-start" onClick={handleReconstructSparse}>
-                  <Activity className="w-4 h-4 mr-2" />
-                  Reconstruct Sparse
-                </Button>
-                <Button variant="ghost" size="sm" className="w-full justify-start" onClick={handleTimeFreqAnalysis}>
-                  <Waves className="w-4 h-4 mr-2" />
-                  Time-Frequency Analysis
-                </Button>
-                <Button variant="ghost" size="sm" className="w-full justify-start" onClick={handleSeparateSources}>
-                  <Radio className="w-4 h-4 mr-2" />
-                  Separate Sources
-                </Button>
               </div>
             )}
           </div>
@@ -1068,29 +800,6 @@ export default function ForensicCockpit() {
                     <Binary className="w-4 h-4" />
                     Hex View
                   </TabsTrigger>
-                  <TabsTrigger value="compressive" className="gap-2">
-                    <Activity className="w-4 h-4" />
-                    Compressive Sensing
-                  </TabsTrigger>
-                  <TabsTrigger value="timefreq" className="gap-2">
-                    <Waves className="w-4 h-4" />
-                    Time-Frequency
-                  </TabsTrigger>
-                  <TabsTrigger value="separation" className="gap-2">
-                    <Radio className="w-4 h-4" />
-                    Source Separation
-                  </TabsTrigger>
-                  <TabsTrigger value="streaming" className="gap-2">
-                    <Radio className="w-4 h-4" />
-                    Live Streaming
-                  </TabsTrigger>                  <TabsTrigger value="dsp-chain" className="gap-2">
-                    <Activity className="w-4 h-4" />
-                    DSP Chain
-                  </TabsTrigger>
-                  <TabsTrigger value="splunk" className="gap-2">
-                    <BarChart3 className="w-4 h-4" />
-                    Splunk Dashboard
-                  </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="spectrum" className="p-4 h-full">
@@ -1109,100 +818,16 @@ export default function ForensicCockpit() {
                   </WebGLErrorBoundary>
                 </TabsContent>
 
-                <TabsContent value="cyclostationary" className="p-4 h-full overflow-auto space-y-4">
-                  {scfData ? (
-                    <>
-                      {/* 3D SCF Surface */}
-                      <div className="space-y-2">
-                        <h3 className="text-sm font-semibold">3D Spectral Correlation Function</h3>
-                        <WebGLErrorBoundary fallbackMessage="Failed to render 3D SCF surface.">
-                          <SCFSurface3D
-                            scfMagnitude={scfData.scf || []}
-                            spectralFreqs={scfData.freq || []}
-                            cyclicFreqs={scfData.alpha || []}
-                            shape={{ cyclic: scfData.alpha?.length || 0, spectral: scfData.freq?.length || 0 }}
-                            colormap="viridis"
-                          />
-                        </WebGLErrorBoundary>
-                      </div>
-
-                      {/* Cross-Section Controls and Visualization */}
-                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                        {/* Slice Controls */}
-                        <div>
-                          <SlicePlaneControls
-                            sliceType={sliceType}
-                            minValue={sliceType === 'alpha' ? Math.min(...(scfData.alpha || [0])) : 0}
-                            maxValue={sliceType === 'alpha' ? Math.max(...(scfData.alpha || [0])) : (scfData.freq?.length || 1) - 1}
-                            currentValue={sliceValue}
-                            onValueChange={(value) => {
-                              setSliceValue(value);
-                              // Extract cross-section
-                              extractCrossSectionMutation.mutate({
-                                scfData: {
-                                  alpha: scfData.alpha || [],
-                                  tau: Array.from({ length: scfData.freq?.length || 0 }, (_, i) => i),
-                                  scf: scfData.scf || [],
-                                },
-                                sliceType,
-                                sliceValue: value,
-                                interpolate: true,
-                              });
-                            }}
-                            onSliceTypeChange={(type) => {
-                              setSliceType(type);
-                              // Reset slice value to center
-                              const newValue = type === 'alpha'
-                                ? (Math.min(...(scfData.alpha || [0])) + Math.max(...(scfData.alpha || [0]))) / 2
-                                : Math.floor((scfData.freq?.length || 1) / 2);
-                              setSliceValue(newValue);
-                            }}
-                            onExport={() => {
-                              if (crossSectionData) {
-                                const csv = `${sliceType === 'alpha' ? 'Tau' : 'Alpha'},SCF_Magnitude,${sliceType}=${crossSectionData.slicePosition}\n` +
-                                  crossSectionData.axis.map((v: number, i: number) => `${v},${crossSectionData.values[i]}`).join('\n');
-                                const blob = new Blob([csv], { type: 'text/csv' });
-                                const url = URL.createObjectURL(blob);
-                                const a = document.createElement('a');
-                                a.href = url;
-                                a.download = `scf_cross_section_${sliceType}_${crossSectionData.slicePosition.toFixed(2)}.csv`;
-                                a.click();
-                                URL.revokeObjectURL(url);
-                                toast.success('Cross-section exported to CSV');
-                              }
-                            }}
-                            disabled={extractCrossSectionMutation.isPending}
-                          />
-                        </div>
-
-                        {/* 2D Cross-Section Plot */}
-                        <div className="lg:col-span-2">
-                          {crossSectionData ? (
-                            <SCFCrossSection2D
-                              data={crossSectionData}
-                              width={700}
-                              height={400}
-                              showPeak={true}
-                            />
-                          ) : (
-                            <div className="flex items-center justify-center h-96 border border-border rounded bg-muted/20">
-                              <p className="text-muted-foreground text-sm">
-                                {extractCrossSectionMutation.isPending
-                                  ? 'Extracting cross-section...'
-                                  : 'Adjust the slice position to extract a cross-section'}
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="flex items-center justify-center h-full">
-                      <p className="text-muted-foreground text-sm">
-                        Run cyclostationary analysis to view SCF data
-                      </p>
-                    </div>
-                  )}
+                <TabsContent value="cyclostationary" className="p-0 h-full">
+                  <WebGLErrorBoundary fallbackMessage="Failed to render 3D SCF surface.">
+                    <SCFSurface3D
+                      scfMagnitude={scfData?.scfMagnitude || []}
+                      spectralFreqs={scfData?.spectralFreqs || []}
+                      cyclicFreqs={scfData?.cyclicFreqs || []}
+                      shape={scfData?.shape || { cyclic: 0, spectral: 0 }}
+                      colormap="viridis"
+                    />
+                  </WebGLErrorBoundary>
                 </TabsContent>
 
                 <TabsContent value="hex" className="p-0 h-full relative">
@@ -1255,475 +880,6 @@ export default function ForensicCockpit() {
                     confidence={demodData?.confidence || 0}
                   />
                 </TabsContent>
-
-                <TabsContent value="compressive" className="p-4 h-full overflow-y-auto">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-bold text-lg">Compressive Sensing Reconstruction</h4>
-                      <div className="flex items-center gap-3">
-                        <label className="flex items-center gap-2 text-sm cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={comparisonMode}
-                            onChange={(e) => {
-                              setComparisonMode(e.target.checked);
-                              if (!e.target.checked) {
-                                setComparisonResults([]);
-                              }
-                            }}
-                            className="w-4 h-4"
-                          />
-                          <span>Comparison Mode</span>
-                        </label>
-                        {reconstructSparseMutation.isPending && (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        )}
-                      </div>
-                    </div>
-                    
-                    {comparisonMode && (
-                      <div className="bg-blue-500/10 border border-blue-500/20 rounded p-3 text-sm">
-                        <div className="font-medium mb-1">🔬 Comparison Mode Active</div>
-                        <div className="text-muted-foreground">
-                          Select different algorithms and run reconstruction to compare results side-by-side.
-                          {comparisonResults.length > 0 && (
-                            <span className="ml-1 font-mono text-blue-500">
-                              ({comparisonResults.length} algorithms compared)
-                            </span>
-                          )}
-                        </div>
-                        {comparisonResults.length > 0 && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="mt-2"
-                            onClick={() => setComparisonResults([])}
-                          >
-                            Clear Comparison
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                    
-                    {/* Algorithm Selector */}
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Algorithm</label>
-                      <Select value={csAlgorithm} onValueChange={setCsAlgorithm}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="omp">OMP (Orthogonal Matching Pursuit)</SelectItem>
-                          <SelectItem value="cosamp">CoSaMP (Compressive Sampling MP)</SelectItem>
-                          <SelectItem value="lasso">LASSO (L1 Regularization)</SelectItem>
-                          <SelectItem value="fista">FISTA (Fast Iterative Shrinkage)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    {/* Sparsity Level Slider */}
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">
-                        Sparsity Level: {sparsityLevel}
-                      </label>
-                      <input
-                        type="range"
-                        min="1"
-                        max="100"
-                        value={sparsityLevel}
-                        onChange={(e) => setSparsityLevel(Number(e.target.value))}
-                        className="w-full"
-                      />
-                      <div className="text-xs text-muted-foreground mt-1">
-                        Number of non-zero coefficients in sparse representation
-                      </div>
-                    </div>
-                    
-                    {/* Measurement Ratio Slider */}
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">
-                        Measurement Ratio: {measurementRatio.toFixed(2)}
-                      </label>
-                      <input
-                        type="range"
-                        min="0.1"
-                        max="1"
-                        step="0.05"
-                        value={measurementRatio}
-                        onChange={(e) => setMeasurementRatio(Number(e.target.value))}
-                        className="w-full"
-                      />
-                      <div className="text-xs text-muted-foreground mt-1">
-                        Ratio of measurements to signal length (lower = more compression)
-                      </div>
-                    </div>
-                    
-                    {/* Results Display */}
-                    {csResult && !comparisonMode && (
-                      <div className="space-y-3">
-                        {/* Export Button */}
-                        <div className="flex justify-end">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              const csv = `Sample,Reconstructed\n${csResult.reconstructed.map((v: number, i: number) => `${i},${v}`).join('\n')}`;
-                              const blob = new Blob([csv], { type: 'text/csv' });
-                              const url = URL.createObjectURL(blob);
-                              const a = document.createElement('a');
-                              a.href = url;
-                              a.download = `reconstructed_${csResult.algorithm}_${Date.now()}.csv`;
-                              a.click();
-                              URL.revokeObjectURL(url);
-                              toast.success('Reconstructed signal exported');
-                            }}
-                          >
-                            <Download className="w-4 h-4 mr-2" />
-                            Export CSV
-                          </Button>
-                        </div>
-                        
-                        {/* Visualization */}
-                        <ReconstructedSignalPlot
-                          reconstructed={csResult.reconstructed}
-                          width={650}
-                          height={200}
-                        />
-                        
-                        {/* Metrics */}
-                        <div className="space-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span className="font-medium">Algorithm:</span>
-                            <span className="font-mono">{csResult.algorithm.toUpperCase()}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="font-medium">Signal Length:</span>
-                            <span className="font-mono">{csResult.signalLength}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="font-medium">Measurements:</span>
-                            <span className="font-mono">{csResult.numMeasurements}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="font-medium">Compression:</span>
-                            <span className="font-mono">{((1 - csResult.measurementRatio) * 100).toFixed(1)}%</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="font-medium">RMSE:</span>
-                            <span className="font-mono">{csResult.rmse.toFixed(6)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="font-medium">Iterations:</span>
-                            <span className="font-mono">{csResult.iterations}</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {!csResult && !comparisonMode && (
-                      <div className="text-sm text-muted-foreground text-center py-8">
-                        Select a signal region and choose "Reconstruct Sparse" from context menu
-                      </div>
-                    )}
-                    
-                    {/* Comparison View */}
-                    {comparisonMode && comparisonResults.length > 0 && (
-                      <AlgorithmComparison results={comparisonResults} />
-                    )}
-                    
-                    {comparisonMode && comparisonResults.length === 0 && (
-                      <div className="text-sm text-muted-foreground text-center py-8">
-                        Run reconstructions with different algorithms to compare their performance
-                      </div>
-                    )}
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="timefreq" className="p-4 h-full overflow-y-auto">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-bold text-lg">Time-Frequency Analysis</h4>
-                      {computeWVDMutation.isPending && (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      )}
-                    </div>
-                    
-                    {/* Distribution Type Selector */}
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Distribution Type</label>
-                      <Select value={wvdType} onValueChange={setWvdType}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="wvd">WVD (Wigner-Ville)</SelectItem>
-                          <SelectItem value="spwvd">SPWVD (Smoothed Pseudo-WVD)</SelectItem>
-                          <SelectItem value="choi-williams">Choi-Williams Distribution</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    {/* Window Size Slider (for SPWVD) */}
-                    {wvdType === 'spwvd' && (
-                      <div>
-                        <label className="text-sm font-medium mb-2 block">
-                          Window Size: {windowSize}
-                        </label>
-                        <input
-                          type="range"
-                          min="16"
-                          max="512"
-                          step="16"
-                          value={windowSize}
-                          onChange={(e) => setWindowSize(Number(e.target.value))}
-                          className="w-full"
-                        />
-                        <div className="text-xs text-muted-foreground mt-1">
-                          Smoothing window size for cross-term mitigation
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Sigma Parameter (for Choi-Williams) */}
-                    {wvdType === 'choi-williams' && (
-                      <div>
-                        <label className="text-sm font-medium mb-2 block">
-                          Sigma: {sigma.toFixed(2)}
-                        </label>
-                        <input
-                          type="range"
-                          min="0.1"
-                          max="10"
-                          step="0.1"
-                          value={sigma}
-                          onChange={(e) => setSigma(Number(e.target.value))}
-                          className="w-full"
-                        />
-                        <div className="text-xs text-muted-foreground mt-1">
-                          Kernel parameter for cross-term suppression
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* WVD Heatmap Display */}
-                    {wvdResult && (
-                      <div className="space-y-3">
-                        {/* Export Button */}
-                        <div className="flex justify-end">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              const json = JSON.stringify({
-                                distributionType: wvdResult.distributionType,
-                                timePoints: wvdResult.timePoints,
-                                freqPoints: wvdResult.freqPoints,
-                                wvd: wvdResult.wvd,
-                              }, null, 2);
-                              const blob = new Blob([json], { type: 'application/json' });
-                              const url = URL.createObjectURL(blob);
-                              const a = document.createElement('a');
-                              a.href = url;
-                              a.download = `wvd_${wvdResult.distributionType}_${Date.now()}.json`;
-                              a.click();
-                              URL.revokeObjectURL(url);
-                              toast.success('WVD matrix exported');
-                            }}
-                          >
-                            <Download className="w-4 h-4 mr-2" />
-                            Export JSON
-                          </Button>
-                        </div>
-                        
-                        {/* Heatmap Visualization */}
-                        <WVDHeatmap
-                          data={wvdResult.wvd}
-                          timePoints={wvdResult.timePoints}
-                          freqPoints={wvdResult.freqPoints}
-                          width={650}
-                          height={300}
-                          colormap="viridis"
-                        />
-                        
-                        {/* Metrics */}
-                        <div className="text-sm space-y-1">
-                          <div className="flex justify-between">
-                            <span className="font-medium">Distribution:</span>
-                            <span className="font-mono">{wvdResult.distributionType.toUpperCase()}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="font-medium">Time Points:</span>
-                            <span className="font-mono">{wvdResult.timePoints}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="font-medium">Freq Points:</span>
-                            <span className="font-mono">{wvdResult.freqPoints}</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {!wvdResult && (
-                      <div className="text-sm text-muted-foreground text-center py-8">
-                        Select a signal region and choose "Time-Frequency Analysis" from context menu
-                      </div>
-                    )}
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="separation" className="p-4 h-full overflow-y-auto">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-bold text-lg">Blind Source Separation</h4>
-                      {separateSourcesMutation.isPending && (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      )}
-                    </div>
-                    
-                    {/* Algorithm Selector */}
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Algorithm</label>
-                      <Select value={bssAlgorithm} onValueChange={setBssAlgorithm}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="fastica">FastICA (Independent Component Analysis)</SelectItem>
-                          <SelectItem value="nmf">NMF (Non-negative Matrix Factorization)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    {/* Number of Components Slider */}
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">
-                        Number of Components: {numComponents}
-                      </label>
-                      <input
-                        type="range"
-                        min="2"
-                        max="8"
-                        value={numComponents}
-                        onChange={(e) => setNumComponents(Number(e.target.value))}
-                        className="w-full"
-                      />
-                      <div className="text-xs text-muted-foreground mt-1">
-                        Number of independent sources to extract
-                      </div>
-                    </div>
-                    
-                    {/* Results Display */}
-                    {bssResult && (
-                      <div className="space-y-3">
-                        {/* Export Button */}
-                        <div className="flex justify-end">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              const csv = bssResult.sources.map((source: number[], idx: number) => {
-                                const header = `Source ${idx + 1}`;
-                                const values = source.join('\n');
-                                return `${header}\n${values}`;
-                              }).join('\n\n');
-                              const blob = new Blob([csv], { type: 'text/csv' });
-                              const url = URL.createObjectURL(blob);
-                              const a = document.createElement('a');
-                              a.href = url;
-                              a.download = `separated_sources_${bssResult.algorithm}_${Date.now()}.csv`;
-                              a.click();
-                              URL.revokeObjectURL(url);
-                              toast.success('Separated sources exported');
-                            }}
-                          >
-                            <Download className="w-4 h-4 mr-2" />
-                            Export CSV
-                          </Button>
-                        </div>
-                        
-                        {/* Metrics */}
-                        <div className="text-sm space-y-1">
-                          <div className="flex justify-between">
-                            <span className="font-medium">Algorithm:</span>
-                            <span className="font-mono">{bssResult.algorithm.toUpperCase()}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="font-medium">Components:</span>
-                            <span className="font-mono">{bssResult.numComponents}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="font-medium">Iterations:</span>
-                            <span className="font-mono">{bssResult.iterations}</span>
-                          </div>
-                        </div>
-                        
-                        {/* Separated Sources Waveforms */}
-                        <div className="space-y-2">
-                          <div className="font-medium text-sm">Separated Sources:</div>
-                          {bssResult.sources.map((source: number[], idx: number) => (
-                            <div key={idx} className="space-y-1">
-                              <WaveformDisplay
-                                data={source}
-                                width={650}
-                                height={100}
-                                color={['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'][idx % 6]}
-                                label={`Source ${idx + 1}`}
-                                sampleRate={currentCapture?.sampleRate || 1}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {!bssResult && (
-                      <div className="text-sm text-muted-foreground text-center py-8">
-                        Select a signal region and choose "Separate Sources" from context menu
-                      </div>
-                    )}
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="streaming" className="p-4 h-full overflow-y-auto">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-bold text-lg">Live SDR Streaming</h4>
-                    </div>
-                    
-                    <SDRControls
-                      isStreaming={isStreaming}
-                      onSessionStart={(sessionId: string) => {
-                        console.log('[ForensicCockpit] Streaming session started:', sessionId);
-                        setIsStreaming(true);
-                        toast.success('Streaming session started');
-                      }}
-                      onSessionStop={() => {
-                        console.log('[ForensicCockpit] Streaming session stopped');
-                        setIsStreaming(false);
-                        toast.info('Streaming session stopped');
-                      }}
-                    />
-                    
-                    <div className="text-sm text-muted-foreground mt-4">
-                      <p>Connect an RTL-SDR, HackRF, or USRP device to start live signal streaming.</p>
-                      <p className="mt-2">The spectrogram will update in real-time with FFT data from the SDR.</p>
-                    </div>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="dspchain" className="p-4 h-full overflow-y-auto">
-                  <DSPChainFlow
-                    onParameterChange={(nodeId, parameter, value) => {
-                      console.log(`[DSPChain] ${nodeId}.${parameter} = ${value}`);
-                      // TODO: Wire to actual DSP pipeline
-                      toast.info(`Updated ${parameter} to ${value}`);
-                    }}
-                  />
-                </TabsContent>
-                
-                <TabsContent value="splunk" className="p-4 h-full overflow-auto">
-                  <SplunkDashboard />
-                </TabsContent>
               </Tabs>
             )}
           </div>
@@ -1750,80 +906,6 @@ export default function ForensicCockpit() {
                     {currentCapture.sampleRate ? `${(currentCapture.sampleRate / 1e6).toFixed(2)} MHz` : 'N/A'}
                   </span>
                 </div>
-              </div>
-            </Card>
-
-            {/* Signal Metrics */}
-            {signalMetrics && (
-              <Card className="p-4 data-panel">
-                <h4 className="font-black mb-3">Signal Metrics</h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="technical-label">SNR</span>
-                    <span className="font-mono text-cyan-400">{signalMetrics.snr.toFixed(2)} dB</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="technical-label">Peak Power</span>
-                    <span className="font-mono">{signalMetrics.peakPower.toFixed(2)} dB</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="technical-label">Avg Power</span>
-                    <span className="font-mono">{signalMetrics.avgPower.toFixed(2)} dB</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="technical-label">Dynamic Range</span>
-                    <span className="font-mono">{signalMetrics.dynamicRange.toFixed(2)} dB</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="technical-label">Bandwidth</span>
-                    <span className="font-mono">{(signalMetrics.bandwidth / 1e3).toFixed(2)} kHz</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="technical-label">Crest Factor</span>
-                    <span className="font-mono">{signalMetrics.crestFactor.toFixed(2)} dB</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="technical-label">Noise Floor</span>
-                    <span className="font-mono">{signalMetrics.noiseFloor.toFixed(2)} dB</span>
-                  </div>
-                </div>
-              </Card>
-            )}
-
-            {/* Modulation Classification */}
-            <Card className="p-4 data-panel">
-              <h4 className="font-black mb-3">Modulation Classifier</h4>
-              <div className="space-y-3">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleClassifyModulation}
-                  disabled={isClassifying || !selection}
-                  className="w-full"
-                >
-                  {isClassifying ? (
-                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Classifying...</>
-                  ) : (
-                    <><Radio className="w-4 h-4 mr-2" /> Classify Modulation</>
-                  )}
-                </Button>
-                
-                {modulationResult && (
-                  <div className="space-y-2 text-sm pt-2 border-t border-border">
-                    <div className="flex justify-between items-center">
-                      <span className="technical-label">Detected:</span>
-                      <span className="font-mono text-cyan-400 text-lg font-bold">{modulationResult.modulation}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="technical-label">Confidence:</span>
-                      <span className="font-mono">{(modulationResult.confidence * 100).toFixed(1)}%</span>
-                    </div>
-                  </div>
-                )}
-                
-                <p className="text-xs text-muted-foreground">
-                  Select a signal region and click to classify modulation type using TensorFlow.js CNN.
-                </p>
               </div>
             </Card>
 
@@ -2015,118 +1097,6 @@ export default function ForensicCockpit() {
                         </div>
                       )}
                     </>
-                  )}
-                  
-                  {/* Costas Loop CFO Refinement */}
-                  {measurementsData?.cfo && (
-                    <div className="border-t border-border pt-3 mt-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="technical-label text-xs">CFO Refinement (Costas Loop)</div>
-                        {refineCFOMutation.isPending && (
-                          <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
-                        )}
-                      </div>
-                      
-                      <div className="space-y-2 mb-2">
-                        <div>
-                          <label className="text-xs text-muted-foreground">Modulation Order</label>
-                          <Select value={costasModOrder.toString()} onValueChange={(v) => setCostasModOrder(Number(v))}>
-                            <SelectTrigger className="w-full h-7 text-xs">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="2">BPSK (2)</SelectItem>
-                              <SelectItem value="4">QPSK (4)</SelectItem>
-                              <SelectItem value="8">8PSK (8)</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        
-                        <div>
-                          <label className="text-xs text-muted-foreground">Loop Bandwidth</label>
-                          <Select value={costasLoopBW.toString()} onValueChange={(v) => setCostasLoopBW(Number(v))}>
-                            <SelectTrigger className="w-full h-7 text-xs">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="0.005">Narrow (0.005)</SelectItem>
-                              <SelectItem value="0.01">Medium (0.01)</SelectItem>
-                              <SelectItem value="0.02">Wide (0.02)</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                      
-                      <Button
-                        size="sm"
-                        className="w-full"
-                        onClick={() => {
-                          if (selection && currentCapture) {
-                            refineCFOMutation.mutate({
-                              captureId: currentCapture.id,
-                              sampleStart: selection.sampleStart,
-                              sampleCount: Math.min(selection.sampleEnd - selection.sampleStart, 32768),
-                              coarseCfoHz: measurementsData.cfo.cfo_hz,
-                              modulationOrder: costasModOrder,
-                              loopBandwidth: costasLoopBW,
-                            });
-                          }
-                        }}
-                        disabled={!selection || refineCFOMutation.isPending}
-                      >
-                        Refine CFO
-                      </Button>
-                      
-                      {costasResult && (
-                        <div className="mt-3 space-y-2 text-xs">
-                          <div className="flex items-center justify-between">
-                            <span className="text-muted-foreground">Total CFO:</span>
-                            <span className="font-mono font-semibold">{costasResult.total_cfo_hz.toFixed(1)} Hz</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-muted-foreground">Fine Correction:</span>
-                            <span className="font-mono">{costasResult.fine_cfo_hz.toFixed(1)} Hz</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-muted-foreground">Lock Status:</span>
-                            <span className={`font-semibold ${costasResult.lock_detected ? 'text-green-500' : 'text-red-500'}`}>
-                              {costasResult.lock_detected ? '✓ Locked' : '✗ No Lock'}
-                            </span>
-                          </div>
-                          {costasResult.lock_time_samples !== null && (
-                            <div className="flex items-center justify-between">
-                              <span className="text-muted-foreground">Lock Time:</span>
-                              <span className="font-mono">{costasResult.lock_time_samples} samples</span>
-                            </div>
-                          )}
-                          <div className="flex items-center justify-between">
-                            <span className="text-muted-foreground">Convergence:</span>
-                            <span className="font-mono">{costasResult.convergence_time_samples} samples</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-muted-foreground">Phase Error Var:</span>
-                            <span className="font-mono">{costasResult.phase_error_variance.toFixed(4)}</span>
-                          </div>
-                          
-                          {/* Phase Tracking Visualization */}
-                          {costasResult.phase_errors && costasResult.frequencies && (
-                            <div className="mt-3 pt-3 border-t border-border">
-                              <div className="text-xs text-muted-foreground mb-2">Phase Tracking Plot</div>
-                              <PhaseTrackingPlot
-                                phaseErrors={costasResult.phase_errors}
-                                frequencies={costasResult.frequencies}
-                                lockThreshold={0.1}
-                                lockTimeSamples={costasResult.lock_time_samples}
-                                loopBandwidth={costasLoopBW}
-                                modulationOrder={costasModOrder}
-                                width={320}
-                                height={200}
-                              />
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
                   )}
                 </div>
               ) : (

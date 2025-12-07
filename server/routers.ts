@@ -28,9 +28,6 @@ import {
 import { parseSigMFMetadata, annotationToSigMF, generateSigMFMetadata } from "./sigmf";
 import { storagePut, storageGet, storageDelete } from "./storage";
 import { demodulateRTTY, demodulatePSK31, decodeCW } from "./demodulator";
-import { batchDeleteCaptures } from "./batchDelete";
-import { calculateByteRange, fetchDataRange } from "./rangeRequest";
-import { serializeIQToArrow } from "./arrowSerializer";
 import { invokeLLM } from "./_core/llm";
 import { exec } from 'child_process';
 import { promisify } from 'util';
@@ -42,19 +39,9 @@ import { runFAMAnalysis, classifyModulation } from './pythonBridge';
 import { fetchIQSamples, validateSampleRange } from './iqDataFetcher';
 import { parseIQData, computeSCF, classifyModulation as classifyModulationJS } from './dsp';
 import { runSNRCFOEstimation } from './snrCfoBridge';
-import { refineCFOWithCostasLoop } from './snrCfoBridge';
-import { calculateAdaptiveLoopBandwidth } from './adaptiveLoopBandwidth';
-import { batchRefineCFO, filterAnnotationsForCFO, estimateBatchDuration } from './batchCFO';
 import { sdrRouter } from './routers/sdr';
-import { apiKeysRouter } from './routers/apiKeys';
-import { splunkRouter } from "./routers/splunk";
-import { trainingRouter } from "./routers/training";
 import { detectFrequencyHopping } from './freqHopping';
 import { serializeIQSamples, streamIQSamplesArrow } from './arrow';
-import { extractAlphaSlice, extractTauSlice, crossSectionToCSV, type SCFData } from './scfCrossSection';
-import { orthogonalMatchingPursuit, compressiveSamplingMatchingPursuit, lasso, fista } from './compressiveSensing';
-import { wignerVilleDistribution, smoothedPseudoWVD, choiWilliamsDistribution } from './wignerVille';
-import { fastICA, nmf } from './blindSourceSeparation';
 
 // Helper to convert flat array to 2D matrix
 function convertToNestedArray(flat: Float32Array, rows: number, cols: number): number[][] {
@@ -68,9 +55,6 @@ function convertToNestedArray(flat: Float32Array, rows: number, cols: number): n
 export const appRouter = router({
   system: systemRouter,
   sdr: sdrRouter,
-  apiKeys: apiKeysRouter,
-  splunk: splunkRouter,
-  training: trainingRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
@@ -276,18 +260,6 @@ export const appRouter = router({
       }),
 
     /**
-     * Batch delete multiple signal captures with S3 cleanup
-     */
-    batchDelete: protectedProcedure
-      .input(z.object({
-        ids: z.array(z.number()),
-      }))
-      .mutation(async ({ input }) => {
-        const result = await batchDeleteCaptures(input.ids);
-        return result;
-      }),
-
-    /**
      * Get signal data range for visualization
      * Returns binary data as base64 for specified sample range
      */
@@ -300,51 +272,16 @@ export const appRouter = router({
       .query(async ({ input }) => {
         const capture = await getSignalCaptureById(input.captureId);
         if (!capture) throw new Error("Capture not found");
-        if (!capture.dataFileUrl) throw new Error("Data file not available");
+
+        // TODO: Implement HTTP Range request to fetch specific samples
+        // This will use Apache Arrow for zero-copy serialization
         
-        // Validate sample range
-        const isValid = validateSampleRange(
-          capture.datatype || 'cf32_le',
-          input.sampleStart,
-          input.sampleCount,
-          capture.dataFileSize || 0
-        );
-        if (!isValid) throw new Error("Invalid sample range");
-        
-        // Calculate byte range for HTTP Range request
-        const { start, end } = calculateByteRange(
-          capture.datatype || 'cf32_le',
-          input.sampleStart,
-          input.sampleCount
-        );
-        
-        // Fetch data range from S3 using HTTP Range request
-        const buffer = await fetchDataRange(capture.dataFileUrl, start, end);
-        
-        // Parse binary IQ data using rangeRequest module
-        const { iqReal, iqImag } = await import('./rangeRequest').then(m => 
-          m.parseIQData(buffer, capture.datatype || 'cf32_le')
-        );
-        
-        // Serialize to Apache Arrow format (zero-copy)
-        const arrowBuffer = serializeIQToArrow(
-          iqReal,
-          iqImag,
-          input.sampleStart,
-          {
-            datatype: capture.datatype || 'cf32_le',
-            sample_rate: capture.sampleRate?.toString() || '0',
-            center_frequency: '0', // TODO: Extract from metadata
-          }
-        );
-        
-        // Return Arrow buffer as base64 for tRPC transport
         return {
           sampleStart: input.sampleStart,
           sampleCount: input.sampleCount,
           datatype: capture.datatype,
           sampleRate: capture.sampleRate,
-          arrowData: Buffer.from(arrowBuffer).toString('base64'),
+          // data: arrowBuffer (to be implemented)
         };
       }),
 
@@ -415,7 +352,6 @@ export const appRouter = router({
         baudRate: z.number().optional(),
         shift: z.number().optional(),
         wpm: z.number().optional(),
-        coarseCfoHz: z.number().optional(),
       }))
       .mutation(async ({ input }) => {
         const capture = await getSignalCaptureById(input.captureId);
@@ -440,58 +376,12 @@ export const appRouter = router({
         );
 
         // Convert to complex samples
-        let complexSamples = Array.from(iqReal).map((re, i) => ({
+        const complexSamples = Array.from(iqReal).map((re, i) => ({
           re,
           im: iqImag[i]
         }));
 
         const sampleRate = capture.sampleRate || 1;
-        
-        // Apply Costas loop CFO correction if coarseCfoHz is provided
-        if (input.coarseCfoHz && Math.abs(input.coarseCfoHz) > 10) {
-          try {
-            // Determine modulation order from mode
-            let modulationOrder = 4; // Default QPSK
-            if (input.mode === 'RTTY' || input.mode === 'CW') {
-              modulationOrder = 2; // BPSK for RTTY/CW
-            } else if (input.mode === 'PSK31') {
-              modulationOrder = 2; // BPSK for PSK31
-            }
-            
-            // Run Costas loop refinement
-            const costasResult = await refineCFOWithCostasLoop(
-              iqReal,
-              iqImag,
-              sampleRate,
-              {
-                coarseCfoHz: input.coarseCfoHz,
-                modulationOrder,
-                loopBandwidth: 0.01,
-              }
-            );
-            
-            // Apply total CFO correction
-            const totalCfoHz = costasResult.total_cfo_hz;
-            for (let i = 0; i < complexSamples.length; i++) {
-              const t = i / sampleRate;
-              const phase = -2 * Math.PI * totalCfoHz * t;
-              const cosPhase = Math.cos(phase);
-              const sinPhase = Math.sin(phase);
-              
-              const re = complexSamples[i].re;
-              const im = complexSamples[i].im;
-              
-              complexSamples[i] = {
-                re: re * cosPhase - im * sinPhase,
-                im: re * sinPhase + im * cosPhase
-              };
-            }
-            
-            console.log(`[Demodulate] Applied Costas loop CFO correction: ${totalCfoHz.toFixed(1)} Hz`);
-          } catch (error) {
-            console.error('[Demodulate] Costas loop failed, proceeding without CFO correction:', error);
-          }
-        }
 
         // Demodulate based on mode
         let result;
@@ -644,36 +534,6 @@ export const appRouter = router({
             cyclicProfile: jsResult.cyclicProfile,
           };
         }
-      }),
-
-    /**
-     * Extract cross-section slice from SCF data
-     */
-    extractCrossSection: protectedProcedure
-      .input(z.object({
-        scfData: z.object({
-          alpha: z.array(z.number()),
-          tau: z.array(z.number()),
-          scf: z.array(z.array(z.number())),
-        }),
-        sliceType: z.enum(['alpha', 'tau']),
-        sliceValue: z.number(),
-        interpolate: z.boolean().optional(),
-      }))
-      .mutation(async ({ input }) => {
-        const { scfData, sliceType, sliceValue, interpolate = true } = input;
-
-        // Extract cross-section based on type
-        const crossSection = sliceType === 'alpha'
-          ? extractAlphaSlice(scfData, sliceValue, interpolate)
-          : extractTauSlice(scfData, sliceValue, interpolate);
-
-        return {
-          axis: crossSection.axis,
-          values: crossSection.values,
-          slicePosition: crossSection.slicePosition,
-          sliceType: crossSection.sliceType,
-        };
       }),
 
     /**
@@ -867,359 +727,6 @@ export const appRouter = router({
           filename: `${capture.name.replace(/[^a-z0-9]/gi, '_')}_report.pdf`,
         };
       }),
-
-    /**
-     * Reconstruct sparse signal using compressive sensing algorithms
-     */
-    reconstructSparse: protectedProcedure
-      .input(z.object({
-        captureId: z.number(),
-        sampleStart: z.number(),
-        sampleCount: z.number(),
-        algorithm: z.enum(['omp', 'cosamp', 'lasso', 'fista']),
-        sparsityLevel: z.number().min(1).max(100), // Number of non-zero coefficients
-        measurementRatio: z.number().min(0.1).max(1).optional(), // Ratio of measurements to signal length
-      }))
-      .mutation(async ({ input }) => {
-        const capture = await getSignalCaptureById(input.captureId);
-        if (!capture) throw new Error("Capture not found");
-        if (!capture.dataFileUrl) throw new Error("Data file not available");
-
-        // Validate sample range
-        const isValid = validateSampleRange(
-          capture.datatype || 'cf32_le',
-          input.sampleStart,
-          input.sampleCount,
-          capture.dataFileSize || 0
-        );
-        if (!isValid) throw new Error("Invalid sample range");
-
-        // Fetch IQ samples from S3
-        const { iqReal, iqImag } = await fetchIQSamples(
-          capture.dataFileUrl,
-          capture.datatype || 'cf32_le',
-          input.sampleStart,
-          Math.min(input.sampleCount, 16384) // Limit to 16k samples for CS
-        );
-
-        // Create measurement matrix (random Gaussian)
-        const signalLength = iqReal.length;
-        const measurementRatio = input.measurementRatio || 0.5;
-        const numMeasurements = Math.floor(signalLength * measurementRatio);
-        
-        const measurementMatrix = new Float32Array(numMeasurements * signalLength);
-        for (let i = 0; i < measurementMatrix.length; i++) {
-          // Gaussian random matrix
-          measurementMatrix[i] = (Math.random() - 0.5) * 2 / Math.sqrt(numMeasurements);
-        }
-
-        // Compute measurements (y = Φx)
-        const measurements = new Float32Array(numMeasurements);
-        for (let i = 0; i < numMeasurements; i++) {
-          let sum = 0;
-          for (let j = 0; j < signalLength; j++) {
-            sum += measurementMatrix[i * signalLength + j] * iqReal[j];
-          }
-          measurements[i] = sum;
-        }
-
-        // Run selected algorithm
-        let reconstructed: Float32Array;
-        let iterations: number;
-        
-        switch (input.algorithm) {
-          case 'omp':
-            const ompResult = orthogonalMatchingPursuit(measurements, measurementMatrix, input.sparsityLevel);
-            reconstructed = ompResult.reconstructed;
-            iterations = ompResult.iterations;
-            break;
-          case 'cosamp':
-            const cosampResult = compressiveSamplingMatchingPursuit(measurements, measurementMatrix, input.sparsityLevel);
-            reconstructed = cosampResult.reconstructed;
-            iterations = cosampResult.iterations;
-            break;
-          case 'lasso':
-            const lassoResult = lasso(measurements, measurementMatrix, 0.1);
-            reconstructed = lassoResult.reconstructed;
-            iterations = lassoResult.iterations;
-            break;
-          case 'fista':
-            const fistaResult = fista(measurements, measurementMatrix, 0.1);
-            reconstructed = fistaResult.reconstructed;
-            iterations = fistaResult.iterations;
-            break;
-        }
-
-        // Compute reconstruction error
-        let error = 0;
-        for (let i = 0; i < signalLength; i++) {
-          error += (iqReal[i] - reconstructed[i]) ** 2;
-        }
-        const rmse = Math.sqrt(error / signalLength);
-
-        return {
-          original: Array.from(iqReal),
-          reconstructed: Array.from(reconstructed),
-          measurements: Array.from(measurements),
-          algorithm: input.algorithm,
-          sparsityLevel: input.sparsityLevel,
-          measurementRatio,
-          numMeasurements,
-          signalLength,
-          iterations,
-          rmse,
-        };
-      }),
-
-    /**
-     * Compute Wigner-Ville Distribution for time-frequency analysis
-     */
-    computeWVD: protectedProcedure
-      .input(z.object({
-        captureId: z.number(),
-        sampleStart: z.number(),
-        sampleCount: z.number(),
-        distributionType: z.enum(['wvd', 'spwvd', 'choi-williams']),
-        windowSize: z.number().min(16).max(512).optional(),
-        sigma: z.number().min(0.1).max(10).optional(), // For Choi-Williams
-      }))
-      .mutation(async ({ input }) => {
-        const capture = await getSignalCaptureById(input.captureId);
-        if (!capture) throw new Error("Capture not found");
-        if (!capture.dataFileUrl) throw new Error("Data file not available");
-
-        // Validate sample range
-        const isValid = validateSampleRange(
-          capture.datatype || 'cf32_le',
-          input.sampleStart,
-          input.sampleCount,
-          capture.dataFileSize || 0
-        );
-        if (!isValid) throw new Error("Invalid sample range");
-
-        // Fetch IQ samples from S3
-        const { iqReal, iqImag } = await fetchIQSamples(
-          capture.dataFileUrl,
-          capture.datatype || 'cf32_le',
-          input.sampleStart,
-          Math.min(input.sampleCount, 8192) // Limit to 8k samples for WVD
-        );
-
-        // Convert to complex signal
-        const signal = new Float32Array(iqReal.length * 2);
-        for (let i = 0; i < iqReal.length; i++) {
-          signal[i * 2] = iqReal[i];
-          signal[i * 2 + 1] = iqImag[i];
-        }
-
-        // Compute selected distribution
-        let tfr: Float32Array;
-        let timePoints: number;
-        let freqPoints: number;
-        
-        const sampleRate = capture.sampleRate || 1;
-        
-        switch (input.distributionType) {
-          case 'wvd':
-            const wvdResult = wignerVilleDistribution(signal, sampleRate);
-            tfr = wvdResult.tfr;
-            timePoints = wvdResult.width;
-            freqPoints = wvdResult.height;
-            break;
-          case 'spwvd':
-            const spwvdResult = smoothedPseudoWVD(signal, sampleRate, input.windowSize || 64);
-            tfr = spwvdResult.tfr;
-            timePoints = spwvdResult.width;
-            freqPoints = spwvdResult.height;
-            break;
-          case 'choi-williams':
-            const cwResult = choiWilliamsDistribution(signal, sampleRate, input.sigma || 1.0);
-            tfr = cwResult.tfr;
-            timePoints = cwResult.width;
-            freqPoints = cwResult.height;
-            break;
-        }
-
-        // Convert to 2D array for frontend
-        const wvd2D = convertToNestedArray(tfr, timePoints, freqPoints);
-
-        return {
-          wvd: wvd2D,
-          timePoints,
-          freqPoints,
-          distributionType: input.distributionType,
-          sampleRate: capture.sampleRate || 1,
-        };
-      }),
-
-    /**
-     * Separate mixed signals using blind source separation
-     */
-    separateSources: protectedProcedure
-      .input(z.object({
-        captureId: z.number(),
-        sampleStart: z.number(),
-        sampleCount: z.number(),
-        algorithm: z.enum(['fastica', 'nmf']),
-        numComponents: z.number().min(2).max(8),
-        maxIterations: z.number().min(100).max(5000).optional(),
-      }))
-      .mutation(async ({ input }) => {
-        const capture = await getSignalCaptureById(input.captureId);
-        if (!capture) throw new Error("Capture not found");
-        if (!capture.dataFileUrl) throw new Error("Data file not available");
-
-        // Validate sample range
-        const isValid = validateSampleRange(
-          capture.datatype || 'cf32_le',
-          input.sampleStart,
-          input.sampleCount,
-          capture.dataFileSize || 0
-        );
-        if (!isValid) throw new Error("Invalid sample range");
-
-        // Fetch IQ samples from S3
-        const { iqReal, iqImag } = await fetchIQSamples(
-          capture.dataFileUrl,
-          capture.datatype || 'cf32_le',
-          input.sampleStart,
-          Math.min(input.sampleCount, 16384) // Limit to 16k samples for BSS
-        );
-
-        // For BSS, we need multiple mixed signals
-        // Create synthetic mixtures from I and Q channels as two observations
-        const mixedSignals = [
-          iqReal,
-          iqImag,
-        ];
-
-        // Run selected algorithm
-        let sources: Float32Array[];
-        let mixingMatrix: Float32Array;
-        let iterations: number;
-        
-        switch (input.algorithm) {
-          case 'fastica':
-            const icaResult = fastICA(mixedSignals, input.numComponents, input.maxIterations || 1000);
-            sources = icaResult.sources;
-            mixingMatrix = icaResult.mixingMatrix;
-            iterations = icaResult.iterations;
-            break;
-          case 'nmf':
-            // For NMF, create magnitude spectrogram
-            const fftSize = 256;
-            const numFrames = Math.floor(iqReal.length / fftSize);
-            const spectrogram = new Float32Array(fftSize * numFrames);
-            
-            for (let i = 0; i < numFrames; i++) {
-              for (let j = 0; j < fftSize; j++) {
-                const idx = i * fftSize + j;
-                if (idx < iqReal.length) {
-                  spectrogram[i * fftSize + j] = Math.sqrt(iqReal[idx] ** 2 + iqImag[idx] ** 2);
-                }
-              }
-            }
-            
-            const nmfResult = nmf(spectrogram, fftSize, numFrames, input.numComponents, input.maxIterations || 1000);
-            
-            // Extract sources from NMF components (W matrix rows)
-            sources = [];
-            for (let i = 0; i < input.numComponents; i++) {
-              const source = new Float32Array(fftSize);
-              for (let j = 0; j < fftSize; j++) {
-                source[j] = nmfResult.W[j * input.numComponents + i];
-              }
-              sources.push(source);
-            }
-            
-            mixingMatrix = nmfResult.H;
-            iterations = nmfResult.iterations;
-            break;
-        }
-
-        return {
-          sources: sources.map(s => Array.from(s)),
-          mixingMatrix: Array.from(mixingMatrix),
-          algorithm: input.algorithm,
-          numComponents: input.numComponents,
-          iterations,
-        };
-      }),
-
-    /**
-     * Refine CFO estimate using Costas loop PLL
-     */
-    refineCFO: protectedProcedure
-      .input(z.object({
-        captureId: z.number(),
-        sampleStart: z.number(),
-        sampleCount: z.number(),
-        coarseCfoHz: z.number().optional(),
-        modulationOrder: z.number().optional(),
-        loopBandwidth: z.number().optional(),
-        snrDb: z.number().optional(),
-        useAdaptiveBandwidth: z.boolean().optional(),
-      }))
-      .mutation(async ({ input }) => {
-        const capture = await getSignalCaptureById(input.captureId);
-        if (!capture) throw new Error("Capture not found");
-        if (!capture.dataFileUrl) throw new Error("Data file not available");
-        if (!capture.sampleRate) throw new Error("Sample rate not available");
-
-        // Validate sample range
-        const isValid = validateSampleRange(
-          capture.datatype || 'cf32_le',
-          input.sampleStart,
-          input.sampleCount,
-          capture.dataFileSize || 0
-        );
-        if (!isValid) throw new Error("Invalid sample range");
-
-        // Fetch IQ samples
-        const { iqReal, iqImag } = await fetchIQSamples(
-          capture.dataFileUrl,
-          capture.datatype || 'cf32_le',
-          input.sampleStart,
-          Math.min(input.sampleCount, 32768) // Limit to 32k samples for PLL convergence
-        );
-
-        // Calculate adaptive loop bandwidth if enabled
-        let loopBandwidth = input.loopBandwidth || 0.01;
-        let adaptiveInfo: any = null;
-        
-        if (input.useAdaptiveBandwidth && input.snrDb !== undefined) {
-          const adaptiveResult = calculateAdaptiveLoopBandwidth({
-            snrDb: input.snrDb,
-            lockDetected: false, // Initial acquisition
-            currentBandwidth: loopBandwidth,
-          });
-          
-          loopBandwidth = adaptiveResult.bandwidth;
-          adaptiveInfo = {
-            mode: adaptiveResult.mode,
-            reason: adaptiveResult.reason,
-            originalBandwidth: input.loopBandwidth || 0.01,
-            adaptedBandwidth: loopBandwidth,
-          };
-        }
-
-        // Run Costas loop refinement
-        const result = await refineCFOWithCostasLoop(
-          iqReal,
-          iqImag,
-          capture.sampleRate,
-          {
-            coarseCfoHz: input.coarseCfoHz,
-            modulationOrder: input.modulationOrder || 4,
-            loopBandwidth,
-          }
-        );
-
-        return {
-          ...result,
-          adaptiveInfo,
-        };
-      }),
   }),
 
   // Annotations Management
@@ -1276,15 +783,6 @@ export const appRouter = router({
         estimatedCFO: z.number().optional(),
         estimatedBaud: z.number().optional(),
         color: z.string().optional(),
-        sampleStart: z.number().optional(),
-        sampleEnd: z.number().optional(),
-        freqStart: z.number().optional(),
-        freqEnd: z.number().optional(),
-        cfoRefinedHz: z.number().optional(),
-        cfoMethod: z.string().optional(),
-        cfoTimestamp: z.date().optional(),
-        cfoLockDetected: z.boolean().optional(),
-        cfoPhaseErrorVar: z.number().optional(),
       }))
       .mutation(async ({ input }) => {
         const { id, ...updates } = input;
@@ -1300,80 +798,6 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         await deleteAnnotation(input.id);
         return { success: true };
-      }),
-
-    /**
-     * Batch refine CFO for all annotations in a capture
-     */
-    batchRefineCFO: protectedProcedure
-      .input(z.object({
-        captureId: z.number(),
-        modulationOrder: z.number().optional(),
-        loopBandwidth: z.number().optional(),
-        useAdaptiveBandwidth: z.boolean().optional(),
-        filterByCFO: z.boolean().optional(), // Only process annotations with CFO > 10 Hz
-      }))
-      .mutation(async ({ input }) => {
-        const capture = await getSignalCaptureById(input.captureId);
-        if (!capture) throw new Error("Capture not found");
-
-        // Get all annotations for this capture
-        let annotations = await getCaptureAnnotations(input.captureId);
-        
-        // Filter annotations if requested
-        if (input.filterByCFO) {
-          annotations = filterAnnotationsForCFO(annotations);
-        }
-
-        if (annotations.length === 0) {
-          return {
-            total: 0,
-            processed: 0,
-            failed: 0,
-            results: [],
-            message: "No annotations to process"
-          };
-        }
-
-        // Estimate duration
-        const avgSamples = annotations.reduce((sum, a) => sum + a.sampleCount, 0) / annotations.length;
-        const estimatedDuration = estimateBatchDuration(annotations.length, avgSamples);
-
-        // Process batch
-        const results = await batchRefineCFO(
-          annotations,
-          capture,
-          {
-            modulationOrder: input.modulationOrder,
-            loopBandwidth: input.loopBandwidth,
-            useAdaptiveBandwidth: input.useAdaptiveBandwidth,
-            maxConcurrent: 3,
-          }
-        );
-
-        // Update annotations with results
-        for (const result of results) {
-          if (result.success) {
-            await updateAnnotation(result.annotationId, {
-              cfoRefinedHz: result.cfoRefinedHz,
-              cfoMethod: result.cfoMethod,
-              cfoTimestamp: new Date(),
-              cfoLockDetected: result.cfoLockDetected,
-              cfoPhaseErrorVar: result.cfoPhaseErrorVar,
-            });
-          }
-        }
-
-        const processed = results.filter(r => r.success).length;
-        const failed = results.filter(r => !r.success).length;
-
-        return {
-          total: annotations.length,
-          processed,
-          failed,
-          results,
-          estimatedDuration,
-        };
       }),
 
     /**

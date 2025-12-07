@@ -2,11 +2,6 @@ import { z } from 'zod';
 import { router, protectedProcedure } from '../_core/trpc';
 import { TRPCError } from '@trpc/server';
 import { enumerateSoapyDevices, startSoapyStream, stopSoapyStream, configureSoapyDevice } from '../soapy';
-import { sessionManager } from '../streaming/sessionManager';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-
-const execAsync = promisify(exec);
 
 /**
  * SDR Router - SoapySDR device control and streaming
@@ -49,34 +44,7 @@ export const sdrRouter = router({
     }),
 
   /**
-   * Start SDR streaming session (simplified API)
-   */
-  startSession: protectedProcedure
-    .input(z.object({
-      deviceDriver: z.string(),
-      centerFreqHz: z.number(),
-      sampleRateHz: z.number(),
-      gainDb: z.number(),
-      recording: z.boolean().optional(),
-    }))
-    .mutation(async ({ input, ctx }) => {
-      const session = sessionManager.createSession({
-        userId: ctx.user.openId,
-        deviceDriver: input.deviceDriver,
-        centerFreqHz: input.centerFreqHz,
-        sampleRateHz: input.sampleRateHz,
-        gainDb: input.gainDb,
-        recording: input.recording,
-      });
-      
-      return {
-        sessionId: session.id,
-        status: session.status,
-      };
-    }),
-
-  /**
-   * Start SDR streaming session (legacy API)
+   * Start SDR streaming session
    */
   startStream: protectedProcedure
     .input(z.object({
@@ -133,39 +101,6 @@ export const sdrRouter = router({
 
   /**
    * Stop SDR streaming session
-   */
-  stopSession: protectedProcedure
-    .input(z.object({
-      sessionId: z.string(),
-    }))
-    .mutation(async ({ input, ctx }) => {
-      const session = sessionManager.getSession(input.sessionId);
-      if (!session) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Session not found',
-        });
-      }
-      
-      if (session.userId !== ctx.user.openId) {
-        throw new TRPCError({
-          code: 'FORBIDDEN',
-          message: 'Unauthorized',
-        });
-      }
-      
-      const result = await sessionManager.stopSession(input.sessionId);
-      
-      return {
-        sessionId: input.sessionId,
-        samplesRecorded: session.samplesRecorded,
-        metaUrl: result.metaUrl,
-        dataUrl: result.dataUrl,
-      };
-    }),
-
-  /**
-   * Stop SDR streaming session (legacy)
    */
   stopStream: protectedProcedure
     .input(z.object({

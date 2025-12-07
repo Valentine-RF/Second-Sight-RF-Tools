@@ -1,8 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useSignalStore } from '@/store/signalStore';
-import { LODManager } from '@/lib/lodManager';
-import { GPUFFT } from '@/lib/gpuFFT';
-import { TileManager, type Viewport } from '@/lib/tileManager';
 
 /**
  * Colormap shader functions for WebGL
@@ -38,13 +35,7 @@ const COLORMAP_SHADERS = {
 interface SpectrogramProps {
   width: number;
   height: number;
-  sampleRate?: number; // For LOD calculation
-  lodQuality?: 'high' | 'medium' | 'low' | 'auto';
-  enableGPUFFT?: boolean; // Enable GPU-accelerated FFT
-  enableTiling?: boolean; // Enable viewport culling with tiles
-  totalSamples?: number; // Total samples in capture (for tiling)
   onBoxSelect?: (selection: { sampleStart: number; sampleEnd: number; freqLowerHz: number; freqUpperHz: number }) => void;
-  onFPSUpdate?: (fps: number) => void; // Callback for FPS monitoring
 }
 
 /**
@@ -61,7 +52,7 @@ interface SpectrogramProps {
  * during high-frequency updates. Use requestAnimationFrame for smooth animation.
  */
 export const Spectrogram = React.forwardRef<{ captureCanvas: () => string }, SpectrogramProps>(
-  ({ width, height, sampleRate = 1e6, lodQuality = 'auto', enableGPUFFT = false, enableTiling = false, totalSamples = 1e6, onBoxSelect, onFPSUpdate }, ref) => {
+  ({ width, height, onBoxSelect }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const glRef = useRef<WebGLRenderingContext | null>(null);
   const programRef = useRef<WebGLProgram | null>(null);
@@ -70,11 +61,6 @@ export const Spectrogram = React.forwardRef<{ captureCanvas: () => string }, Spe
   // High-frequency data stored in refs (NOT state)
   const fftDataRef = useRef<Float32Array | null>(null);
   const animationFrameRef = useRef<number>(0);
-  const lodManagerRef = useRef<LODManager>(new LODManager());
-  const gpuFFTRef = useRef<GPUFFT | null>(null);
-  const tileManagerRef = useRef<TileManager | null>(null);
-  const [currentLOD, setCurrentLOD] = useState<{ quality: string; reason: string }>({ quality: 'high', reason: 'Initializing...' });
-  const [viewport, setViewport] = useState<Viewport>({ x: 0, y: 0, width, height, zoom: 1, pan: { x: 0, y: 0 } });
 
   // UI state from store
   const colormap = useSignalStore((state) => state.colormap);
@@ -190,42 +176,16 @@ export const Spectrogram = React.forwardRef<{ captureCanvas: () => string }, Spe
         return;
       }
 
-      // Record frame for FPS tracking
-      lodManagerRef.current.recordFrame();
-      const currentFPS = lodManagerRef.current.getCurrentFPS();
-      
-      // Report FPS to parent component
-      if (onFPSUpdate && currentFPS > 0) {
-        onFPSUpdate(currentFPS);
-      }
-
-      // Calculate LOD settings
-      const lodResult = lodManagerRef.current.calculateLOD({
-        viewportWidth: width,
-        viewportHeight: height,
-        sampleRate,
-        targetFPS: 60,
-        quality: lodQuality,
-      });
-
-      // Update LOD display (throttled)
-      if (Math.random() < 0.01) { // Update UI only 1% of frames
-        setCurrentLOD({ quality: lodResult.quality, reason: lodResult.reason });
-      }
-
-      // Decimate FFT data if needed
-      const processedFFT = lodManagerRef.current.decimateFFT(fftData, lodResult.decimationFactor);
-
       gl.useProgram(program);
 
-      // Update texture with FFT data (using LOD-adjusted size)
+      // Update texture with FFT data
       gl.bindTexture(gl.TEXTURE_2D, texture);
       gl.texImage2D(
         gl.TEXTURE_2D,
         0,
         gl.LUMINANCE,
-        Math.min(1024, lodResult.textureWidth), // width (frequency bins)
-        Math.min(512, lodResult.textureHeight),  // height (time steps)
+        1024, // width (frequency bins)
+        512,  // height (time steps)
         0,
         gl.LUMINANCE,
         gl.FLOAT,
@@ -306,7 +266,6 @@ export const Spectrogram = React.forwardRef<{ captureCanvas: () => string }, Spe
         width={width}
         height={height}
         className="absolute inset-0"
-        data-spectrogram="main"
         onContextMenu={handleContextMenu}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -316,26 +275,6 @@ export const Spectrogram = React.forwardRef<{ captureCanvas: () => string }, Spe
           setSelectionEnd(null);
         }}
       />
-      
-      {/* LOD Quality Indicator */}
-      <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-sm px-2 py-1 rounded text-xs font-mono pointer-events-none">
-        <div className="flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full ${
-            currentLOD.quality === 'high' ? 'bg-green-400' :
-            currentLOD.quality === 'medium' ? 'bg-yellow-400' :
-            'bg-red-400'
-          }`} />
-          <span className="text-gray-300">LOD: {currentLOD.quality.toUpperCase()}</span>
-        </div>
-        <div className="text-gray-500 text-[10px] mt-0.5">{currentLOD.reason}</div>
-      </div>
-
-      {/* FPS Counter */}
-      {onFPSUpdate && (
-        <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm px-2 py-1 rounded text-xs font-mono pointer-events-none">
-          <span className="text-gray-300">FPS: {lodManagerRef.current.getCurrentFPS().toFixed(1)}</span>
-        </div>
-      )}
       
       {/* Selection box overlay */}
       {isSelecting && selectionStart && selectionEnd && (

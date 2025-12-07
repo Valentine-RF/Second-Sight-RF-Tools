@@ -2,10 +2,6 @@ import { useState } from 'react';
 import { UploadProgress, UploadTask } from '@/components/UploadProgress';
 import { FileListSkeleton } from '@/components/FileListSkeleton';
 import { DropZone } from '@/components/DropZone';
-import { SmartFileUpload } from '@/components/SmartFileUpload';
-import { BatchUploadQueue } from '@/components/BatchUploadQueue';
-import { LearningStatsDashboard } from '@/components/LearningStatsDashboard';
-import type { DetectedMetadata } from '@/lib/signalFormatDetector';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { trpc } from '@/lib/trpc';
 import { useSignalStore } from '@/store/signalStore';
@@ -36,7 +32,7 @@ export default function FileManager() {
 
   const [isUploading, setIsUploading] = useState(false);
   const [uploadTasks, setUploadTasks] = useState<UploadTask[]>([]);
-  const [uploadMode, setUploadMode] = useState<'sigmf' | 'raw' | 'smart' | 'batch' | 'stats'>('smart');
+  const [uploadMode, setUploadMode] = useState<'sigmf' | 'raw'>('sigmf');
   const [uploadForm, setUploadForm] = useState({
     name: '',
     description: '',
@@ -68,23 +64,6 @@ export default function FileManager() {
     },
     onError: (error) => {
       toast.error(`Failed to delete: ${error.message}`);
-    },
-  });
-
-  // Batch delete mutation
-  const batchDeleteMutation = trpc.captures.batchDelete.useMutation({
-    onSuccess: (result) => {
-      if (result.deleted > 0) {
-        toast.success(`Deleted ${result.deleted} capture${result.deleted !== 1 ? 's' : ''}`);
-      }
-      if (result.failed > 0) {
-        toast.error(`Failed to delete ${result.failed} capture${result.failed !== 1 ? 's' : ''}`);
-      }
-      setSelectedCaptureIds([]);
-      refetch();
-    },
-    onError: (error) => {
-      toast.error(`Batch delete failed: ${error.message}`);
     },
   });
 
@@ -234,24 +213,9 @@ export default function FileManager() {
         )
       );
 
-       toast.success('Upload complete!');
-      
-      // Log to Splunk
-      try {
-        await fetch('/api/splunk/log-upload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            captureName: uploadForm.name,
-            fileSize: totalSize,
-            format: 'sigmf',
-          }),
-        });
-      } catch (err) {
-        console.error('Failed to log to Splunk:', err);
-      }
-      
+      toast.success('Upload complete!');
       refetch();
+
       setUploadForm({
         name: '',
         description: '',
@@ -277,25 +241,9 @@ export default function FileManager() {
     setLocation('/cockpit');
   };
 
-  const handleDeleteCapture = (id: number, name: string) => {
-    if (confirm(`Are you sure you want to delete "${name}"?\n\nThis will permanently delete:\n• Signal capture metadata\n• Raw IQ data file from S3\n• All annotations and analysis results\n\nThis action cannot be undone.`)) {
+  const handleDeleteCapture = (id: number) => {
+    if (confirm('Are you sure you want to delete this signal capture?')) {
       deleteMutation.mutate({ id });
-    }
-  };
-
-  const handleBatchDelete = () => {
-    if (selectedCaptureIds.length === 0) {
-      toast.error('No captures selected');
-      return;
-    }
-
-    const captureNames = captures
-      ?.filter(c => selectedCaptureIds.includes(c.id))
-      .map(c => c.name)
-      .join(', ');
-
-    if (confirm(`Are you sure you want to delete ${selectedCaptureIds.length} capture${selectedCaptureIds.length !== 1 ? 's' : ''}?\n\n${captureNames}\n\nThis will permanently delete:\n• Signal capture metadata\n• Raw IQ data files from S3\n• All annotations and analysis results\n\nThis action cannot be undone.`)) {
-      batchDeleteMutation.mutate({ ids: selectedCaptureIds });
     }
   };
 
@@ -382,38 +330,31 @@ export default function FileManager() {
           <div className="flex items-center justify-between mb-4">
             <h2>Upload Signal Capture</h2>
             <div className="flex gap-2">
-              <Button variant={uploadMode === 'smart' ? 'default' : 'outline'} size="sm" onClick={() => setUploadMode('smart')}>Smart Upload</Button>
-              <Button variant={uploadMode === 'batch' ? 'default' : 'outline'} size="sm" onClick={() => setUploadMode('batch')}>Batch Upload</Button>
-              <Button variant={uploadMode === 'sigmf' ? 'default' : 'outline'} size="sm" onClick={() => setUploadMode('sigmf')}>SigMF</Button>
-              <Button variant={uploadMode === 'raw' ? 'default' : 'outline'} size="sm" onClick={() => setUploadMode('raw')}>Raw IQ</Button>
-              <Button variant={uploadMode === 'stats' ? 'default' : 'outline'} size="sm" onClick={() => setUploadMode('stats')}>Learning Stats</Button>
+              <Button
+                variant={uploadMode === 'sigmf' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setUploadMode('sigmf')}
+              >
+                SigMF Upload
+              </Button>
+              <Button
+                variant={uploadMode === 'raw' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setUploadMode('raw')}
+              >
+                Raw IQ Upload
+              </Button>
             </div>
           </div>
           
-          {uploadMode === 'smart' ? (
-            <SmartFileUpload
-              onUpload={async (file, metadata) => {
-                setIsUploading(true);
-                try {
-                  await uploadRawIQMutation.mutateAsync({
-                    name: metadata.suggestedName,
-                    description: undefined,
-                    datatype: metadata.datatype === 'unknown' ? 'cf32_le' : metadata.datatype,
-                    sampleRate: metadata.sampleRate!,
-                    centerFrequency: metadata.centerFrequency || undefined,
-                    hardware: metadata.hardware || undefined,
-                    dataFileSize: file.size,
-                  });
-                  toast.success('File uploaded successfully!');
-                } catch (error: any) {
-                  toast.error(`Upload failed: ${error.message}`);
-                } finally {
-                  setIsUploading(false);
-                }
-              }}
-              isUploading={isUploading}
-            />
-          ) : uploadMode === 'sigmf' ? (
+          {/* Drag and Drop Zone */}
+          <DropZone onFilesDropped={handleFilesDropped} className="mb-6" />
+          
+          <div className="text-center my-4">
+            <span className="technical-label text-sm">or use manual file selection below</span>
+          </div>
+          
+          {uploadMode === 'sigmf' ? (
             <div className="grid gap-4">
               <div>
                 <Label htmlFor="name">Capture Name *</Label>
@@ -477,7 +418,7 @@ export default function FileManager() {
                 {isUploading ? 'Uploading...' : 'Upload Signal Capture'}
               </Button>
             </div>
-          ) : uploadMode === 'raw' ? (
+          ) : (
             <div className="grid gap-4">
               <div>
                 <Label htmlFor="rawName">Capture Name *</Label>
@@ -576,23 +517,7 @@ export default function FileManager() {
                 {isUploading ? 'Uploading...' : 'Upload Raw IQ File'}
               </Button>
             </div>
-          ) : uploadMode === 'batch' ? (
-            <BatchUploadQueue
-              onUpload={async (file, metadata) => {
-                await uploadRawIQMutation.mutateAsync({
-                  name: metadata.suggestedName,
-                  description: undefined,
-                  datatype: metadata.datatype === 'unknown' ? 'cf32_le' : metadata.datatype,
-                  sampleRate: metadata.sampleRate!,
-                  centerFrequency: metadata.centerFrequency || undefined,
-                  hardware: metadata.hardware || undefined,
-                  dataFileSize: file.size,
-                });
-              }}
-            />
-          ) : uploadMode === 'stats' ? (
-            <LearningStatsDashboard />
-          ) : null}
+          )}
         </Card>
 
         {/* Captures List */}
@@ -626,15 +551,6 @@ export default function FileManager() {
                 >
                   <Download className="w-4 h-4 mr-2" />
                   {isExporting ? 'Exporting...' : `Export ${selectedCaptureIds.length} Annotation${selectedCaptureIds.length !== 1 ? 's' : ''}`}
-                </Button>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  disabled={selectedCaptureIds.length === 0 || batchDeleteMutation.isPending}
-                  onClick={handleBatchDelete}
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  {batchDeleteMutation.isPending ? 'Deleting...' : `Delete ${selectedCaptureIds.length} Capture${selectedCaptureIds.length !== 1 ? 's' : ''}`}
                 </Button>
               </div>
             )}
@@ -716,8 +632,7 @@ export default function FileManager() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDeleteCapture(capture.id, capture.name)}
-                        title="Delete capture"
+                        onClick={() => handleDeleteCapture(capture.id)}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>

@@ -75,15 +75,8 @@ export const annotations = mysqlTable("annotations", {
   modulationType: varchar("modulationType", { length: 64 }), // QPSK, BPSK, 16-QAM, etc.
   confidence: float("confidence"), // 0.0 to 1.0
   estimatedSNR: float("estimatedSNR"), // dB
-  estimatedCFO: float("estimatedCFO"), // Hz (coarse FFT-based estimate)
+  estimatedCFO: float("estimatedCFO"), // Hz
   estimatedBaud: float("estimatedBaud"), // symbols/sec
-  
-  // CFO refinement tracking (Costas loop)
-  cfoRefinedHz: float("cfoRefinedHz"), // Hz (fine Costas loop estimate)
-  cfoMethod: varchar("cfoMethod", { length: 64 }), // "FFT" or "Costas Loop"
-  cfoTimestamp: timestamp("cfoTimestamp"), // When CFO was measured
-  cfoLockDetected: boolean("cfoLockDetected"), // Costas loop lock status
-  cfoPhaseErrorVar: float("cfoPhaseErrorVar"), // Phase error variance
   
   // Color coding for UI
   color: varchar("color", { length: 32 }).default("#3b82f6"), // Hex color for flag/overlay
@@ -158,104 +151,3 @@ export const chatMessages = mysqlTable("chat_messages", {
 
 export type ChatMessage = typeof chatMessages.$inferSelect;
 export type InsertChatMessage = typeof chatMessages.$inferInsert;
-
-/**
- * API keys for third-party access to modulation classification endpoint.
- * Enables external tools to submit signals for analysis.
- */
-export const apiKeys = mysqlTable("api_keys", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
-  name: varchar("name", { length: 255 }).notNull(),
-  key: varchar("key", { length: 64 }).notNull().unique(),
-  lastUsed: timestamp("lastUsed"),
-  requestCount: int("requestCount").notNull().default(0),
-  rateLimit: int("rateLimit").notNull().default(100), // requests per hour
-  isActive: boolean("isActive").notNull().default(true),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  expiresAt: timestamp("expiresAt"),
-});
-
-export type ApiKey = typeof apiKeys.$inferSelect;
-export type InsertApiKey = typeof apiKeys.$inferInsert;
-
-/**
- * Training datasets for modulation classifier.
- * Stores uploaded RadioML or GNU Radio datasets.
- */
-export const trainingDatasets = mysqlTable('training_datasets', {
-  id: int('id').autoincrement().primaryKey(),
-  userId: int('user_id').notNull(),
-  name: text('name').notNull(),
-  description: text('description'),
-  format: varchar('format', { length: 50 }).notNull(), // 'radioml', 'gnuradio', 'custom'
-  sampleCount: int('sample_count').notNull(),
-  modulationTypes: text('modulation_types').notNull(), // JSON array of modulation types
-  sampleRate: int('sample_rate'),
-  fileSize: int('file_size').notNull(),
-  filePath: text('file_path').notNull(), // S3 path
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
-});
-
-/**
- * Model versions for modulation classifier.
- * Tracks trained models with metrics and confusion matrices.
- */
-export const modelVersions = mysqlTable('model_versions', {
-  id: int('id').autoincrement().primaryKey(),
-  userId: int('user_id').notNull(),
-  name: text('name').notNull(),
-  description: text('description'),
-  datasetId: int('dataset_id'),
-  epochs: int('epochs').notNull(),
-  batchSize: int('batch_size').notNull(),
-  learningRate: float('learning_rate').notNull(),
-  accuracy: float('accuracy'),
-  loss: float('loss'),
-  confusionMatrix: text('confusion_matrix'), // JSON
-  modelPath: text('model_path').notNull(), // S3 path
-  isActive: boolean('is_active').notNull().default(false),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-});
-
-/**
- * Splunk Enterprise integration configuration.
- * Stores HEC (HTTP Event Collector) settings for centralized logging.
- */
-export const splunkConfig = mysqlTable('splunk_config', {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
-  
-  // Splunk HEC configuration
-  hecUrl: varchar("hecUrl", { length: 512 }).notNull(), // e.g., https://splunk.example.com:8088/services/collector
-  hecToken: varchar("hecToken", { length: 256 }).notNull(),
-  
-  // Splunk Search API configuration (for dashboard queries)
-  splunkUrl: varchar("splunkUrl", { length: 512 }), // Base URL for Search API (e.g., https://splunk.example.com:8089)
-  searchUsername: varchar("searchUsername", { length: 128 }),
-  searchPassword: varchar("searchPassword", { length: 256 }),
-  index: varchar("index", { length: 128 }).default("main"),
-  source: varchar("source", { length: 128 }).default("second-sight-rf"),
-  sourcetype: varchar("sourcetype", { length: 128 }).default("rf_signal_analysis"),
-  
-  // Event filtering
-  enabledEventTypes: text("enabledEventTypes"), // JSON array of enabled event types
-  
-  // Connection settings
-  verifySsl: boolean("verifySsl").notNull().default(true),
-  batchSize: int("batchSize").notNull().default(10),
-  flushInterval: int("flushInterval").notNull().default(5000), // milliseconds
-  
-  // Status
-  isActive: boolean("isActive").notNull().default(true),
-  lastTestAt: timestamp("lastTestAt"),
-  lastTestSuccess: boolean("lastTestSuccess"),
-  lastTestMessage: text("lastTestMessage"),
-  
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
-
-export type SplunkConfig = typeof splunkConfig.$inferSelect;
-export type InsertSplunkConfig = typeof splunkConfig.$inferInsert;
