@@ -457,3 +457,10 @@
 - [x] Test end-to-end: upload → analyze → visualize → annotate
 - [x] Verify all features work without external Python dependencies
 - [x] All 11 DSP tests passing
+
+## Python Backend Wiring (URGENT)
+- [x] Replace JavaScript DSP calls with Python bridge in analyzeCycles procedure
+- [x] Replace JavaScript classification with Python TorchSig in classifyModulation procedure
+- [x] Add error handling for Python script failures
+- [ ] Test Python script execution with real IQ data
+- [ ] Document Python environment setup requirements for deployment

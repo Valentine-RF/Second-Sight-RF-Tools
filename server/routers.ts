@@ -38,6 +38,15 @@ import { runFAMAnalysis, classifyModulation } from './pythonBridge';
 import { fetchIQSamples, validateSampleRange } from './iqDataFetcher';
 import { parseIQData, computeSCF, classifyModulation as classifyModulationJS } from './dsp';
 
+// Helper to convert flat array to 2D matrix
+function convertToNestedArray(flat: Float32Array, rows: number, cols: number): number[][] {
+  const result: number[][] = [];
+  for (let i = 0; i < rows; i++) {
+    result.push(Array.from(flat.slice(i * cols, (i + 1) * cols)));
+  }
+  return result;
+}
+
 export const appRouter = router({
   system: systemRouter,
   auth: router({
@@ -287,18 +296,39 @@ export const appRouter = router({
           input.sampleCount
         );
         
-        // Convert to complex samples array
-        const samples = Array.from(iqReal).map((re, i) => ({ re, im: iqImag[i] }));
-        
-        // Run JavaScript FAM algorithm
-        const result = computeSCF(samples, 32, 64);
-
-        return {
-          alpha: result.alpha,
-          freq: result.freq,
-          scf: result.scf,
-          cyclicProfile: result.cyclicProfile,
-        };
+        // Run Python FAM algorithm with GPU acceleration
+        try {
+          const result = await runFAMAnalysis(
+            iqReal,
+            iqImag,
+            capture.sampleRate || 1e6,
+            {
+              nfft: input.nfft || 256,
+              overlap: input.overlap || 0.5,
+              alpha_max: input.alphaMax || 1.0,
+            }
+          );
+          
+          // Convert Python result to frontend format
+          return {
+            alpha: Array.from(result.cyclic_freqs),
+            freq: Array.from(result.spectral_freqs),
+            scf: convertToNestedArray(result.scf_magnitude, result.shape.cyclic, result.shape.spectral),
+            cyclicProfile: Array.from(result.cyclic_profile),
+          };
+        } catch (pythonError) {
+          // Fallback to JavaScript if Python fails
+          console.warn('Python FAM failed, falling back to JavaScript:', pythonError);
+          const samples = Array.from(iqReal).map((re, i) => ({ re, im: iqImag[i] }));
+          const jsResult = computeSCF(samples, 32, 64);
+          
+          return {
+            alpha: jsResult.alpha,
+            freq: jsResult.freq,
+            scf: jsResult.scf,
+            cyclicProfile: jsResult.cyclicProfile,
+          };
+        }
       }),
 
     /**
@@ -333,19 +363,39 @@ export const appRouter = router({
           input.sampleCount
         );
         
-        // Convert to complex samples array
-        const samples = Array.from(iqReal).map((re, i) => ({ re, im: iqImag[i] }));
-        
-        // Run JavaScript modulation classification
-        const classifications = classifyModulationJS(samples);
-        
-        const topK = input.topK || 3;
-        return {
-          predictions: classifications.slice(0, topK).map(c => ({
-            modulation: c.modulation,
-            confidence: c.confidence,
-          })),
-        };
+        // Run Python TorchSig classification with GPU acceleration
+        try {
+          const result = await classifyModulation(
+            iqReal,
+            iqImag,
+            {
+              top_k: input.topK || 5,
+            }
+          );
+          
+          return {
+            predictions: result.predictions.map(p => ({
+              modulation: p.modulation,
+              confidence: p.confidence,
+              probability: p.probability,
+            })),
+            warning: result.warning,
+          };
+        } catch (pythonError) {
+          // Fallback to JavaScript if Python fails
+          console.warn('Python classification failed, falling back to JavaScript:', pythonError);
+          const samples = Array.from(iqReal).map((re, i) => ({ re, im: iqImag[i] }));
+          const classifications = classifyModulationJS(samples);
+          
+          const topK = input.topK || 3;
+          return {
+            predictions: classifications.slice(0, topK).map(c => ({
+              modulation: c.modulation,
+              confidence: c.confidence,
+              probability: c.confidence / 100,
+            })),
+          };
+        }
       }),
   }),
 
