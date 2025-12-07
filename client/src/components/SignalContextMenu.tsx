@@ -12,7 +12,7 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import { Activity, Zap, Save, Layers } from "lucide-react";
+import { Activity, Zap, Save, Layers, Radio } from "lucide-react";
 
 export interface SignalSelection {
   sampleStart: number;
@@ -29,6 +29,7 @@ interface SignalContextMenuProps {
   captureId: number;
   onAnalyzeCycles?: (selection: SignalSelection) => void;
   onClassifyModulation?: (selection: SignalSelection) => void;
+  onDetectHopping?: (selection: SignalSelection) => void;
   onSaveAnnotation?: (selection: SignalSelection) => void;
   onViewDetails?: (selection: SignalSelection) => void;
 }
@@ -39,6 +40,7 @@ export default function SignalContextMenu({
   captureId,
   onAnalyzeCycles,
   onClassifyModulation,
+  onDetectHopping,
   onSaveAnnotation,
   onViewDetails,
 }: SignalContextMenuProps) {
@@ -83,6 +85,19 @@ export default function SignalContextMenu({
                 <div className="font-medium">Classify Modulation</div>
                 <div className="text-xs text-gray-400">
                   Identify modulation type using ML
+                </div>
+              </div>
+            </ContextMenuItem>
+            
+            <ContextMenuItem
+              onClick={() => selection && onDetectHopping?.(selection)}
+              className="flex items-center gap-2 cursor-pointer hover:bg-gray-800"
+            >
+              <Radio className="w-4 h-4 text-orange-400" />
+              <div>
+                <div className="font-medium">Detect Hopping</div>
+                <div className="text-xs text-gray-400">
+                  Analyze frequency hopping patterns
                 </div>
               </div>
             </ContextMenuItem>

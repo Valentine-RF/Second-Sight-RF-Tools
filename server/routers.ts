@@ -405,6 +405,68 @@ export const appRouter = router({
       }),
 
     /**
+     * Detect frequency hopping patterns
+     */
+    detectHopping: protectedProcedure
+      .input(z.object({
+        captureId: z.number(),
+        sampleStart: z.number(),
+        sampleCount: z.number(),
+      }))
+      .mutation(async ({ input }) => {
+        const capture = await getSignalCaptureById(input.captureId);
+        if (!capture) throw new Error("Capture not found");
+        if (!capture.dataFileUrl) throw new Error("Data file not available");
+
+        // Validate sample range
+        const isValid = validateSampleRange(
+          capture.datatype || 'cf32_le',
+          input.sampleStart,
+          input.sampleCount,
+          capture.dataFileSize || 0
+        );
+        if (!isValid) throw new Error("Invalid sample range");
+
+        // Fetch IQ samples from S3
+        const { iqReal, iqImag } = await fetchIQSamples(
+          capture.dataFileUrl,
+          capture.datatype || 'cf32_le',
+          input.sampleStart,
+          Math.min(input.sampleCount, 65536) // Limit to 64k samples
+        );
+
+        // Convert to complex samples
+        const complexSamples = Array.from(iqReal).map((re, i) => ({
+          re,
+          im: iqImag[i]
+        }));
+
+        const sampleRate = capture.sampleRate || 1;
+
+        // Detect frequency hopping
+        // First compute spectrogram from complex samples
+        const fftSize = 1024;
+        const hopSize = 256;
+        const numFrames = Math.floor((complexSamples.length - fftSize) / hopSize);
+        const spectrogram: Float32Array[] = [];
+        
+        for (let i = 0; i < numFrames; i++) {
+          const frame = complexSamples.slice(i * hopSize, i * hopSize + fftSize);
+          const fft = new Float32Array(fftSize);
+          // Simple magnitude spectrum (replace with proper FFT if needed)
+          for (let j = 0; j < fftSize; j++) {
+            fft[j] = Math.sqrt(frame[j].re ** 2 + frame[j].im ** 2);
+          }
+          spectrogram.push(fft);
+        }
+        
+        const { detectFrequencyHopping } = await import('./freqHopping');
+        const hopResult = detectFrequencyHopping(spectrogram, sampleRate, fftSize, hopSize);
+
+        return hopResult;
+      }),
+
+    /**
      * Run FAM (Cyclostationary) Analysis on a signal region
      */
     analyzeCycles: protectedProcedure

@@ -71,20 +71,39 @@ export default function ForensicCockpit() {
   const [classificationResults, setClassificationResults] = useState<any[]>([]);
   const [fftData, setFftData] = useState<any>(null);
   const [demodData, setDemodData] = useState<any>(null);
+  const [demodResult, setDemodResult] = useState<any>(null);
+  const [hopResult, setHopResult] = useState<any>(null);
+  const [annotationSearchText, setAnnotationSearchText] = useState('');
+  const [annotationFilterModulation, setAnnotationFilterModulation] = useState('all');
+  const [annotationMinSNR, setAnnotationMinSNR] = useState(-100);
   const [editingAnnotation, setEditingAnnotation] = useState<any>(null);
   const [annotationEditOpen, setAnnotationEditOpen] = useState(false);
   const [selectedAnnotationId, setSelectedAnnotationId] = useState<number | null>(null);
   const [pendingAnnotation, setPendingAnnotation] = useState<SignalSelection | null>(null);
   
-  const demodulateMutation = trpc.captures.demodulate.useMutation({
+  const demodMutation = trpc.captures.demodulate.useMutation({
     onSuccess: (data) => {
-      setDemodData(data);
+      setDemodResult(data);
       setActiveTab('hex');
-      toast.success(`${data.mode} signal demodulated!`);
+      toast.success('Demodulation complete');
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(`Demodulation failed: ${error.message}`);
-      setDemodData(null);
+    },
+  });
+
+  const hopMutation = trpc.captures.detectHopping.useMutation({
+    onSuccess: (data) => {
+      if (data) {
+        // Store hop result for visualization
+        setHopResult(data);
+        toast.success(`Detected ${data.hops.length} frequency hops (${data.pattern} pattern)`);
+      } else {
+        toast.info('No frequency hopping detected');
+      }
+    },
+    onError: (error: any) => {
+      toast.error(`Hopping detection failed: ${error.message}`);
     },
   });
   
@@ -350,7 +369,7 @@ export default function ForensicCockpit() {
     const mode = modulationType.includes('PSK') ? 'PSK31' : 
                  modulationType.includes('RTTY') || modulationType.includes('FSK') ? 'RTTY' : 'CW';
     
-    demodulateMutation.mutate({
+    demodMutation.mutate({
       captureId: currentCapture.id,
       sampleStart: selection.sampleStart,
       sampleCount,
@@ -539,6 +558,14 @@ export default function ForensicCockpit() {
                 freqEnd: (currentCapture?.sampleRate || 1e6) / 2,
               } : null}
               captureId={currentCapture?.id || 0}
+              onDetectHopping={(sel) => {
+                if (!currentCapture) return;
+                hopMutation.mutate({
+                  captureId: currentCapture.id,
+                  sampleStart: sel.sampleStart,
+                  sampleCount: sel.sampleCount,
+                });
+              }}
               onAnalyzeCycles={(sel) => {
                 if (!currentCapture) return;
                 analyzeCyclesMutation.mutate({
@@ -635,6 +662,10 @@ export default function ForensicCockpit() {
                 }}
                 title={annotation.label || 'Annotation'}
                 onClick={() => setSelectedAnnotationId(annotation.id)}
+                onDoubleClick={() => {
+                  setEditingAnnotation(annotation);
+                  setAnnotationEditOpen(true);
+                }}
               >
                 {/* Annotation Label */}
                 <div
@@ -1133,6 +1164,45 @@ export default function ForensicCockpit() {
                 <div className="wireframe-cyan p-2">Decimate → 4x</div>
               </div>
             </Card>
+
+            {/* Annotation Filtering */}
+            {currentCapture && savedAnnotations.length > 0 && (
+              <Card className="p-4 space-y-3">
+                <h3 className="text-sm font-semibold text-cyan-400">Filter Annotations</h3>
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    placeholder="Search labels..."
+                    className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded focus:outline-none focus:border-cyan-500"
+                    value={annotationSearchText}
+                    onChange={(e) => setAnnotationSearchText(e.target.value)}
+                  />
+                  <Select value={annotationFilterModulation} onValueChange={setAnnotationFilterModulation}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Filter by modulation" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Modulations</SelectItem>
+                      <SelectItem value="QPSK">QPSK</SelectItem>
+                      <SelectItem value="8PSK">8PSK</SelectItem>
+                      <SelectItem value="16QAM">16-QAM</SelectItem>
+                      <SelectItem value="RTTY">RTTY</SelectItem>
+                      <SelectItem value="PSK31">PSK31</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs text-gray-400">Min SNR (dB):</label>
+                    <input
+                      type="number"
+                      className="flex-1 px-2 py-1 text-sm bg-gray-800 border border-gray-700 rounded"
+                      value={annotationMinSNR}
+                      onChange={(e) => setAnnotationMinSNR(Number(e.target.value))}
+                      step="1"
+                    />
+                  </div>
+                </div>
+              </Card>
+            )}
 
             {/* Annotation Statistics */}
             {currentCapture && savedAnnotations.length > 0 && (

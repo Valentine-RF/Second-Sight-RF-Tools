@@ -696,3 +696,17 @@
 - [ ] Add raycasting for interactive plane dragging
 - [x] Display 2D slice of SCF at selected cyclic frequency
 - [x] Add axis labels and value readout for slice plane
+
+## Final Polish Features (Current Sprint)
+- [x] Add detectHopping tRPC procedure in captures router
+- [x] Wire detectHopping to frequency hopping detection algorithm
+- [x] Add "Detect Hopping" button to context menu
+- [x] Display hop pattern visualization in Analysis Dock
+- [x] Implement double-click handler on annotation boxes
+- [x] Open AnnotationEditDialog with pre-filled values on double-click
+- [x] Add annotation filtering UI in Signal Inspector
+- [x] Create search input for annotation text filtering
+- [x] Add modulation type dropdown filter
+- [x] Add SNR threshold slider filter
+- [ ] Add time range filter with start/end inputs
+- [ ] Wire filters to annotation list display
