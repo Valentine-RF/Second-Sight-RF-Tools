@@ -159,3 +159,11 @@
 - [x] Create comparison toolbar with sync toggle
 - [x] Add individual capture metadata display
 - [x] Integrate comparison mode into navigation
+
+## Comparison Mode Enhancements
+- [x] Implement keyboard shortcuts (1-4 for capture selection, Space for sync toggle, +/- for zoom, arrows for time)
+- [x] Create difference visualization mode with spectral difference heatmap
+- [x] Add color-coded divergence display for anomaly detection
+- [x] Implement PDF export button for comparison reports
+- [x] Generate PDF with side-by-side screenshots and metadata table
+- [x] Add analysis notes field for PDF export

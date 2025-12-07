@@ -1,17 +1,20 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { trpc } from '@/lib/trpc';
 import { Spectrogram } from '@/components/Spectrogram';
 import { WebGLErrorBoundary } from '@/components/WebGLErrorBoundary';
+import { DifferenceHeatmap } from '@/components/DifferenceHeatmap';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Slider } from '@/components/ui/slider';
 import { 
   Link2, Link2Off, ZoomIn, ZoomOut, MoveHorizontal, 
-  Radio, X, ArrowLeftRight 
+  Radio, X, ArrowLeftRight, GitCompare, FileDown 
 } from 'lucide-react';
 import { toast } from 'sonner';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 interface ComparisonCapture {
   id: number;
@@ -46,6 +49,9 @@ export default function ComparisonMode() {
 
   const [selectedCaptures, setSelectedCaptures] = useState<ComparisonCapture[]>([]);
   const [isSynced, setIsSynced] = useState(true);
+  const [showDifference, setShowDifference] = useState(false);
+  const [analysisNotes, setAnalysisNotes] = useState('');
+  const [isExporting, setIsExporting] = useState(false);
   const [syncState, setSyncState] = useState<SyncState>({
     zoom: 1.0,
     timeOffset: 0,
@@ -53,6 +59,59 @@ export default function ComparisonMode() {
   });
 
   const spectrogramRefs = useRef<HTMLDivElement[]>([]);
+
+  // Keyboard shortcuts
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    // Ignore if user is typing in an input field
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+      return;
+    }
+
+    switch (e.key) {
+      case ' ': // Space - toggle sync
+        e.preventDefault();
+        setIsSynced(prev => !prev);
+        toast.info(isSynced ? 'Sync disabled' : 'Sync enabled');
+        break;
+      case '+':
+      case '=': // Plus/Equals - zoom in
+        e.preventDefault();
+        handleZoomIn();
+        break;
+      case '-':
+      case '_': // Minus/Underscore - zoom out
+        e.preventDefault();
+        handleZoomOut();
+        break;
+      case 'ArrowLeft': // Left arrow - shift time left
+        e.preventDefault();
+        handleTimeShift('left');
+        break;
+      case 'ArrowRight': // Right arrow - shift time right
+        e.preventDefault();
+        handleTimeShift('right');
+        break;
+      case '1':
+      case '2':
+      case '3':
+      case '4': // Number keys - quick select first 4 captures
+        e.preventDefault();
+        if (captures && captures.length > 0) {
+          const index = parseInt(e.key) - 1;
+          if (index < captures.length) {
+            const capture = captures[index];
+            const isSelected = selectedCaptures.some(c => c.id === capture.id);
+            handleCaptureToggle(capture, !isSelected);
+          }
+        }
+        break;
+    }
+  }, [isSynced, captures, selectedCaptures]);
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
 
   const handleCaptureToggle = (capture: any, checked: boolean) => {
     if (checked) {
@@ -87,6 +146,101 @@ export default function ComparisonMode() {
 
   const handleRemoveCapture = (id: number) => {
     setSelectedCaptures(selectedCaptures.filter(c => c.id !== id));
+  };
+
+  const handleExportPDF = async () => {
+    if (selectedCaptures.length === 0) {
+      toast.error('No captures selected for export');
+      return;
+    }
+
+    setIsExporting(true);
+    toast.info('Generating PDF report...');
+
+    try {
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 15;
+
+      // Title
+      pdf.setFontSize(20);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Signal Comparison Report', margin, margin + 10);
+
+      // Metadata table
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      let yPos = margin + 25;
+
+      pdf.text('Capture Metadata:', margin, yPos);
+      yPos += 7;
+
+      selectedCaptures.forEach((capture, index) => {
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(`${index + 1}. ${capture.name}`, margin + 5, yPos);
+        yPos += 5;
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(`   Sample Rate: ${capture.sampleRate ? `${(capture.sampleRate / 1e6).toFixed(2)} MHz` : 'N/A'}`, margin + 5, yPos);
+        yPos += 5;
+        pdf.text(`   Datatype: ${capture.datatype || 'N/A'}`, margin + 5, yPos);
+        yPos += 5;
+        pdf.text(`   Hardware: ${capture.hardware || 'N/A'}`, margin + 5, yPos);
+        yPos += 7;
+      });
+
+      // Analysis notes
+      if (analysisNotes) {
+        yPos += 5;
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Analysis Notes:', margin, yPos);
+        yPos += 7;
+        pdf.setFont('helvetica', 'normal');
+        const splitNotes = pdf.splitTextToSize(analysisNotes, pageWidth - 2 * margin);
+        pdf.text(splitNotes, margin + 5, yPos);
+        yPos += splitNotes.length * 5 + 10;
+      }
+
+      // Capture screenshots
+      for (let i = 0; i < spectrogramRefs.current.length; i++) {
+        const element = spectrogramRefs.current[i];
+        if (element) {
+          if (yPos > pageHeight - 80) {
+            pdf.addPage();
+            yPos = margin;
+          }
+
+          const canvas = await html2canvas(element, {
+            backgroundColor: '#000000',
+            scale: 2,
+          });
+
+          const imgData = canvas.toDataURL('image/png');
+          const imgWidth = pageWidth - 2 * margin;
+          const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+          pdf.text(`Capture ${i + 1}: ${selectedCaptures[i]?.name}`, margin, yPos);
+          yPos += 7;
+          pdf.addImage(imgData, 'PNG', margin, yPos, imgWidth, imgHeight);
+          yPos += imgHeight + 10;
+        }
+      }
+
+      // Footer
+      const timestamp = new Date().toISOString();
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'italic');
+      pdf.text(`Generated: ${timestamp}`, margin, pageHeight - 10);
+
+      // Save
+      pdf.save(`comparison-report-${Date.now()}.pdf`);
+      toast.success('PDF report exported successfully!');
+    } catch (error) {
+      console.error('PDF export error:', error);
+      toast.error('Failed to export PDF report');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const getGridClass = () => {
@@ -124,9 +278,28 @@ export default function ComparisonMode() {
             <p className="technical-label">
               Compare up to 4 signal captures side-by-side with synchronized controls
             </p>
+            <p className="technical-label text-xs mt-1 opacity-70">
+              Shortcuts: 1-4 (select), Space (sync), +/- (zoom), ← → (time)
+            </p>
           </div>
           
           <div className="flex items-center gap-2">
+            <Button
+              variant={showDifference ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => {
+                if (selectedCaptures.length !== 2) {
+                  toast.error('Difference mode requires exactly 2 captures');
+                  return;
+                }
+                setShowDifference(!showDifference);
+              }}
+              className="gap-2"
+              disabled={selectedCaptures.length !== 2}
+            >
+              <GitCompare className="w-4 h-4" />
+              {showDifference ? 'Difference' : 'Normal'}
+            </Button>
             <Button
               variant={isSynced ? 'default' : 'outline'}
               size="sm"
@@ -135,6 +308,16 @@ export default function ComparisonMode() {
             >
               {isSynced ? <Link2 className="w-4 h-4" /> : <Link2Off className="w-4 h-4" />}
               {isSynced ? 'Synced' : 'Independent'}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              disabled={selectedCaptures.length === 0 || isExporting}
+              onClick={handleExportPDF}
+            >
+              <FileDown className="w-4 h-4" />
+              {isExporting ? 'Exporting...' : 'Export PDF'}
             </Button>
           </div>
         </div>
@@ -283,7 +466,7 @@ export default function ComparisonMode() {
                     </div>
                   </div>
 
-                  {/* Spectrogram */}
+                  {/* Spectrogram or Difference Heatmap */}
                   <div
                     ref={(el) => {
                       if (el) spectrogramRefs.current[index] = el;
@@ -291,10 +474,19 @@ export default function ComparisonMode() {
                     className="flex-1 bg-black rounded overflow-hidden"
                   >
                     <WebGLErrorBoundary>
-                      <Spectrogram
-                        width={spectrogramRefs.current[index]?.clientWidth || 400}
-                        height={spectrogramRefs.current[index]?.clientHeight || 300}
-                      />
+                      {showDifference && selectedCaptures.length === 2 ? (
+                        <DifferenceHeatmap
+                          width={spectrogramRefs.current[index]?.clientWidth || 400}
+                          height={spectrogramRefs.current[index]?.clientHeight || 300}
+                          capture1Name={selectedCaptures[0].name}
+                          capture2Name={selectedCaptures[1].name}
+                        />
+                      ) : (
+                        <Spectrogram
+                          width={spectrogramRefs.current[index]?.clientWidth || 400}
+                          height={spectrogramRefs.current[index]?.clientHeight || 300}
+                        />
+                      )}
                     </WebGLErrorBoundary>
                   </div>
                 </Card>
