@@ -559,3 +559,15 @@
 - [x] Implement file deletion with S3 cleanup in FileManager
 - [x] Add confirmation dialog for file deletion
 - [x] Test complete annotation workflow end-to-end
+
+## Analysis Dock Implementation (Current Sprint)
+- [x] Implement Spectrum/FFT PSD plot component with frequency axis
+- [x] Add FFT computation backend procedure for selected signal region
+- [x] Wire Spectrum tab to display PSD plot with dB scale
+- [x] Wire Constellation tab to display existing ConstellationPlot component
+- [x] Wire Cyclostationary tab to display existing SCFSurface3D component
+- [ ] Add Hex view tab with demodulated bitstream display
+- [x] Implement zoom controls for main spectrogram (mouse wheel, +/- buttons)
+- [x] Implement pan controls for main spectrogram (click-drag, arrow keys)
+- [ ] Add zoom level indicator and reset button
+- [x] Test all Analysis Dock tabs with real signal data

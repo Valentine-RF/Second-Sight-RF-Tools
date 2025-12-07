@@ -133,6 +133,33 @@ export function fft(samples: Complex[]): Complex[] {
 }
 
 /**
+ * Compute FFT and return magnitude spectrum
+ */
+export function computeFFT(samples: Complex[], nfft: number = 2048): {
+  magnitude: number[];
+  phase: number[];
+  frequencies: number[];
+} {
+  // Pad or truncate to nfft length
+  const paddedSamples = samples.slice(0, nfft);
+  while (paddedSamples.length < nfft) {
+    paddedSamples.push({ re: 0, im: 0 });
+  }
+  
+  // Compute FFT
+  const fftResult = fft(paddedSamples);
+  
+  // Extract magnitude and phase
+  const magnitude = fftResult.map(c => Math.sqrt(c.re * c.re + c.im * c.im));
+  const phase = fftResult.map(c => Math.atan2(c.im, c.re));
+  
+  // Generate normalized frequency bins
+  const frequencies = Array.from({ length: nfft }, (_, i) => (i / nfft) - 0.5);
+  
+  return { magnitude, phase, frequencies };
+}
+
+/**
  * Compute Power Spectral Density using Welch's method
  */
 export function computePSD(samples: Complex[], fftSize: number = 1024): number[] {

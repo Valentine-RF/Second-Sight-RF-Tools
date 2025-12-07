@@ -281,6 +281,61 @@ export const appRouter = router({
       }),
 
     /**
+     * Compute FFT/PSD for a signal region
+     */
+    computeFFT: protectedProcedure
+      .input(z.object({
+        captureId: z.number(),
+        sampleStart: z.number(),
+        sampleCount: z.number(),
+        nfft: z.number().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const capture = await getSignalCaptureById(input.captureId);
+        if (!capture) throw new Error("Capture not found");
+        if (!capture.dataFileUrl) throw new Error("Data file not available");
+
+        // Validate sample range
+        const isValid = validateSampleRange(
+          capture.datatype || 'cf32_le',
+          input.sampleStart,
+          input.sampleCount,
+          capture.dataFileSize || 0
+        );
+        if (!isValid) throw new Error("Invalid sample range");
+
+        // Fetch IQ samples from S3
+        const { iqReal, iqImag } = await fetchIQSamples(
+          capture.dataFileUrl,
+          capture.datatype || 'cf32_le',
+          input.sampleStart,
+          Math.min(input.sampleCount, 8192) // Limit to 8192 samples for FFT
+        );
+
+        // Compute FFT using DSP library
+        const { computeFFT } = await import('./dsp');
+        const complexSamples = Array.from(iqReal).map((re, i) => ({ re, im: iqImag[i] }));
+        const fftResult = computeFFT(complexSamples, input.nfft || 2048);
+
+        // Convert to PSD (Power Spectral Density) in dB
+        const psd = fftResult.magnitude.map((mag: number) => 10 * Math.log10(mag * mag + 1e-12));
+
+        // Generate frequency bins
+        const sampleRate = capture.sampleRate || 1;
+        const frequencies = fftResult.magnitude.map((_: number, i: number) => {
+          const normalizedFreq = (i / fftResult.magnitude.length) - 0.5;
+          return normalizedFreq * sampleRate;
+        });
+
+        return {
+          frequencies,
+          magnitudes: psd,
+          centerFreq: 0, // Center frequency not stored in schema
+          sampleRate,
+        };
+      }),
+
+    /**
      * Run FAM (Cyclostationary) Analysis on a signal region
      */
     analyzeCycles: protectedProcedure

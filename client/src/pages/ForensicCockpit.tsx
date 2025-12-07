@@ -6,6 +6,7 @@ import { useSignalStore } from '@/store/signalStore';
 import { Spectrogram } from '@/components/Spectrogram';
 import { ConstellationPlot } from '@/components/ConstellationPlot';
 import SCFSurface3D from '@/components/SCFSurface3D';
+import { FFTPSDPlot } from '@/components/FFTPSDPlot';
 import SignalContextMenu, { type SignalSelection } from '@/components/SignalContextMenu';
 import CyclicProfilePanel from '@/components/CyclicProfilePanel';
 import AnnotationDialog from '@/components/AnnotationDialog';
@@ -13,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
-import { ChevronDown, ChevronUp, Activity, Radio, Waves, Binary, FileDown, Loader2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Activity, Radio, Waves, Binary, FileDown, Loader2, Plus, Minus, Move } from 'lucide-react';
 import { generateForensicReport } from '@/lib/pdfExport';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
@@ -64,6 +65,19 @@ export default function ForensicCockpit() {
   });
   
   const [classificationResults, setClassificationResults] = useState<any[]>([]);
+  const [fftData, setFftData] = useState<any>(null);
+  
+  const computeFFTMutation = trpc.captures.computeFFT.useMutation({
+    onSuccess: (data) => {
+      setFftData(data);
+      setActiveTab('spectrum');
+      toast.success('FFT spectrum computed!');
+    },
+    onError: (error) => {
+      toast.error(`FFT computation failed: ${error.message}`);
+      setFftData(null);
+    },
+  });
   
   const classifyModulationMutation = trpc.captures.classifyModulation.useMutation({
     onSuccess: (data) => {
@@ -209,6 +223,21 @@ export default function ForensicCockpit() {
       captureId: currentCapture.id,
       sampleStart: selection.sampleStart,
       sampleCount,
+    });
+    
+    setContextMenuPos(null);
+  };
+  
+  const handleComputeSpectrum = () => {
+    if (!selection || !currentCapture) return;
+    
+    const sampleCount = selection.sampleEnd - selection.sampleStart;
+    
+    computeFFTMutation.mutate({
+      captureId: currentCapture.id,
+      sampleStart: selection.sampleStart,
+      sampleCount,
+      nfft: 2048,
     });
     
     setContextMenuPos(null);
@@ -457,7 +486,35 @@ export default function ForensicCockpit() {
                 toast.info(`Selection: ${sel.sampleCount} samples, ${(sel.timeEnd - sel.timeStart).toFixed(3)}s`);
               }}
             >
-              <div className="w-full h-full">
+              <div className="relative w-full h-full">
+                {/* Zoom Controls */}
+                <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="bg-card/90 backdrop-blur"
+                    title="Zoom in (Mouse wheel up)"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="bg-card/90 backdrop-blur"
+                    title="Zoom out (Mouse wheel down)"
+                  >
+                    <Minus className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="bg-card/90 backdrop-blur"
+                    title="Pan (Click and drag)"
+                  >
+                    <Move className="w-4 h-4" />
+                  </Button>
+                </div>
+                
                 <WebGLErrorBoundary fallbackMessage="Failed to render spectrogram. Your GPU may not support the required WebGL features.">
                   <Spectrogram
                     ref={mainSpectrogramRef}
@@ -550,6 +607,10 @@ export default function ForensicCockpit() {
                   Save as Annotation
                 </Button>
                 <div className="border-t border-border my-1" />
+                <Button variant="ghost" size="sm" className="w-full justify-start" onClick={handleComputeSpectrum}>
+                  <Activity className="w-4 h-4 mr-2" />
+                  Compute Spectrum
+                </Button>
                 <Button variant="ghost" size="sm" className="w-full justify-start" onClick={handleAnalyzeCycles}>
                   <Waves className="w-4 h-4 mr-2" />
                   Analyze Cycles
@@ -601,9 +662,13 @@ export default function ForensicCockpit() {
                 </TabsList>
 
                 <TabsContent value="spectrum" className="p-4 h-full">
-                  <div className="wireframe-cyan h-full flex items-center justify-center">
-                    <p className="technical-label">PSD Plot (To be implemented)</p>
-                  </div>
+                  <FFTPSDPlot
+                    frequencies={fftData?.frequencies || []}
+                    magnitudes={fftData?.magnitudes || []}
+                    centerFreq={fftData?.centerFreq || 0}
+                    width={window.innerWidth - 400}
+                    height={250}
+                  />
                 </TabsContent>
 
                 <TabsContent value="constellation" className="p-4 h-full">
