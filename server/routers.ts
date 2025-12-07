@@ -41,7 +41,7 @@ import { generateSigMFMetadata as generateRawIQMetadata, isValidDatatype, valida
 import { runFAMAnalysis, classifyModulation } from './pythonBridge';
 import { fetchIQSamples, validateSampleRange } from './iqDataFetcher';
 import { parseIQData, computeSCF, classifyModulation as classifyModulationJS } from './dsp';
-import { runSNRCFOEstimation } from './snrCfoBridge';
+import { runSNRCFOEstimation, refineCFOWithCostasLoop } from './snrCfoBridge';
 import { sdrRouter } from './routers/sdr';
 import { detectFrequencyHopping } from './freqHopping';
 import { serializeIQSamples, streamIQSamplesArrow } from './arrow';
@@ -1057,6 +1057,56 @@ export const appRouter = router({
           numComponents: input.numComponents,
           iterations,
         };
+      }),
+
+    /**
+     * Refine CFO estimate using Costas loop PLL
+     */
+    refineCFO: protectedProcedure
+      .input(z.object({
+        captureId: z.number(),
+        sampleStart: z.number(),
+        sampleCount: z.number(),
+        coarseCfoHz: z.number().optional(),
+        modulationOrder: z.number().optional(),
+        loopBandwidth: z.number().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const capture = await getSignalCaptureById(input.captureId);
+        if (!capture) throw new Error("Capture not found");
+        if (!capture.dataFileUrl) throw new Error("Data file not available");
+        if (!capture.sampleRate) throw new Error("Sample rate not available");
+
+        // Validate sample range
+        const isValid = validateSampleRange(
+          capture.datatype || 'cf32_le',
+          input.sampleStart,
+          input.sampleCount,
+          capture.dataFileSize || 0
+        );
+        if (!isValid) throw new Error("Invalid sample range");
+
+        // Fetch IQ samples
+        const { iqReal, iqImag } = await fetchIQSamples(
+          capture.dataFileUrl,
+          capture.datatype || 'cf32_le',
+          input.sampleStart,
+          Math.min(input.sampleCount, 32768) // Limit to 32k samples for PLL convergence
+        );
+
+        // Run Costas loop refinement
+        const result = await refineCFOWithCostasLoop(
+          iqReal,
+          iqImag,
+          capture.sampleRate,
+          {
+            coarseCfoHz: input.coarseCfoHz,
+            modulationOrder: input.modulationOrder || 4,
+            loopBandwidth: input.loopBandwidth || 0.01,
+          }
+        );
+
+        return result;
       }),
   }),
 

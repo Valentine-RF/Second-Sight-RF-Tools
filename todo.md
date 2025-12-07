@@ -10,10 +10,14 @@
 ## SigMF File Processing
 - [x] Implement SigMF metadata parser with schema validation
 - [x] Implement SigMF data file handler with binary reading support
-- [ ] Create file upload endpoint with multipart form handling
-- [ ] Implement S3 upload for .sigmf-meta and .sigmf-data files
+- [x] Create file upload endpoint with multipart form handling (captures.initUpload, captures.uploadRawIQ)
+- [x] Implement S3 upload for .sigmf-meta and .sigmf-data files (storagePut integration)
 - [x] Add SHA512 integrity checking for uploaded files
-- [ ] Create HTTP Range request handler for streaming large signal files
+- [x] Create HTTP Range request handler for streaming large signal files (server/rangeRequest.ts)
+- [x] Implement Apache Arrow zero-copy serialization for IQ data (server/arrowSerializer.ts)
+- [x] Integrate Range requests with getDataRange procedure
+- [x] Add byte range calculations for all SigMF datatypes (cf32_le, ci16_le, cu8, etc.)
+- [x] Implement IQ data parsing with proper normalization
 
 ## Signal Processing Algorithms
 - [ ] Implement FFT Accumulation Method (FAM) for Spectral Correlation Function
@@ -795,11 +799,11 @@
 - [x] Add "Demodulate" context menu action
 - [x] Wire context menu actions to tRPC procedures
 - [x] Add double-click handler to annotation boxes
-- [ ] Implement annotation drag handles (8-point resize)
-- [ ] Add annotation position update procedure
+- [x] Implement annotation drag handles (8-point resize)
+- [x] Add annotation position update procedure (annotations.update with startTime/endTime/startFreq/endFreq)
 - [x] Add visual feedback for selected/hovered annotations
-- [x] Create file deletion tRPC procedure (already exists)
-- [x] Add S3 file cleanup on deletion (already implemented)
+- [x] Create file deletion tRPC procedure (captures.delete with S3 cleanup)
+- [x] Add S3 file cleanup on deletion (storageDelete for metadata and data files)
 - [x] Add confirmation dialog for file deletion
 - [x] Wire delete button to deletion procedure
 - [ ] Test all features with real signal data
@@ -834,3 +838,17 @@
 - [ ] Test with large signal files (>1GB)
 - [ ] Validate zero-copy performance vs full file loading
 - [x] Add error handling for invalid range requests
+
+## Costas Loop CFO Refinement (Current Sprint)
+- [x] Implement Costas loop PLL algorithm in Python
+- [x] Add phase detector for BPSK/QPSK/8PSK modulations
+- [x] Implement loop filter with proportional and integral gains
+- [x] Add NCO (Numerically Controlled Oscillator) for phase correction
+- [x] Create carrier tracking state machine
+- [x] Add lock detection based on phase error variance
+- [x] Integrate with existing CFO estimation pipeline
+- [x] Create TypeScript bridge for Costas loop (refineCFOWithCostasLoop)
+- [x] Add tRPC procedure for refined CFO estimation (captures.refineCFO)
+- [ ] Test with real QPSK/PSK signals
+- [ ] Validate phase tracking performance
+- [ ] Compare coarse vs fine CFO accuracy
