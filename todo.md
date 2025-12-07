@@ -117,3 +117,10 @@
 - [ ] Document signal processing algorithms with mathematical formulas
 - [ ] Add inline code documentation with function signatures
 - [ ] Create checkpoint for production deployment
+
+## Dark Mode Implementation
+- [x] Update CSS theme with dark mode color palette (inverted blueprint)
+- [x] Add theme toggle button to navigation
+- [x] Enable switchable theme in ThemeProvider
+- [x] Test dark mode across all pages and components
+- [x] Verify WebGL visualizations work in dark mode

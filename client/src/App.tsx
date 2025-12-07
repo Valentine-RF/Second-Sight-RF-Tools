@@ -3,13 +3,13 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch, Link } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
-import { ThemeProvider } from "./contexts/ThemeContext";
+import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import FileManager from "./pages/FileManager";
 import ForensicCockpit from "./pages/ForensicCockpit";
 import { useAuth } from "./_core/hooks/useAuth";
 import { Button } from "./components/ui/button";
-import { Radio, Upload, LogOut, Menu } from "lucide-react";
+import { Radio, Upload, LogOut, Menu, Moon, Sun } from 'lucide-react';
 import { useState } from "react";
 
 /**
@@ -18,6 +18,7 @@ import { useState } from "react";
 function Navigation() {
   const { user, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { theme, toggleTheme } = useTheme();
 
   if (!user) return null;
 
@@ -34,6 +35,15 @@ function Navigation() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleTheme}
+              className="gap-2"
+            >
+              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              {theme === 'dark' ? 'Light' : 'Dark'}
+            </Button>
             <Link href="/files">
               <Button variant="ghost" className="gap-2">
                 <Upload className="w-4 h-4" />
@@ -73,6 +83,14 @@ function Navigation() {
         {/* Mobile Navigation */}
         {isMenuOpen && (
           <div className="md:hidden border-t border-border py-4 space-y-2">
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-2"
+              onClick={toggleTheme}
+            >
+              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+            </Button>
             <Link href="/files">
               <Button variant="ghost" className="w-full justify-start gap-2">
                 <Upload className="w-4 h-4" />
@@ -127,7 +145,7 @@ function Router() {
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="light">
+      <ThemeProvider defaultTheme="light" switchable>
         <TooltipProvider>
           <Toaster />
           <Navigation />
