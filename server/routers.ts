@@ -35,6 +35,7 @@ const execAsync = promisify(exec);
 import { nanoid } from 'nanoid';
 import { generateSigMFMetadata as generateRawIQMetadata, isValidDatatype, validateFileSize, type RawIQMetadata } from './sigmfGenerator';
 import { runFAMAnalysis, classifyModulation } from './pythonBridge';
+import { fetchIQSamples, validateSampleRange } from './iqDataFetcher';
 
 export const appRouter = router({
   system: systemRouter,
@@ -266,11 +267,24 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         const capture = await getSignalCaptureById(input.captureId);
         if (!capture) throw new Error("Capture not found");
+        if (!capture.dataFileUrl) throw new Error("Data file not available");
 
-        // TODO: Fetch IQ samples from S3 using HTTP Range request
-        // For now, return mock data
-        const iqReal = new Float32Array(input.sampleCount);
-        const iqImag = new Float32Array(input.sampleCount);
+        // Validate sample range
+        const isValid = validateSampleRange(
+          capture.datatype || 'cf32_le',
+          input.sampleStart,
+          input.sampleCount,
+          capture.dataFileSize || 0
+        );
+        if (!isValid) throw new Error("Invalid sample range");
+
+        // Fetch IQ samples from S3
+        const { iqReal, iqImag } = await fetchIQSamples(
+          capture.dataFileUrl,
+          capture.datatype || 'cf32_le',
+          input.sampleStart,
+          input.sampleCount
+        );
         
         // Run FAM algorithm via Python bridge
         const result = await runFAMAnalysis(
@@ -306,11 +320,24 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         const capture = await getSignalCaptureById(input.captureId);
         if (!capture) throw new Error("Capture not found");
+        if (!capture.dataFileUrl) throw new Error("Data file not available");
 
-        // TODO: Fetch IQ samples from S3 using HTTP Range request
-        // For now, return mock data
-        const iqReal = new Float32Array(input.sampleCount);
-        const iqImag = new Float32Array(input.sampleCount);
+        // Validate sample range
+        const isValid = validateSampleRange(
+          capture.datatype || 'cf32_le',
+          input.sampleStart,
+          input.sampleCount,
+          capture.dataFileSize || 0
+        );
+        if (!isValid) throw new Error("Invalid sample range");
+
+        // Fetch IQ samples from S3
+        const { iqReal, iqImag } = await fetchIQSamples(
+          capture.dataFileUrl,
+          capture.datatype || 'cf32_le',
+          input.sampleStart,
+          input.sampleCount
+        );
         
         // Run TorchSig classification via Python bridge
         const result = await classifyModulation(

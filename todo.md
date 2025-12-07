@@ -387,3 +387,31 @@
 - [ ] Display loading states during async operations
 - [ ] Show results in respective panels when complete
 
+
+## Three.js 3D Visualization & Context Menu - In Progress
+
+### Three.js 3D SCF Surface
+- [x] Install @react-three/fiber and @react-three/drei
+- [x] Create SCFSurface3D component with PlaneGeometry
+- [x] Map SCF magnitude to Z-height displacement
+- [x] Add rotation controls (OrbitControls)
+- [x] Implement lighting and material (MeshStandardMaterial)
+- [x] Add colormap for magnitude visualization
+- [x] Wire to Cyclostationary tab
+
+### S3 IQ Data Fetching
+- [x] Implement HTTP Range request helper in server
+- [x] Calculate byte offsets for cf32_le datatype
+- [x] Fetch IQ samples from S3 dataFileUrl
+- [x] Parse binary data to Float32Array (I/Q channels)
+- [x] Update analyzeCycles procedure to use real data
+- [x] Update classifyModulation procedure to use real data
+
+### Context Menu Integration
+- [x] Create ContextMenu component with Radix UI
+- [x] Add right-click handler to box selection in Spectrogram
+- [x] Show "Analyze Cycles", "Classify Modulation", "Save Annotation"
+- [x] Trigger tRPC mutations on menu item click
+- [x] Display loading states during processing
+- [x] Update Signal Inspector panels with results
+

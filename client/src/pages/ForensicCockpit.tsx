@@ -5,7 +5,8 @@ import { useAuth } from '@/_core/hooks/useAuth';
 import { useSignalStore } from '@/store/signalStore';
 import { Spectrogram } from '@/components/Spectrogram';
 import { ConstellationPlot } from '@/components/ConstellationPlot';
-import { SCFSurface } from '@/components/SCFSurface';
+import SCFSurface3D from '@/components/SCFSurface3D';
+import SignalContextMenu, { type SignalSelection } from '@/components/SignalContextMenu';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
@@ -36,6 +37,29 @@ export default function ForensicCockpit() {
 
   const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [scfData, setScfData] = useState<any>(null);
+  
+  // tRPC mutations for FAM and classification
+  const analyzeCyclesMutation = trpc.captures.analyzeCycles.useMutation({
+    onSuccess: (data) => {
+      setScfData(data);
+      setActiveTab('cyclostationary');
+      toast.success('Cyclostationary analysis complete!');
+    },
+    onError: (error) => {
+      toast.error(`FAM analysis failed: ${error.message}`);
+    },
+  });
+  
+  const classifyModulationMutation = trpc.captures.classifyModulation.useMutation({
+    onSuccess: (data) => {
+      const topPrediction = data.predictions[0];
+      toast.success(`Classified as ${topPrediction.modulation} (${topPrediction.confidence.toFixed(1)}%)`);
+    },
+    onError: (error) => {
+      toast.error(`Classification failed: ${error.message}`);
+    },
+  });
   
   // Refs for capturing visualizations
   const mainSpectrogramRef = useRef<{ captureCanvas: () => string }>(null);
@@ -241,14 +265,53 @@ export default function ForensicCockpit() {
         {/* Zone B: Main Workspace (Center, Dominant) */}
         <div className="flex-1 flex flex-col">
           <div className="flex-1 relative bg-black">
-            <WebGLErrorBoundary fallbackMessage="Failed to render spectrogram. Your GPU may not support the required WebGL features.">
-              <Spectrogram
-                ref={mainSpectrogramRef}
-                width={window.innerWidth - 400} // Account for sidebar
-                height={isDockCollapsed ? window.innerHeight - 200 : window.innerHeight - 500}
-                onBoxSelect={handleBoxSelect}
-              />
-            </WebGLErrorBoundary>
+            <SignalContextMenu
+              selection={selection ? {
+                sampleStart: selection.sampleStart,
+                sampleCount: selection.sampleEnd - selection.sampleStart,
+                timeStart: selection.sampleStart / (currentCapture?.sampleRate || 1e6),
+                timeEnd: selection.sampleEnd / (currentCapture?.sampleRate || 1e6),
+                freqStart: 0,
+                freqEnd: (currentCapture?.sampleRate || 1e6) / 2,
+              } : null}
+              captureId={currentCapture?.id || 0}
+              onAnalyzeCycles={(sel) => {
+                if (!currentCapture) return;
+                analyzeCyclesMutation.mutate({
+                  captureId: currentCapture.id,
+                  sampleStart: sel.sampleStart,
+                  sampleCount: sel.sampleCount,
+                  nfft: 256,
+                  overlap: 0.5,
+                  alphaMax: 0.5,
+                });
+              }}
+              onClassifyModulation={(sel) => {
+                if (!currentCapture) return;
+                classifyModulationMutation.mutate({
+                  captureId: currentCapture.id,
+                  sampleStart: sel.sampleStart,
+                  sampleCount: Math.min(sel.sampleCount, 4096),  // Limit to 4096 samples
+                });
+              }}
+              onSaveAnnotation={(sel) => {
+                toast.info('Save annotation feature coming soon!');
+              }}
+              onViewDetails={(sel) => {
+                toast.info(`Selection: ${sel.sampleCount} samples, ${(sel.timeEnd - sel.timeStart).toFixed(3)}s`);
+              }}
+            >
+              <div className="w-full h-full">
+                <WebGLErrorBoundary fallbackMessage="Failed to render spectrogram. Your GPU may not support the required WebGL features.">
+                  <Spectrogram
+                    ref={mainSpectrogramRef}
+                    width={window.innerWidth - 400} // Account for sidebar
+                    height={isDockCollapsed ? window.innerHeight - 200 : window.innerHeight - 500}
+                    onBoxSelect={handleBoxSelect}
+                  />
+                </WebGLErrorBoundary>
+              </div>
+            </SignalContextMenu>
             
             {/* Selection overlay */}
             {selection && (
@@ -335,9 +398,15 @@ export default function ForensicCockpit() {
                   </WebGLErrorBoundary>
                 </TabsContent>
 
-                <TabsContent value="cyclostationary" className="p-4 h-full">
+                <TabsContent value="cyclostationary" className="p-0 h-full">
                   <WebGLErrorBoundary fallbackMessage="Failed to render 3D SCF surface.">
-                    <SCFSurface ref={scfSurfaceRef} width={800} height={250} />
+                    <SCFSurface3D
+                      scfMagnitude={scfData?.scfMagnitude || []}
+                      spectralFreqs={scfData?.spectralFreqs || []}
+                      cyclicFreqs={scfData?.cyclicFreqs || []}
+                      shape={scfData?.shape || { cyclic: 0, spectral: 0 }}
+                      colormap="viridis"
+                    />
                   </WebGLErrorBoundary>
                 </TabsContent>
 
