@@ -803,3 +803,20 @@
 - [x] Add confirmation dialog for file deletion
 - [x] Wire delete button to deletion procedure
 - [ ] Test all features with real signal data
+
+## UX Enhancements (Current Sprint)
+- [x] Create AnnotationBox component with 8-point resize handles
+- [x] Implement drag-to-move functionality for annotations
+- [x] Implement resize handles (top-left, top, top-right, right, bottom-right, bottom, bottom-left, left)
+- [x] Add cursor styles for each resize handle (nw-resize, n-resize, etc.)
+- [x] Wire annotation position updates to tRPC procedure
+- [x] Add demodulation mode selector to context menu
+- [x] Create submenu for Demodulate action with RTTY/PSK31/CW options
+- [x] Update onDemodulate handler to accept mode parameter
+- [x] Add checkbox selection to FileManager capture cards (already exists)
+- [x] Add "Select All" / "Deselect All" buttons to FileManager (already exists)
+- [x] Create batch delete button with count indicator
+- [x] Implement batch delete confirmation dialog
+- [x] Create captures.batchDelete tRPC procedure
+- [x] Handle S3 cleanup for multiple files in batch
+- [ ] Test all features with real signal data

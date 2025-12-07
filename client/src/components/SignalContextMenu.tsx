@@ -10,6 +10,9 @@ import {
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { Activity, Zap, Save, Layers, Radio, Signal } from "lucide-react";
@@ -29,7 +32,7 @@ interface SignalContextMenuProps {
   captureId: number;
   onAnalyzeCycles?: (selection: SignalSelection) => void;
   onClassifyModulation?: (selection: SignalSelection) => void;
-  onDemodulate?: (selection: SignalSelection) => void;
+  onDemodulate?: (selection: SignalSelection, mode: 'RTTY' | 'PSK31' | 'CW') => void;
   onDetectHopping?: (selection: SignalSelection) => void;
   onSaveAnnotation?: (selection: SignalSelection) => void;
   onViewDetails?: (selection: SignalSelection) => void;
@@ -91,18 +94,46 @@ export default function SignalContextMenu({
               </div>
             </ContextMenuItem>
             
-            <ContextMenuItem
-              onClick={() => selection && onDemodulate?.(selection)}
-              className="flex items-center gap-2 cursor-pointer hover:bg-gray-800"
-            >
-              <Signal className="w-4 h-4 text-cyan-400" />
-              <div>
-                <div className="font-medium">Demodulate</div>
-                <div className="text-xs text-gray-400">
-                  Extract data from modulated signal
+            <ContextMenuSub>
+              <ContextMenuSubTrigger className="flex items-center gap-2 cursor-pointer hover:bg-gray-800">
+                <Signal className="w-4 h-4 text-cyan-400" />
+                <div>
+                  <div className="font-medium">Demodulate</div>
+                  <div className="text-xs text-gray-400">
+                    Extract data from modulated signal
+                  </div>
                 </div>
-              </div>
-            </ContextMenuItem>
+              </ContextMenuSubTrigger>
+              <ContextMenuSubContent className="bg-gray-900 border-gray-700">
+                <ContextMenuItem
+                  onClick={() => selection && onDemodulate?.(selection, 'RTTY')}
+                  className="cursor-pointer hover:bg-gray-800"
+                >
+                  <div>
+                    <div className="font-medium">RTTY</div>
+                    <div className="text-xs text-gray-400">Radio Teletype (45.45 baud)</div>
+                  </div>
+                </ContextMenuItem>
+                <ContextMenuItem
+                  onClick={() => selection && onDemodulate?.(selection, 'PSK31')}
+                  className="cursor-pointer hover:bg-gray-800"
+                >
+                  <div>
+                    <div className="font-medium">PSK31</div>
+                    <div className="text-xs text-gray-400">Phase Shift Keying (31.25 baud)</div>
+                  </div>
+                </ContextMenuItem>
+                <ContextMenuItem
+                  onClick={() => selection && onDemodulate?.(selection, 'CW')}
+                  className="cursor-pointer hover:bg-gray-800"
+                >
+                  <div>
+                    <div className="font-medium">CW (Morse)</div>
+                    <div className="text-xs text-gray-400">Continuous Wave Morse Code</div>
+                  </div>
+                </ContextMenuItem>
+              </ContextMenuSubContent>
+            </ContextMenuSub>
             
             <ContextMenuItem
               onClick={() => selection && onDetectHopping?.(selection)}

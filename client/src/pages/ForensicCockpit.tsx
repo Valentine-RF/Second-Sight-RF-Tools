@@ -714,13 +714,13 @@ export default function ForensicCockpit() {
                   sampleCount: Math.min(sel.sampleCount, 4096),  // Limit to 4096 samples
                 });
               }}
-              onDemodulate={(sel) => {
+              onDemodulate={(sel, mode) => {
                 if (!currentCapture) return;
                 demodMutation.mutate({
                   captureId: currentCapture.id,
                   sampleStart: sel.sampleStart,
                   sampleCount: sel.sampleCount,
-                  mode: 'RTTY',  // Default mode, could be made configurable
+                  mode: mode,
                 });
               }}
               onSaveAnnotation={(sel) => {

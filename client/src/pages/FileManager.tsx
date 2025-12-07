@@ -67,6 +67,23 @@ export default function FileManager() {
     },
   });
 
+  // Batch delete mutation
+  const batchDeleteMutation = trpc.captures.batchDelete.useMutation({
+    onSuccess: (result) => {
+      if (result.deleted > 0) {
+        toast.success(`Deleted ${result.deleted} capture${result.deleted !== 1 ? 's' : ''}`);
+      }
+      if (result.failed > 0) {
+        toast.error(`Failed to delete ${result.failed} capture${result.failed !== 1 ? 's' : ''}`);
+      }
+      setSelectedCaptureIds([]);
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(`Batch delete failed: ${error.message}`);
+    },
+  });
+
   // Raw IQ upload mutation
   const uploadRawIQMutation = trpc.captures.uploadRawIQ.useMutation({
     onSuccess: () => {
@@ -244,6 +261,22 @@ export default function FileManager() {
   const handleDeleteCapture = (id: number, name: string) => {
     if (confirm(`Are you sure you want to delete "${name}"?\n\nThis will permanently delete:\n• Signal capture metadata\n• Raw IQ data file from S3\n• All annotations and analysis results\n\nThis action cannot be undone.`)) {
       deleteMutation.mutate({ id });
+    }
+  };
+
+  const handleBatchDelete = () => {
+    if (selectedCaptureIds.length === 0) {
+      toast.error('No captures selected');
+      return;
+    }
+
+    const captureNames = captures
+      ?.filter(c => selectedCaptureIds.includes(c.id))
+      .map(c => c.name)
+      .join(', ');
+
+    if (confirm(`Are you sure you want to delete ${selectedCaptureIds.length} capture${selectedCaptureIds.length !== 1 ? 's' : ''}?\n\n${captureNames}\n\nThis will permanently delete:\n• Signal capture metadata\n• Raw IQ data files from S3\n• All annotations and analysis results\n\nThis action cannot be undone.`)) {
+      batchDeleteMutation.mutate({ ids: selectedCaptureIds });
     }
   };
 
@@ -551,6 +584,15 @@ export default function FileManager() {
                 >
                   <Download className="w-4 h-4 mr-2" />
                   {isExporting ? 'Exporting...' : `Export ${selectedCaptureIds.length} Annotation${selectedCaptureIds.length !== 1 ? 's' : ''}`}
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  disabled={selectedCaptureIds.length === 0 || batchDeleteMutation.isPending}
+                  onClick={handleBatchDelete}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  {batchDeleteMutation.isPending ? 'Deleting...' : `Delete ${selectedCaptureIds.length} Capture${selectedCaptureIds.length !== 1 ? 's' : ''}`}
                 </Button>
               </div>
             )}

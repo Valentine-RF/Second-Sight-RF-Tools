@@ -28,6 +28,7 @@ import {
 import { parseSigMFMetadata, annotationToSigMF, generateSigMFMetadata } from "./sigmf";
 import { storagePut, storageGet, storageDelete } from "./storage";
 import { demodulateRTTY, demodulatePSK31, decodeCW } from "./demodulator";
+import { batchDeleteCaptures } from "./batchDelete";
 import { invokeLLM } from "./_core/llm";
 import { exec } from 'child_process';
 import { promisify } from 'util';
@@ -260,6 +261,18 @@ export const appRouter = router({
         // Delete database record
         await deleteSignalCapture(input.id);
         return { success: true };
+      }),
+
+    /**
+     * Batch delete multiple signal captures with S3 cleanup
+     */
+    batchDelete: protectedProcedure
+      .input(z.object({
+        ids: z.array(z.number()),
+      }))
+      .mutation(async ({ input }) => {
+        const result = await batchDeleteCaptures(input.ids);
+        return result;
       }),
 
     /**
@@ -1064,6 +1077,10 @@ export const appRouter = router({
         estimatedCFO: z.number().optional(),
         estimatedBaud: z.number().optional(),
         color: z.string().optional(),
+        sampleStart: z.number().optional(),
+        sampleEnd: z.number().optional(),
+        freqStart: z.number().optional(),
+        freqEnd: z.number().optional(),
       }))
       .mutation(async ({ input }) => {
         const { id, ...updates } = input;
