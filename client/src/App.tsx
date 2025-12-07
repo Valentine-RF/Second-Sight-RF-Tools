@@ -5,6 +5,7 @@ import { Route, Switch, Link } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
+import ComparisonMode from "./pages/ComparisonMode";
 import FileManager from "./pages/FileManager";
 import ForensicCockpit from "./pages/ForensicCockpit";
 import { useAuth } from "./_core/hooks/useAuth";
@@ -56,6 +57,12 @@ function Navigation() {
                 Cockpit
               </Link>
             </Button>
+            <Button variant="ghost" className="gap-2" asChild>
+              <Link href="/compare">
+                <Menu className="w-4 h-4" />
+                Compare
+              </Link>
+            </Button>
             <div className="h-6 w-px bg-border" />
             <div className="flex items-center gap-3">
               <div className="text-sm">
@@ -103,6 +110,12 @@ function Navigation() {
                 Cockpit
               </Link>
             </Button>
+            <Button variant="ghost" className="w-full justify-start gap-2" asChild>
+              <Link href="/compare">
+                <Menu className="w-4 h-4" />
+                Compare
+              </Link>
+            </Button>
             <div className="border-t border-border pt-2 mt-2">
               <div className="px-4 py-2 text-sm">
                 <div className="font-mono">{user.name || 'User'}</div>
@@ -130,8 +143,11 @@ function Navigation() {
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/files" component={FileManager} />
+       <Route path={"/"} component={Home} />
+      <Route path={"/files"} component={FileManager} />
+      <Route path={"/cockpit"} component={ForensicCockpit} />
+      <Route path={"/compare"} component={ComparisonMode} />
+      <Route path={"/404"} component={NotFound} />
       <Route path="/cockpit" component={ForensicCockpit} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />

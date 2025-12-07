@@ -148,3 +148,14 @@
 - [x] Handle file validation on drop
 - [x] Support dropping both .sigmf-meta and .sigmf-data files
 - [x] Integrate drag-and-drop into FileManager upload section
+
+## Signal Comparison Mode
+- [x] Create comparison mode page component
+- [x] Add multi-select UI for choosing captures to compare
+- [x] Implement side-by-side spectrogram layout (2-4 captures)
+- [x] Add synchronized zoom controls
+- [x] Implement synchronized time alignment
+- [x] Add linked panning across all spectrograms
+- [x] Create comparison toolbar with sync toggle
+- [x] Add individual capture metadata display
+- [x] Integrate comparison mode into navigation
