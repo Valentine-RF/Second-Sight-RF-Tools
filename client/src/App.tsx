@@ -11,6 +11,7 @@ import AdvancedAnalysis from "./pages/AdvancedAnalysis";
 import FileManager from "./pages/FileManager";
 import ForensicCockpit from "./pages/ForensicCockpit";
 import APIDocumentation from "./pages/APIDocumentation";
+import SplunkSettings from "./pages/SplunkSettings";
 import { useAuth } from "./_core/hooks/useAuth";
 import { Button } from "./components/ui/button";
 import { Radio, Upload, LogOut, Menu, Moon, Sun, Activity, Key } from 'lucide-react';
@@ -165,6 +166,7 @@ function Router() {
        <Route path="/compare" component={ComparisonMode} />
       <Route path="/advanced" component={AdvancedAnalysis} />
       <Route path="/api" component={APIDocumentation} />
+      <Route path="/splunk" component={SplunkSettings} />
       <Route path={"/404"} component={NotFound} />
       <Route path="/cockpit" component={ForensicCockpit} />
       <Route path="/404" component={NotFound} />

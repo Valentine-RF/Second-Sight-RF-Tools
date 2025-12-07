@@ -178,3 +178,39 @@ export const apiKeys = mysqlTable("api_keys", {
 
 export type ApiKey = typeof apiKeys.$inferSelect;
 export type InsertApiKey = typeof apiKeys.$inferInsert;
+
+/**
+ * Splunk Enterprise integration configuration.
+ * Stores HEC (HTTP Event Collector) settings for centralized logging.
+ */
+export const splunkConfig = mysqlTable("splunk_config", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  
+  // Splunk HEC configuration
+  hecUrl: varchar("hecUrl", { length: 512 }).notNull(), // e.g., https://splunk.example.com:8088/services/collector
+  hecToken: varchar("hecToken", { length: 256 }).notNull(),
+  index: varchar("index", { length: 128 }).default("main"),
+  source: varchar("source", { length: 128 }).default("second-sight-rf"),
+  sourcetype: varchar("sourcetype", { length: 128 }).default("rf_signal_analysis"),
+  
+  // Event filtering
+  enabledEventTypes: text("enabledEventTypes"), // JSON array of enabled event types
+  
+  // Connection settings
+  verifySsl: boolean("verifySsl").notNull().default(true),
+  batchSize: int("batchSize").notNull().default(10),
+  flushInterval: int("flushInterval").notNull().default(5000), // milliseconds
+  
+  // Status
+  isActive: boolean("isActive").notNull().default(true),
+  lastTestAt: timestamp("lastTestAt"),
+  lastTestSuccess: boolean("lastTestSuccess"),
+  lastTestMessage: text("lastTestMessage"),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SplunkConfig = typeof splunkConfig.$inferSelect;
+export type InsertSplunkConfig = typeof splunkConfig.$inferInsert;

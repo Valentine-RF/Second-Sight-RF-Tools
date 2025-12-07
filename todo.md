@@ -1181,3 +1181,30 @@
 - [ ] Add CORS configuration for cross-origin requests
 - [ ] Test endpoint with curl and Python examples
 - [ ] Add Redis for distributed rate limiting (production)
+
+## Splunk Enterprise Integration
+- [x] Design Splunk HEC (HTTP Event Collector) integration architecture
+- [x] Define event schema for RF signal analysis events
+- [x] Create SplunkClient class for HEC API communication
+- [x] Implement event batching and retry logic (configurable batch size, flush interval)
+- [x] Add Splunk configuration in database (HEC URL, token, index)
+- [x] Create event formatters for different event types
+- [x] Add signal capture events (upload, analysis start/complete)
+- [x] Add modulation classification events with confidence scores
+- [x] Add anomaly detection events (frequency hopping, unusual patterns)
+- [x] Add annotation events (user markings, signal identification)
+- [x] Add API usage events (public API calls, rate limit hits)
+- [x] Create Splunk configuration UI in Settings (/splunk route)
+- [x] Add test connection button with status display
+- [x] Add event type filtering (choose which events to send)
+- [x] Implement automatic event streaming with configurable intervals
+- [x] Add Splunk dashboard templates (SPL queries for common use cases)
+- [x] Create alert examples (high confidence unknown signals)
+- [x] Add error handling and retry logic (3 attempts with exponential backoff)
+- [x] Add SSL verification toggle for self-signed certificates
+- [x] Add helper functions (logSignalUpload, logModulationClassification, etc.)
+- [x] Add singleton pattern for Splunk client
+- [x] Create tRPC router for Splunk configuration management
+- [x] Add setup instructions in UI
+- [ ] Test integration with live Splunk Enterprise instance
+- [ ] Wire event logging into actual signal processing workflows
