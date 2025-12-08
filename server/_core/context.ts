@@ -1,6 +1,16 @@
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
+import type { Request, Response, NextFunction } from "express";
 import type { User } from "../../drizzle/schema";
 import { sdk } from "./sdk";
+
+// Extend Express Request type to include user
+declare global {
+  namespace Express {
+    interface Request {
+      user?: User | null;
+    }
+  }
+}
 
 export type TrpcContext = {
   req: CreateExpressContextOptions["req"];
@@ -25,4 +35,21 @@ export async function createContext(
     res: opts.res,
     user,
   };
+}
+
+/**
+ * Express middleware to attach authenticated user to request object
+ * Used for non-tRPC routes that need authentication
+ */
+export async function attachUserToRequest(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    req.user = await sdk.authenticateRequest(req);
+  } catch (error) {
+    req.user = null;
+  }
+  next();
 }

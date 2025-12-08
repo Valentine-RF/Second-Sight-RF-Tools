@@ -8,7 +8,9 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { dataRouter } from "../dataRoutes";
+import { uploadRouter } from "../uploadRoutes";
 import { initializeWebSocketServer } from "./websocket";
+import { attachUserToRequest } from "./context";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -42,6 +44,9 @@ async function startServer() {
   registerOAuthRoutes(app);
   // Data streaming routes (must be before tRPC to avoid conflicts)
   app.use("/api", dataRouter);
+  
+  // File upload routes with authentication
+  app.use("/api/upload", attachUserToRequest, uploadRouter);
   // tRPC API
   app.use(
     "/api/trpc",

@@ -927,3 +927,14 @@
 - [x] Applied git diff patch successfully
 - [x] Fix ES module __dirname errors in advancedAnalysis.ts, soapy.ts, demodulationBridge.ts
 - [x] Restart server and verify clean operation
+
+## Deployment Prep - S3 Upload Endpoint (Dec 7, 2025 - Evening)
+- [x] Create deployment-prep branch
+- [x] Implement S3 file upload endpoint with multipart form handling
+- [x] Add file size validation (max 10GB)
+- [x] Implement upload progress tracking (XMLHttpRequest with progress events)
+- [x] Create upload client utility with formatBytes and estimateRemainingTime helpers
+- [ ] Update FileManager UI to use new upload client
+- [x] Write vitest tests for upload endpoints (19 tests passing)
+- [ ] Test upload with real signal files via UI
+- [ ] Add S3 cleanup on file deletion
