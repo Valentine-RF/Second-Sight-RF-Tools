@@ -991,3 +991,14 @@
 - [x] Create PR to merge deployment-prep into main
 - [x] Add comprehensive PR description
 - [x] Verify PR created successfully (PR #1: https://github.com/Valentine-RF/Second-Sight-RF-Tools/pull/1)
+
+
+## README.md Creation (Dec 8, 2024)
+- [ ] Create comprehensive README.md
+- [ ] Add project overview and description
+- [ ] Add feature list with descriptions
+- [ ] Add deployment options table
+- [ ] Add screenshots and badges
+- [ ] Add documentation links
+- [ ] Commit and push to GitHub
+- [ ] Verify README displays correctly
