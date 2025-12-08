@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Radio, Waves, Activity, Binary, Upload, MessageSquare } from 'lucide-react';
 import { Link } from 'wouter';
+import { Header } from '@/components/Header';
 
 /**
  * Landing Page - Forensic Signal Processing Web App
@@ -15,6 +16,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen">
+      <Header />
       {/* Hero Section */}
       <div className="container py-16">
         <div className="max-w-4xl mx-auto text-center mb-16">

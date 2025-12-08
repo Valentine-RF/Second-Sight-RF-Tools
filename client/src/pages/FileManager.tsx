@@ -15,6 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Upload, FileText, Trash2, Radio, Download, CheckSquare, Square } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { toast } from 'sonner';
+import { Header } from '@/components/Header';
 
 /**
  * File Manager - SigMF Signal Capture Management
@@ -341,6 +342,7 @@ export default function FileManager() {
         onDismiss={handleDismissUpload}
       />
       <div className="min-h-screen">
+        <Header />
       <div className="container py-8">
         <div className="mb-8">
           <h1 className="mb-2">Signal File Manager</h1>

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { WebGLErrorBoundary } from '@/components/WebGLErrorBoundary';
 import { CockpitSkeleton } from '@/components/CockpitSkeleton';
 import { useAuth } from '@/_core/hooks/useAuth';
+import { Header } from '@/components/Header';
 import { useSignalStore } from '@/store/signalStore';
 import { Spectrogram } from '@/components/Spectrogram';
 import { ConstellationPlot } from '@/components/ConstellationPlot';
@@ -528,6 +529,7 @@ export default function ForensicCockpit() {
 
   return (
     <div className="h-screen flex flex-col bg-background">
+      <Header />
       {/* Zone A: Global Timeline (Top, Full Width) */}
       <div className="h-32 border-b border-border bg-card/30">
         <div className="h-full flex flex-col">
