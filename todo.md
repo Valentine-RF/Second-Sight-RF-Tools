@@ -866,3 +866,21 @@
 - [ ] Add symbol output hex view
 - [ ] Test with real modulated signals
 - [ ] Integrate with GPU service for CUDA acceleration
+
+## Advanced UI Components Integration (Dec 7, 2025)
+- [x] Create Python SoapySDR bridge (soapy_bridge.py)
+- [x] Integrate useSDRStream React hook for WebSocket streaming
+- [x] Add GeolocationPanel component (TDOA/AOA/RSS/Hybrid)
+- [x] Add AnomalyDetectionPanel component (LSTM autoencoder)
+- [x] Add CompressiveSensingPanel component (OMP/CoSaMP/LASSO/FISTA)
+- [x] Add ProtocolIdentificationPanel component (LTE/5G/WiFi/IoT)
+- [x] Add SDRControlPanel component (hardware control interface)
+- [x] Update tRPC routers from backend package
+- [ ] Fix 11 TypeScript compilation errors
+- [ ] Integrate panels into ForensicCockpit UI navigation
+- [ ] Test SDR device enumeration
+- [ ] Test WebSocket streaming connection
+- [ ] Test protocol identification endpoint
+- [ ] Test geolocation endpoint
+- [ ] Test anomaly detection endpoint
+- [ ] Test with real USDR hardware

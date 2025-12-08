@@ -1,0 +1,274 @@
+/**
+ * SDR tRPC Router
+ * 
+ * Exposes SDR device control and streaming to the frontend via tRPC
+ */
+
+import { z } from 'zod';
+import { router, publicProcedure, protectedProcedure } from '../_core/trpc';
+import {
+  getSDRManager,
+  enumerateDevices,
+  connectDevice,
+  configureDevice,
+  startStreaming,
+  stopStreaming,
+  getStreamStats,
+  getSDRState,
+  type SDRDevice,
+  type SDRConfig,
+  type StreamStats,
+} from '../soapy';
+
+// Validation schemas
+const SDRConfigSchema = z.object({
+  frequency: z.number().min(100000).max(6000000000), // 100kHz to 6GHz
+  sampleRate: z.number().min(250000).max(80000000),  // 250kHz to 80MHz
+  gain: z.number().min(0).max(73),
+  bandwidth: z.number().optional(),
+  antenna: z.string().optional(),
+  agc: z.boolean().optional(),
+  dcOffset: z.boolean().optional(),
+  iqBalance: z.boolean().optional(),
+});
+
+export const sdrRouter = router({
+  /**
+   * Enumerate available SDR devices
+   */
+  enumerate: protectedProcedure
+    .query(async (): Promise<SDRDevice[]> => {
+      try {
+        return await enumerateDevices();
+      } catch (error: any) {
+        throw new Error(`Failed to enumerate devices: ${error.message}`);
+      }
+    }),
+
+  /**
+   * Get current SDR state
+   */
+  getState: protectedProcedure
+    .query(() => {
+      return getSDRState();
+    }),
+
+  /**
+   * Connect to an SDR device
+   */
+  connect: protectedProcedure
+    .input(z.object({
+      deviceIndex: z.number().int().min(0).default(0),
+    }))
+    .mutation(async ({ input }): Promise<SDRDevice> => {
+      try {
+        return await connectDevice(input.deviceIndex);
+      } catch (error: any) {
+        throw new Error(`Failed to connect: ${error.message}`);
+      }
+    }),
+
+  /**
+   * Disconnect from current device
+   */
+  disconnect: protectedProcedure
+    .mutation(async (): Promise<void> => {
+      const manager = getSDRManager();
+      await manager.disconnect();
+    }),
+
+  /**
+   * Configure SDR parameters
+   */
+  configure: protectedProcedure
+    .input(SDRConfigSchema.partial())
+    .mutation(async ({ input }): Promise<SDRConfig> => {
+      try {
+        return await configureDevice(input);
+      } catch (error: any) {
+        throw new Error(`Failed to configure: ${error.message}`);
+      }
+    }),
+
+  /**
+   * Start streaming IQ data
+   */
+  startStream: protectedProcedure
+    .mutation(async (): Promise<{ success: boolean; wsPort: number }> => {
+      try {
+        const manager = getSDRManager();
+        manager.startServer(); // Ensure WS server is running
+        await startStreaming();
+        return { success: true, wsPort: 8765 };
+      } catch (error: any) {
+        throw new Error(`Failed to start stream: ${error.message}`);
+      }
+    }),
+
+  /**
+   * Stop streaming
+   */
+  stopStream: protectedProcedure
+    .mutation(async (): Promise<{ success: boolean }> => {
+      try {
+        await stopStreaming();
+        return { success: true };
+      } catch (error: any) {
+        throw new Error(`Failed to stop stream: ${error.message}`);
+      }
+    }),
+
+  /**
+   * Quick tune to a new frequency
+   */
+  tune: protectedProcedure
+    .input(z.object({
+      frequency: z.number().min(100000).max(6000000000),
+    }))
+    .mutation(async ({ input }): Promise<void> => {
+      const manager = getSDRManager();
+      await manager.tune(input.frequency);
+    }),
+
+  /**
+   * Set gain (live adjustment)
+   */
+  setGain: protectedProcedure
+    .input(z.object({
+      gain: z.number().min(0).max(73),
+    }))
+    .mutation(async ({ input }): Promise<void> => {
+      const manager = getSDRManager();
+      await manager.setGain(input.gain);
+    }),
+
+  /**
+   * Get streaming statistics
+   */
+  getStats: protectedProcedure
+    .query((): StreamStats => {
+      return getStreamStats();
+    }),
+
+  /**
+   * Start recording to file
+   */
+  startRecording: protectedProcedure
+    .input(z.object({
+      filename: z.string().optional(),
+      format: z.enum(['cf32', 'cs16', 'sigmf']).default('sigmf'),
+      maxDuration: z.number().optional(), // seconds
+      maxSize: z.number().optional(), // bytes
+    }))
+    .mutation(async ({ input }): Promise<{ recordingId: string; filename: string }> => {
+      const manager = getSDRManager();
+      const state = manager.getState();
+      
+      if (!state.streaming) {
+        throw new Error('Must be streaming to start recording');
+      }
+
+      // Generate filename if not provided
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const freq = state.config?.frequency || 0;
+      const freqMHz = (freq / 1e6).toFixed(3);
+      const filename = input.filename || `capture_${freqMHz}MHz_${timestamp}`;
+
+      // In production, this would actually start a recording process
+      // For now, return mock data
+      const recordingId = `rec_${Date.now()}`;
+      
+      return {
+        recordingId,
+        filename: `${filename}.${input.format === 'sigmf' ? 'sigmf-data' : input.format}`,
+      };
+    }),
+
+  /**
+   * Stop recording
+   */
+  stopRecording: protectedProcedure
+    .input(z.object({
+      recordingId: z.string(),
+    }))
+    .mutation(async ({ input }): Promise<{
+      success: boolean;
+      filename: string;
+      duration: number;
+      samples: number;
+      size: number;
+    }> => {
+      // In production, this would stop the recording and return stats
+      return {
+        success: true,
+        filename: 'capture.sigmf-data',
+        duration: 10.5,
+        samples: 25200000,
+        size: 201600000,
+      };
+    }),
+
+  /**
+   * Get supported sample rates for connected device
+   */
+  getSampleRates: protectedProcedure
+    .query((): number[] => {
+      // USDR supported sample rates
+      return [
+        250000,    // 250 kHz
+        500000,    // 500 kHz
+        1000000,   // 1 MHz
+        2000000,   // 2 MHz
+        2400000,   // 2.4 MHz
+        4000000,   // 4 MHz
+        8000000,   // 8 MHz
+        10000000,  // 10 MHz
+        16000000,  // 16 MHz
+        20000000,  // 20 MHz
+        40000000,  // 40 MHz
+        56000000,  // 56 MHz
+        80000000,  // 80 MHz (USDR max)
+      ];
+    }),
+
+  /**
+   * Get supported antennas for connected device
+   */
+  getAntennas: protectedProcedure
+    .query((): string[] => {
+      // USDR antennas
+      return ['LNAH', 'LNAL', 'LNAW'];
+    }),
+
+  /**
+   * Get device info
+   */
+  getDeviceInfo: protectedProcedure
+    .query((): {
+      driver: string;
+      hardware: string;
+      serial: string;
+      frequencyRange: { min: number; max: number };
+      sampleRateRange: { min: number; max: number };
+      gainRange: { min: number; max: number };
+      antennas: string[];
+    } | null => {
+      const state = getSDRState();
+      if (!state.connected || !state.device) {
+        return null;
+      }
+
+      // Return USDR specs
+      return {
+        driver: state.device.driver,
+        hardware: state.device.hardware || 'USDR',
+        serial: state.device.serial || 'Unknown',
+        frequencyRange: { min: 100000, max: 3800000000 },
+        sampleRateRange: { min: 250000, max: 80000000 },
+        gainRange: { min: 0, max: 73 },
+        antennas: ['LNAH', 'LNAL', 'LNAW'],
+      };
+    }),
+});
+
+export type SDRRouter = typeof sdrRouter;
