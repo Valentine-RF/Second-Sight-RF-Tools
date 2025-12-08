@@ -483,16 +483,8 @@ export default function ForensicCockpit() {
     return <CockpitSkeleton />;
   }
 
-  if (!currentCapture) {
-    return (
-      <div className="h-screen flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <h2 className="text-4xl font-black">No Signal Loaded</h2>
-          <p className="technical-label">Upload a SigMF capture to begin analysis</p>
-        </div>
-      </div>
-    );
-  }
+  // Show empty state message in the header when no capture is loaded
+  const emptyState = !currentCapture;
 
   return (
     <div className="h-screen flex flex-col bg-background">
@@ -501,12 +493,21 @@ export default function ForensicCockpit() {
         <div className="h-full flex flex-col">
           <div className="flex items-center justify-between px-4 py-2 border-b border-border">
             <div>
-              <h3 className="font-black text-lg">{currentCapture.name}</h3>
-              <div className="flex gap-4 technical-label">
-                <span>Sample Rate: {currentCapture.sampleRate ? `${(currentCapture.sampleRate / 1e6).toFixed(2)} MHz` : 'N/A'}</span>
-                <span>Datatype: {currentCapture.datatype || 'N/A'}</span>
-                <span>Hardware: {currentCapture.hardware || 'N/A'}</span>
-              </div>
+              {emptyState ? (
+                <>
+                  <h3 className="font-black text-lg">No Signal Loaded</h3>
+                  <p className="technical-label">Upload a SigMF capture from the File Manager to begin analysis</p>
+                </>
+              ) : (
+                <>
+                  <h3 className="font-black text-lg">{currentCapture?.name}</h3>
+                  <div className="flex gap-4 technical-label">
+                    <span>Sample Rate: {currentCapture?.sampleRate ? `${(currentCapture.sampleRate / 1e6).toFixed(2)} MHz` : 'N/A'}</span>
+                    <span>Datatype: {currentCapture?.datatype || 'N/A'}</span>
+                    <span>Hardware: {currentCapture?.hardware || 'N/A'}</span>
+                  </div>
+                </>
+              )}
             </div>
             <div className="flex gap-2">
               <span className="technical-label">Annotations: {savedAnnotations.length}</span>
@@ -985,16 +986,16 @@ export default function ForensicCockpit() {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="technical-label">Hardware</span>
-                  <span className="font-mono">{currentCapture.hardware || 'N/A'}</span>
+                  <span className="font-mono">{currentCapture?.hardware || 'N/A'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="technical-label">Author</span>
-                  <span className="font-mono">{currentCapture.author || 'N/A'}</span>
+                  <span className="font-mono">{currentCapture?.author || 'N/A'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="technical-label">Sample Rate</span>
                   <span className="font-mono">
-                    {currentCapture.sampleRate ? `${(currentCapture.sampleRate / 1e6).toFixed(2)} MHz` : 'N/A'}
+                    {currentCapture?.sampleRate ? `${(currentCapture.sampleRate / 1e6).toFixed(2)} MHz` : 'N/A'}
                   </span>
                 </div>
               </div>
@@ -1211,7 +1212,7 @@ export default function ForensicCockpit() {
                       const url = URL.createObjectURL(blob);
                       const a = document.createElement('a');
                       a.href = url;
-                      a.download = `classification_${currentCapture.name}_${Date.now()}.json`;
+                      a.download = `classification_${currentCapture?.name || 'signal'}_${Date.now()}.json`;
                       a.click();
                       URL.revokeObjectURL(url);
                       toast.success('Classification results downloaded');

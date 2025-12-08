@@ -1008,3 +1008,13 @@
 - [x] Add troubleshooting guide
 - [x] Commit and push to GitHub
 - [x] Verify README displays correctly on GitHub
+
+
+## Cockpit Accessibility Fix (Dec 8, 2024)
+- [x] Review current Cockpit button logic on Home page (button was already accessible)
+- [x] Make "Open Cockpit" button always accessible (no changes needed)
+- [x] Remove dependency on active capture processing (removed guard in ForensicCockpit.tsx)
+- [x] Test Cockpit opens without loaded files (verified - shows empty state)
+- [x] Update Cockpit to show empty state when no file selected (displays "No Signal Loaded" message with full UI)
+- [x] Add optional chaining to prevent TypeScript errors when currentCapture is null
+- [x] Update header to show helpful message: "Upload a SigMF capture from the File Manager to begin analysis"
