@@ -938,3 +938,22 @@
 - [x] Write vitest tests for upload endpoints (19 tests passing)
 - [x] Test upload with real signal files via UI (curl test confirmed endpoint works, UI code verified)
 - [ ] Add S3 cleanup on file deletion
+
+
+## Deployment Documentation (Dec 8, 2024)
+- [x] Create comprehensive DEPLOYMENT.md guide with system architecture
+- [x] Document system requirements (hardware, software, network)
+- [x] Write installation steps for Node.js and Python dependencies
+- [x] Document environment configuration and secrets management
+- [x] Create database setup instructions with PostgreSQL
+- [x] Document S3 storage configuration
+- [x] Add service management with systemd and PM2
+- [x] Create monitoring and health check guidelines
+- [x] Write troubleshooting section for common issues
+- [x] Document security considerations
+- [x] Add performance tuning recommendations
+- [x] Create Python environment setup guide (PYTHON_SETUP.md)
+- [x] Document CUDA and CuPy installation for GPU acceleration
+- [x] Add TorchSig and SoapySDR installation instructions
+- [x] Create verification scripts for testing environment
+- [x] Document three deployment modes (dev, CPU, GPU)
