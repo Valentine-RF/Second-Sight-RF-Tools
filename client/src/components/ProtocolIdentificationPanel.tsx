@@ -183,8 +183,9 @@ export function ProtocolIdentificationPanel({
   const getProtocolIcon = (protocol: string) => {
     const info = PROTOCOL_INFO[protocol];
     if (!info) return <Radio className="w-5 h-5" />;
-    const Icon = info.icon;
-    return <Icon className={`w-5 h-5 ${info.color}`} />;
+    const Icon: any = info.icon;
+    const iconClassName = `w-5 h-5 ${info.color}`;
+    return <Icon className={iconClassName} />;
   };
 
   // Format bandwidth
@@ -264,10 +265,11 @@ export function ProtocolIdentificationPanel({
             <div className="flex flex-wrap gap-2 mt-2">
               {CATEGORY_INFO[category].protocols.map((proto) => {
                 const info = PROTOCOL_INFO[proto];
-                const Icon = info?.icon || Radio;
+                const Icon: any = info?.icon || Radio;
+                const iconClassName = `w-3 h-3 mr-1 ${info?.color || ''}`;
                 return (
                   <Badge key={proto} variant="outline" className="text-xs">
-                    <Icon className={`w-3 h-3 mr-1 ${info?.color || ''}`} />
+                    <Icon className={iconClassName} />
                     {proto}
                   </Badge>
                 );

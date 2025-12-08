@@ -36,7 +36,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
-import useSDRStream, { type SDRStreamConfig } from '@/hooks/useSDRStream';
+import useSDRStream, { type SDRStreamConfig, type IQData, type FFTData } from '@/hooks/useSDRStream';
 
 interface SDRDevice {
   driver: string;
@@ -51,8 +51,8 @@ interface SDRDevice {
 }
 
 interface SDRControlPanelProps {
-  onStreamData?: (data: Float32Array) => void;
-  onFFTData?: (fft: { frequencies: number[]; magnitudes: number[] }) => void;
+  onStreamData?: (data: IQData) => void;
+  onFFTData?: (fft: FFTData) => void;
   onConnect?: (device: SDRDevice) => void;
   onDisconnect?: () => void;
 }
@@ -97,16 +97,14 @@ export function SDRControlPanel({
   const [isScanning, setIsScanning] = useState(false);
   
   // Configuration state
-  const [config, setConfig] = useState<SDRConfig>({
-    centerFreq: 98.1e6,
+  const [config, setConfig] = useState<SDRStreamConfig>({
+    deviceSerial: '',
+    frequency: 98.1e6,
     sampleRate: 2000000,
     gain: 40,
     antenna: 'LNAW',
     bandwidth: 0, // Auto
-    agc: false,
-    dcOffset: true,
-    iqBalance: true,
-  });
+  } as SDRStreamConfig);
   
   // Streaming state
   const [isRecording, setIsRecording] = useState(false);
@@ -129,7 +127,7 @@ export function SDRControlPanel({
     onIQData: onStreamData,
     onFFTData: onFFTData,
     fftSize: 2048,
-    autoConnect: false,
+    autoReconnect: false,
   });
 
   // Forward FFT data
@@ -295,7 +293,7 @@ export function SDRControlPanel({
               <p className="text-sm text-muted-foreground">
                 {isConnected 
                   ? isStreaming 
-                    ? `Streaming @ ${formatFreq(config.centerFreq)}`
+                    ? `Streaming @ ${formatFreq(config.frequency)}`
                     : 'Ready to stream'
                   : 'Select and connect a device'
                 }
@@ -487,7 +485,7 @@ export function SDRControlPanel({
                 <div className="flex items-center justify-between">
                   <Label className="text-sm">AGC (Auto Gain)</Label>
                   <Switch
-                    checked={config.agc}
+                    checked={false}
                     disabled
                     title="AGC not available in current config"
                   />
@@ -585,7 +583,7 @@ export function SDRControlPanel({
               min={0}
               max={73}
               step={1}
-              disabled={config.agc}
+              disabled={false}
             />
             
             <div className="flex justify-between text-xs text-muted-foreground">

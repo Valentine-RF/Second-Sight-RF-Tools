@@ -472,11 +472,12 @@ export function AnomalyDetectionPanel({
               <div className="space-y-3 pr-4">
                 {threats.map((threat) => {
                   const info = THREAT_INFO[threat.type];
-                  const Icon = info.icon;
+                  const Icon: any = info.icon;
+                  const iconClassName = `w-6 h-6 ${info.color} mt-0.5`;
                   return (
                     <Card key={threat.id} className={`p-4 border ${SEVERITY_COLORS[threat.severity]}`}>
                       <div className="flex items-start gap-3">
-                        <Icon className={`w-6 h-6 ${info.color} mt-0.5`} />
+                        <Icon className={iconClassName} />
                         <div className="flex-1">
                           <div className="flex items-center justify-between">
                             <h4 className="font-semibold">{info.name}</h4>
