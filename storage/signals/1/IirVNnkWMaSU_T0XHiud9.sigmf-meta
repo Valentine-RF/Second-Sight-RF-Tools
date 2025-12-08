@@ -1,0 +1,17 @@
+{
+  "global": {
+    "core:datatype": "cf32_le",
+    "core:sample_rate": 2400000,
+    "core:version": "1.0.0",
+    "core:hw": "Synthetic Generator (Python)",
+    "core:author": "Test Script",
+    "core:description": "Synthetic QPSK signal for testing spectrogram rendering"
+  },
+  "captures": [
+    {
+      "core:sample_start": 0,
+      "core:datetime": "2025-12-08T11:10:37.666Z"
+    }
+  ],
+  "annotations": []
+}

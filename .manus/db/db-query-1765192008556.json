@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE `signal_captures` \n  MODIFY COLUMN `metaFileKey` varchar(512),\n  MODIFY COLUMN `metaFileUrl` varchar(1024),\n  MODIFY COLUMN `dataFileKey` varchar(512),\n  MODIFY COLUMN `dataFileUrl` varchar(1024),\n  ADD COLUMN `localMetaPath` varchar(512),\n  ADD COLUMN `localDataPath` varchar(512),\n  ADD COLUMN `s3SyncStatus` enum('none','pending','synced','failed') DEFAULT 'none';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2ACQfACSQZoz6vb.d095a050fa67 --database 6cEK8Bhjn9P8MpMjVBM6F9 --execute ALTER TABLE `signal_captures` \n  MODIFY COLUMN `metaFileKey` varchar(512),\n  MODIFY COLUMN `metaFileUrl` varchar(1024),\n  MODIFY COLUMN `dataFileKey` varchar(512),\n  MODIFY COLUMN `dataFileUrl` varchar(1024),\n  ADD COLUMN `localMetaPath` varchar(512),\n  ADD COLUMN `localDataPath` varchar(512),\n  ADD COLUMN `s3SyncStatus` enum('none','pending','synced','failed') DEFAULT 'none';",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1076
+}

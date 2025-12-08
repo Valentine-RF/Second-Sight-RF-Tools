@@ -1,0 +1,8 @@
+{
+  "query": "SELECT id, name, data_file_url, metadata_file_url FROM signal_captures LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2ACQfACSQZoz6vb.d095a050fa67 --database 6cEK8Bhjn9P8MpMjVBM6F9 --execute SELECT id, name, data_file_url, metadata_file_url FROM signal_captures LIMIT 5;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'data_file_url' in 'field list'"
+  ]
+}

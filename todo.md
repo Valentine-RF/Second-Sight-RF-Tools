@@ -1074,3 +1074,39 @@
 - [x] Show capture name in breadcrumb when loaded (dynamic from currentCapture?.name)
 - [x] Show placeholder when no capture loaded (displays "No Signal Loaded")
 - [x] Test breadcrumb navigation functionality (verified Home and Files links work)
+
+
+## Main Workspace Interactivity Implementation (Dec 8, 2024)
+- [ ] Implement box selection on spectrogram with right-click drag
+- [ ] Add selection state management (start point, end point, active selection)
+- [ ] Create context menu component with analysis actions
+- [ ] Add context menu actions: Analyze Cycles, Classify Modulation, Demodulate, Add Annotation
+- [ ] Implement zoom controls (zoom in, zoom out, reset)
+- [ ] Implement pan controls (click and drag to pan)
+- [ ] Add mouse wheel zoom functionality
+- [ ] Create semi-transparent annotation overlays on spectrogram
+- [ ] Add annotation rendering with color-coded flags
+- [ ] Implement annotation hover tooltips
+
+## Analysis Dock Tab Content Implementation (Dec 8, 2024)
+- [ ] Build Spectrum/FFT plot component for Tab 1
+- [ ] Add frequency axis and PSD visualization
+- [ ] Integrate FFT computation from selected region
+- [ ] Build Constellation plot component for Tab 2
+- [ ] Add WebGL persistence for constellation trails
+- [ ] Implement I/Q scatter plot rendering
+- [ ] Build 3D SCF surface component for Tab 3
+- [ ] Integrate Three.js scene with PlaneGeometry
+- [ ] Add Z-height mapping from SCF magnitude
+- [ ] Build Hex view component for Tab 4
+- [ ] Add hex dump display for demodulated bitstream
+- [ ] Implement ASCII preview alongside hex data
+
+
+## Spectrogram Data Display Fix (Dec 8, 2024)
+- [ ] Add `updateFFT()` method to Spectrogram component's useImperativeHandle
+- [ ] Wire updateFFT to populate fftDataRef with FFT data
+- [ ] Ensure render loop picks up new FFT data
+- [ ] Update Spectrogram ref type in ForensicCockpit
+- [ ] Test that spectrogram displays actual visualization
+- [ ] Verify streaming pipeline successfully feeds data to spectrogram

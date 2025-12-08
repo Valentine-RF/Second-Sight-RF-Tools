@@ -29,6 +29,13 @@
       "when": 1765151640297,
       "tag": "0003_legal_mach_iv",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1765191935431,
+      "tag": "0004_gigantic_nomad",
+      "breakpoints": true
     }
   ]
 }

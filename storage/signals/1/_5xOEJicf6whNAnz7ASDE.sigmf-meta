@@ -1,0 +1,17 @@
+{
+  "global": {
+    "core:datatype": "cf32_le",
+    "core:sample_rate": 5000000,
+    "core:version": "1.0.0",
+    "core:hw": "Real SDR Capture",
+    "core:author": "User Upload",
+    "core:description": "Real 5 MHz IQ capture for testing"
+  },
+  "captures": [
+    {
+      "core:sample_start": 0,
+      "core:datetime": "2025-12-08T11:15:33.229Z"
+    }
+  ],
+  "annotations": []
+}

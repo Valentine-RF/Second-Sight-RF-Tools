@@ -61,6 +61,12 @@ export const Spectrogram = React.forwardRef<{ captureCanvas: () => string }, Spe
   // High-frequency data stored in refs (NOT state)
   const fftDataRef = useRef<Float32Array | null>(null);
   const animationFrameRef = useRef<number>(0);
+  
+  // Waterfall accumulation for 2D spectrogram texture
+  const waterfallBufferRef = useRef<Float32Array | null>(null);
+  const waterfallHeightRef = useRef<number>(512); // Number of time steps to accumulate
+  const waterfallWidthRef = useRef<number>(1024); // Frequency bins
+  const currentRowRef = useRef<number>(0); // Current row index for circular buffer
 
   // UI state from store
   const colormap = useSignalStore((state) => state.colormap);
@@ -68,13 +74,41 @@ export const Spectrogram = React.forwardRef<{ captureCanvas: () => string }, Spe
   const maxColorLevel = useSignalStore((state) => state.maxColorLevel);
   const setSelection = useSignalStore((state) => state.setSelection);
 
-  // Expose capture method via ref
+  // Expose capture and update methods via ref
   React.useImperativeHandle(ref, () => ({
     captureCanvas: () => {
       if (canvasRef.current) {
         return canvasRef.current.toDataURL('image/png');
       }
       return '';
+    },
+    updateFFT: (fft: Float32Array, _chunkIndex?: number) => {
+      // Initialize waterfall buffer if needed
+      if (!waterfallBufferRef.current) {
+        const width = waterfallWidthRef.current;
+        const height = waterfallHeightRef.current;
+        waterfallBufferRef.current = new Float32Array(width * height);
+        waterfallBufferRef.current.fill(-100); // Initialize with low dB value
+      }
+      
+      // Add new FFT frame to waterfall buffer (circular buffer)
+      const width = waterfallWidthRef.current;
+      const height = waterfallHeightRef.current;
+      const row = currentRowRef.current;
+      
+      // Copy FFT data into current row
+      // If FFT is smaller than width, pad with zeros
+      // If FFT is larger, truncate
+      const copyLength = Math.min(fft.length, width);
+      for (let i = 0; i < copyLength; i++) {
+        waterfallBufferRef.current![row * width + i] = fft[i];
+      }
+      
+      // Advance to next row (circular buffer)
+      currentRowRef.current = (row + 1) % height;
+      
+      // Update fftDataRef to point to the full 2D buffer
+      fftDataRef.current = waterfallBufferRef.current;
     }
   }));
 

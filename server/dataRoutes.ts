@@ -45,53 +45,94 @@ dataRouter.get('/captures/:id/data', async (req, res) => {
       return res.status(404).json({ error: 'Capture not found' });
     }
     
-    if (!capture.dataFileUrl) {
-      return res.status(404).json({ error: 'Data file URL not available' });
-    }
-    
-    // Forward Range header to S3 if present
-    const headers: Record<string, string> = {};
-    if (req.headers.range) {
-      headers['Range'] = req.headers.range;
-    }
-    
-    // Fetch from S3 with Range support
-    const s3Response = await fetch(capture.dataFileUrl, { headers });
-    
-    // Forward status code (200 for full file, 206 for partial content)
-    res.status(s3Response.status);
-    
-    // Forward relevant headers
-    const contentType = s3Response.headers.get('content-type');
-    const contentLength = s3Response.headers.get('content-length');
-    const contentRange = s3Response.headers.get('content-range');
-    const acceptRanges = s3Response.headers.get('accept-ranges');
-    
-    if (contentType) res.setHeader('Content-Type', contentType);
-    if (contentLength) res.setHeader('Content-Length', contentLength);
-    if (contentRange) res.setHeader('Content-Range', contentRange);
-    if (acceptRanges) res.setHeader('Accept-Ranges', acceptRanges);
-    
-    // Enable CORS for frontend access
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Expose-Headers', 'Content-Range, Content-Length, Accept-Ranges');
-    
-    // Stream response body
-    if (s3Response.body) {
-      const reader = s3Response.body.getReader();
-      const pump = async () => {
-        const { done, value } = await reader.read();
-        if (done) {
-          res.end();
-          return;
+    // PHASE 1: Try local file first (fastest)
+    if (capture.localDataPath) {
+      const { fileExists, readLocalFileStream, getFileStats } = await import('./localStorage');
+      
+      if (await fileExists(capture.localDataPath)) {
+        console.log('[DataRoute] Serving from local storage:', capture.localDataPath);
+        
+        const stats = await getFileStats(capture.localDataPath);
+        const fileSize = stats.size;
+        
+        // Parse Range header
+        const range = req.headers.range;
+        if (range) {
+          const parts = range.replace(/bytes=/, "").split("-");
+          const start = parseInt(parts[0], 10);
+          const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+          
+          res.status(206); // Partial Content
+          res.setHeader('Content-Range', `bytes ${start}-${end}/${fileSize}`);
+          res.setHeader('Content-Length', end - start + 1);
+          res.setHeader('Accept-Ranges', 'bytes');
+          res.setHeader('Content-Type', 'application/octet-stream');
+          res.setHeader('Access-Control-Allow-Origin', '*');
+          res.setHeader('Access-Control-Expose-Headers', 'Content-Range, Content-Length, Accept-Ranges');
+          
+          const stream = await readLocalFileStream(capture.localDataPath, { start, end });
+          stream.pipe(res);
+        } else {
+          // Full file
+          res.status(200);
+          res.setHeader('Content-Length', fileSize);
+          res.setHeader('Accept-Ranges', 'bytes');
+          res.setHeader('Content-Type', 'application/octet-stream');
+          res.setHeader('Access-Control-Allow-Origin', '*');
+          res.setHeader('Access-Control-Expose-Headers', 'Content-Range, Content-Length, Accept-Ranges');
+          
+          const stream = await readLocalFileStream(capture.localDataPath);
+          stream.pipe(res);
         }
-        res.write(value);
-        pump();
-      };
-      pump();
-    } else {
-      res.end();
+        return;
+      }
     }
+    
+    // PHASE 2: Fall back to S3 if local file missing
+    if (capture.dataFileUrl) {
+      console.warn('[DataRoute] Local file missing, using S3:', capture.localDataPath);
+      
+      const headers: Record<string, string> = {};
+      if (req.headers.range) {
+        headers['Range'] = req.headers.range;
+      }
+      
+      const s3Response = await fetch(capture.dataFileUrl, { headers });
+      res.status(s3Response.status);
+      
+      const contentType = s3Response.headers.get('content-type');
+      const contentLength = s3Response.headers.get('content-length');
+      const contentRange = s3Response.headers.get('content-range');
+      const acceptRanges = s3Response.headers.get('accept-ranges');
+      
+      if (contentType) res.setHeader('Content-Type', contentType);
+      if (contentLength) res.setHeader('Content-Length', contentLength);
+      if (contentRange) res.setHeader('Content-Range', contentRange);
+      if (acceptRanges) res.setHeader('Accept-Ranges', acceptRanges);
+      
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Expose-Headers', 'Content-Range, Content-Length, Accept-Ranges');
+      
+      if (s3Response.body) {
+        const reader = s3Response.body.getReader();
+        const pump = async () => {
+          const { done, value } = await reader.read();
+          if (done) {
+            res.end();
+            return;
+          }
+          res.write(value);
+          pump();
+        };
+        pump();
+      } else {
+        res.end();
+      }
+      return;
+    }
+    
+    // PHASE 3: No data available
+    return res.status(404).json({ error: 'Data file not found (neither local nor S3)' });
     
   } catch (error) {
     console.error('Error serving signal data:', error);

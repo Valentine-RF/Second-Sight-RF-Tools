@@ -1,0 +1,22 @@
+{
+  "query": "SELECT id, name, dataFileUrl, metaFileUrl FROM signal_captures LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2ACQfACSQZoz6vb.d095a050fa67 --database 6cEK8Bhjn9P8MpMjVBM6F9 --execute SELECT id, name, dataFileUrl, metaFileUrl FROM signal_captures LIMIT 5;",
+  "rows": [
+    {
+      "id": "1",
+      "name": "Test Capture",
+      "dataFileUrl": "https://example.com/data.sigmf-data",
+      "metaFileUrl": "https://example.com/meta.sigmf-meta"
+    },
+    {
+      "id": "30001",
+      "name": "Test Capture",
+      "dataFileUrl": "https://example.com/data.sigmf-data",
+      "metaFileUrl": "https://example.com/meta.sigmf-meta"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\tdataFileUrl\tmetaFileUrl\n1\tTest Capture\thttps://example.com/data.sigmf-data\thttps://example.com/meta.sigmf-meta\n30001\tTest Capture\thttps://example.com/data.sigmf-data\thttps://example.com/meta.sigmf-meta\n",
+  "stderr": "",
+  "execution_time_ms": 79
+}

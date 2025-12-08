@@ -172,34 +172,56 @@ router.post('/raw-iq', upload.single('dataFile'), async (req, res) => {
 
     const metadataJson = generateSigMFMetadata(metadataParams);
 
-    // Generate unique file keys for S3
+    // Generate unique file ID
     const fileId = nanoid();
-    const metaFileKey = `${req.user.id}/signals/${fileId}.sigmf-meta`;
-    const dataFileKey = `${req.user.id}/signals/${fileId}.sigmf-data`;
+    const localMetaPath = `signals/${req.user.id}/${fileId}.sigmf-meta`;
+    const localDataPath = `signals/${req.user.id}/${fileId}.sigmf-data`;
 
-    // Upload metadata file to S3
-    const metaResult = await storagePut(
-      metaFileKey,
-      metadataJson,
-      'application/json'
-    );
+    // PHASE 1: Write to local storage (REQUIRED)
+    const { writeLocalFile } = await import('./localStorage');
+    await writeLocalFile(localMetaPath, metadataJson);
+    await writeLocalFile(localDataPath, dataFile.buffer);
+    console.log(`[Upload] Local files written: ${localDataPath}`);
 
-    // Upload data file to S3
-    const dataResult = await storagePut(
-      dataFileKey,
-      dataFile.buffer,
-      'application/octet-stream'
-    );
+    // PHASE 2: Optional S3 sync
+    let s3MetaUrl: string | null = null;
+    let s3DataUrl: string | null = null;
+    let s3SyncStatus: 'none' | 'pending' | 'synced' | 'failed' = 'none';
 
-    // Create database record
+    if (process.env.ENABLE_S3_SYNC === 'true') {
+      console.log(`[Upload] S3 sync enabled, uploading...`);
+      s3SyncStatus = 'pending';
+      try {
+        const metaFileKey = `${req.user.id}/signals/${fileId}.sigmf-meta`;
+        const dataFileKey = `${req.user.id}/signals/${fileId}.sigmf-data`;
+        
+        const [metaResult, dataResult] = await Promise.all([
+          storagePut(metaFileKey, metadataJson, 'application/json'),
+          storagePut(dataFileKey, dataFile.buffer, 'application/octet-stream'),
+        ]);
+        
+        s3MetaUrl = metaResult.url;
+        s3DataUrl = dataResult.url;
+        s3SyncStatus = 'synced';
+        console.log(`[Upload] S3 sync complete`);
+      } catch (error) {
+        console.warn('[Upload] S3 sync failed (continuing with local only):', error);
+        s3SyncStatus = 'failed';
+      }
+    }
+
+    // PHASE 3: Create database record
     const capture = await createSignalCapture({
       userId: req.user.id,
       name,
       description: req.body.description || null,
-      metaFileKey,
-      metaFileUrl: metaResult.url,
-      dataFileKey,
-      dataFileUrl: dataResult.url,
+      localMetaPath,
+      localDataPath,
+      metaFileKey: s3MetaUrl ? `${req.user.id}/signals/${fileId}.sigmf-meta` : null,
+      metaFileUrl: s3MetaUrl,
+      dataFileKey: s3DataUrl ? `${req.user.id}/signals/${fileId}.sigmf-data` : null,
+      dataFileUrl: s3DataUrl,
+      s3SyncStatus,
       datatype,
       sampleRate: parseFloat(sampleRate),
       hardware: req.body.hardware || null,
@@ -212,8 +234,11 @@ router.post('/raw-iq', upload.single('dataFile'), async (req, res) => {
     res.json({
       success: true,
       captureId: capture.id,
-      metaFileUrl: metaResult.url,
-      dataFileUrl: dataResult.url,
+      name,
+      localDataPath,
+      s3DataUrl,
+      s3SyncStatus,
+      dataFileSize: dataFile.size,
     });
   } catch (error) {
     console.error('[Upload] Raw IQ upload failed:', error);

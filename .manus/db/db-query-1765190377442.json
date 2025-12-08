@@ -1,0 +1,30 @@
+{
+  "query": "SELECT * FROM signal_captures LIMIT 1;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2ACQfACSQZoz6vb.d095a050fa67 --database 6cEK8Bhjn9P8MpMjVBM6F9 --execute SELECT * FROM signal_captures LIMIT 1;",
+  "rows": [
+    {
+      "id": "1",
+      "userId": "1",
+      "name": "Test Capture",
+      "description": "Test description",
+      "metaFileKey": "test/meta.sigmf-meta",
+      "metaFileUrl": "https://example.com/meta.sigmf-meta",
+      "dataFileKey": "test/data.sigmf-data",
+      "dataFileUrl": "https://example.com/data.sigmf-data",
+      "datatype": "cf32_le",
+      "sampleRate": "2400000",
+      "hardware": "HackRF One",
+      "author": "Test User",
+      "sha512": "abc123",
+      "dataFileSize": "8000000",
+      "status": "ready",
+      "createdAt": "2025-12-07 22:26:36",
+      "updatedAt": "2025-12-07 22:26:36",
+      "centerFreq": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tuserId\tname\tdescription\tmetaFileKey\tmetaFileUrl\tdataFileKey\tdataFileUrl\tdatatype\tsampleRate\thardware\tauthor\tsha512\tdataFileSize\tstatus\tcreatedAt\tupdatedAt\tcenterFreq\n1\t1\tTest Capture\tTest description\ttest/meta.sigmf-meta\thttps://example.com/meta.sigmf-meta\ttest/data.sigmf-data\thttps://example.com/data.sigmf-data\tcf32_le\t2400000\tHackRF One\tTest User\tabc123\t8000000\tready\t2025-12-07 22:26:36\t2025-12-07 22:26:36\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 66
+}

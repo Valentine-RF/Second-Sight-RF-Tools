@@ -5,6 +5,11 @@ interface ConstellationPlotProps {
   height: number;
 }
 
+type ConstellationPlotHandle = {
+  captureCanvas: () => string;
+  updateSamples: (samples: Float32Array, chunkIndex?: number) => void;
+};
+
 /**
  * WebGL constellation plot with persistence/trail effect
  * 
@@ -18,7 +23,7 @@ interface ConstellationPlotProps {
  * @param width - Canvas width in pixels
  * @param height - Canvas height in pixels
  */
-export const ConstellationPlot = React.forwardRef<{ captureCanvas: () => string }, ConstellationPlotProps>(
+export const ConstellationPlot = React.forwardRef<ConstellationPlotHandle, ConstellationPlotProps>(
   ({ width, height }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const glRef = useRef<WebGLRenderingContext | null>(null);
@@ -34,16 +39,41 @@ export const ConstellationPlot = React.forwardRef<{ captureCanvas: () => string 
   // High-frequency IQ data stored in ref (NOT state)
   const iqDataRef = useRef<Float32Array>(new Float32Array(0));
   
-  // Expose capture method via ref
+  const renderRef = useRef<((timestamp?: number) => void) | null>(null);
+  const animationFrameRef = useRef<number>(0);
+
+  // Expose capture and update methods via ref
   React.useImperativeHandle(ref, () => ({
     captureCanvas: () => {
       if (canvasRef.current) {
         return canvasRef.current.toDataURL('image/png');
       }
       return '';
+    },
+    updateSamples: (samples: Float32Array, _chunkIndex?: number) => {
+      // Limit the number of plotted points for performance; downsample if necessary
+      const MAX_POINTS = 4096;
+      const totalPoints = samples.length / 2;
+      if (totalPoints > MAX_POINTS) {
+        const stride = Math.ceil(totalPoints / MAX_POINTS);
+        const decimatedPoints = Math.min(MAX_POINTS, Math.floor(totalPoints / stride));
+        const downsampled = new Float32Array(decimatedPoints * 2);
+
+        for (let i = 0, j = 0; i < samples.length && j < downsampled.length; i += stride * 2) {
+          downsampled[j++] = samples[i];
+          downsampled[j++] = samples[i + 1];
+        }
+        iqDataRef.current = downsampled;
+      } else {
+        iqDataRef.current = samples;
+      }
+
+      // Ensure the render loop picks up the new data promptly
+      if (!animationFrameRef.current && renderRef.current) {
+        animationFrameRef.current = requestAnimationFrame(renderRef.current);
+      }
     }
   }));
-  const animationFrameRef = useRef<number>(0);
 
   // Initialize WebGL context and ping-pong framebuffers
   useEffect(() => {
@@ -153,7 +183,7 @@ export const ConstellationPlot = React.forwardRef<{ captureCanvas: () => string 
 
   // Render loop with persistence effect
   useEffect(() => {
-    const render = () => {
+    const render = (_timestamp?: number) => {
       const gl = glRef.current;
       const program = programRef.current;
       const iqData = iqDataRef.current;
@@ -220,7 +250,7 @@ export const ConstellationPlot = React.forwardRef<{ captureCanvas: () => string 
 
       animationFrameRef.current = requestAnimationFrame(render);
     };
-
+    renderRef.current = render;
     animationFrameRef.current = requestAnimationFrame(render);
 
     return () => {
@@ -229,20 +259,6 @@ export const ConstellationPlot = React.forwardRef<{ captureCanvas: () => string 
       }
     };
   }, [width, height]);
-
-  /**
-   * Update IQ data for constellation plot
-   * @param data - Float32Array of interleaved I/Q samples (I, Q, I, Q, ...)
-   * Range: -1.0 to 1.0 for normalized constellation
-   */
-  const updateIQData = (data: Float32Array) => {
-    iqDataRef.current = data;
-  };
-
-  // Expose update function via ref (for parent component)
-  useEffect(() => {
-    (canvasRef.current as any)?.updateIQData?.(updateIQData);
-  }, []);
 
   return (
     <div className="relative bg-black" style={{ width, height }}>

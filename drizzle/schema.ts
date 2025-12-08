@@ -30,11 +30,16 @@ export const signalCaptures = mysqlTable("signal_captures", {
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
   
-  // S3 storage references
-  metaFileKey: varchar("metaFileKey", { length: 512 }).notNull(), // .sigmf-meta file key
-  metaFileUrl: varchar("metaFileUrl", { length: 1024 }).notNull(),
-  dataFileKey: varchar("dataFileKey", { length: 512 }).notNull(), // .sigmf-data file key
-  dataFileUrl: varchar("dataFileUrl", { length: 1024 }).notNull(),
+  // Local storage paths (PRIMARY - always populated)
+  localMetaPath: varchar("localMetaPath", { length: 512 }),
+  localDataPath: varchar("localDataPath", { length: 512 }),
+  
+  // S3 storage references (OPTIONAL - populated when ENABLE_S3_SYNC=true)
+  metaFileKey: varchar("metaFileKey", { length: 512 }), // .sigmf-meta file key
+  metaFileUrl: varchar("metaFileUrl", { length: 1024 }),
+  dataFileKey: varchar("dataFileKey", { length: 512 }), // .sigmf-data file key
+  dataFileUrl: varchar("dataFileUrl", { length: 1024 }),
+  s3SyncStatus: mysqlEnum("s3SyncStatus", ["none", "pending", "synced", "failed"]).default("none"),
   
   // SigMF global metadata (parsed from .sigmf-meta)
   datatype: varchar("datatype", { length: 64 }), // e.g., cf32_le, ci16_le

@@ -273,7 +273,10 @@ export default function ForensicCockpit() {
   
   // Refs for capturing visualizations
   const mainSpectrogramRef = useRef<{ captureCanvas: () => string }>(null);
-  const constellationPlotRef = useRef<{ captureCanvas: () => string }>(null);
+  const constellationPlotRef = useRef<{
+    captureCanvas: () => string;
+    updateSamples: (samples: Float32Array, chunkIndex?: number) => void;
+  }>(null);
   const scfSurfaceRef = useRef<{ captureCanvas: () => string }>(null);
   
   // Streaming pipeline for real-time IQ data processing
@@ -287,8 +290,10 @@ export default function ForensicCockpit() {
   });
   
   // Refs for WebGL components (high-frequency data - no React state)
-  const spectrogramRef = useRef<any>(null);
-  const constellationRef = useRef<any>(null);
+  const spectrogramRef = useRef<{
+    captureCanvas: () => string;
+    updateFFT: (fft: Float32Array, chunkIndex?: number) => void;
+  } | null>(null);
   const waterfallRef = useRef<any>(null);
   
   // Connect pipeline to visualizations
@@ -305,8 +310,8 @@ export default function ForensicCockpit() {
     
     // IQ samples -> Constellation
     pipeline.onSamples((samples, chunkIndex) => {
-      if (constellationRef.current?.updateSamples) {
-        constellationRef.current.updateSamples(samples, chunkIndex);
+      if (constellationPlotRef.current?.updateSamples) {
+        constellationPlotRef.current.updateSamples(samples, chunkIndex);
       }
     });
   }, [pipeline]);
