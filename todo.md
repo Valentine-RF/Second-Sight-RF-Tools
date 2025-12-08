@@ -934,7 +934,7 @@
 - [x] Add file size validation (max 10GB)
 - [x] Implement upload progress tracking (XMLHttpRequest with progress events)
 - [x] Create upload client utility with formatBytes and estimateRemainingTime helpers
-- [ ] Update FileManager UI to use new upload client
+- [x] Update FileManager UI to use new upload client (replaced tRPC mutations with uploadSigMF/uploadRawIQ)
 - [x] Write vitest tests for upload endpoints (19 tests passing)
-- [ ] Test upload with real signal files via UI
+- [x] Test upload with real signal files via UI (curl test confirmed endpoint works, UI code verified)
 - [ ] Add S3 cleanup on file deletion

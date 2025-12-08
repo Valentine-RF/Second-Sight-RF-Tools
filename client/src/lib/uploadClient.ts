@@ -142,6 +142,50 @@ function uploadWithProgress(
 }
 
 /**
+ * Convenience wrapper for uploadSigMFFiles with simpler signature
+ */
+export async function uploadSigMF(
+  name: string,
+  metaFile: File,
+  dataFile: File,
+  description?: string,
+  onProgress?: (percentage: number) => void
+): Promise<UploadResponse> {
+  return uploadSigMFFiles({
+    name,
+    metaFile,
+    dataFile,
+    description,
+    onProgress: onProgress ? (progress) => onProgress(progress.percentage) : undefined,
+  });
+}
+
+/**
+ * Convenience wrapper for uploadRawIQFile with simpler signature
+ */
+export async function uploadRawIQ(
+  name: string,
+  dataFile: File,
+  datatype: string,
+  sampleRate: number,
+  centerFrequency?: number,
+  hardware?: string,
+  description?: string,
+  onProgress?: (percentage: number) => void
+): Promise<UploadResponse> {
+  return uploadRawIQFile({
+    name,
+    dataFile,
+    datatype,
+    sampleRate,
+    centerFrequency,
+    hardware,
+    description,
+    onProgress: onProgress ? (progress) => onProgress(progress.percentage) : undefined,
+  });
+}
+
+/**
  * Format bytes to human-readable size
  */
 export function formatBytes(bytes: number): string {

@@ -4,6 +4,7 @@ import { FileListSkeleton } from '@/components/FileListSkeleton';
 import { DropZone } from '@/components/DropZone';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { trpc } from '@/lib/trpc';
+import { uploadSigMF, uploadRawIQ } from '@/lib/uploadClient';
 import { useSignalStore } from '@/store/signalStore';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -67,25 +68,7 @@ export default function FileManager() {
     },
   });
 
-  // Raw IQ upload mutation
-  const uploadRawIQMutation = trpc.captures.uploadRawIQ.useMutation({
-    onSuccess: () => {
-      toast.success('Raw IQ file uploaded successfully! SigMF metadata auto-generated.');
-      setRawIQForm({
-        name: '',
-        description: '',
-        dataFile: null,
-        datatype: 'cf32_le',
-        sampleRate: 0,
-        centerFrequency: 0,
-        hardware: '',
-      });
-      refetch();
-    },
-    onError: (error) => {
-      toast.error(`Upload failed: ${error.message}`);
-    },
-  });
+  // Upload now uses REST endpoints via uploadClient utility
 
   const handleMetaFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -129,21 +112,73 @@ export default function FileManager() {
 
     setIsUploading(true);
 
-    try {
-      // Call uploadRawIQ mutation
-      await uploadRawIQMutation.mutateAsync({
-        name: rawIQForm.name,
-        description: rawIQForm.description || undefined,
-        datatype: rawIQForm.datatype,
-        sampleRate: rawIQForm.sampleRate,
-        centerFrequency: rawIQForm.centerFrequency || undefined,
-        hardware: rawIQForm.hardware || undefined,
-        dataFileSize: rawIQForm.dataFile.size,
-      });
+    // Create upload task
+    const taskId = `upload-raw-${Date.now()}`;
+    const totalSize = rawIQForm.dataFile.size;
+    
+    const newTask: UploadTask = {
+      id: taskId,
+      fileName: rawIQForm.name,
+      fileSize: totalSize,
+      uploadedBytes: 0,
+      status: 'uploading',
+      startTime: Date.now(),
+    };
 
-      // TODO: Upload data file to S3 using the returned dataFileKey
+    setUploadTasks((prev) => [...prev, newTask]);
+
+    try {
+      // Use real uploadClient with progress tracking
+      await uploadRawIQ(
+        rawIQForm.name,
+        rawIQForm.dataFile,
+        rawIQForm.datatype,
+        rawIQForm.sampleRate,
+        rawIQForm.centerFrequency,
+        rawIQForm.hardware,
+        rawIQForm.description,
+        (progress) => {
+          // Update progress in real-time
+          setUploadTasks((prev) =>
+            prev.map((t) =>
+              t.id === taskId
+                ? { ...t, uploadedBytes: Math.round((totalSize * progress) / 100) }
+                : t
+            )
+          );
+        }
+      );
+
+      // Mark as complete
+      setUploadTasks((prev) =>
+        prev.map((t) =>
+          t.id === taskId
+            ? { ...t, status: 'complete', uploadedBytes: totalSize }
+            : t
+        )
+      );
+
+      toast.success('Raw IQ file uploaded successfully! SigMF metadata auto-generated.');
+      refetch();
+
+      setRawIQForm({
+        name: '',
+        description: '',
+        dataFile: null,
+        datatype: 'cf32_le',
+        sampleRate: 0,
+        centerFrequency: 0,
+        hardware: '',
+      });
     } catch (error: any) {
-      // Error already handled by mutation onError
+      setUploadTasks((prev) =>
+        prev.map((t) =>
+          t.id === taskId
+            ? { ...t, status: 'error', error: error.message || String(error) }
+            : t
+        )
+      );
+      toast.error(`Upload failed: ${error.message || error}`);
     } finally {
       setIsUploading(false);
     }
@@ -173,36 +208,23 @@ export default function FileManager() {
     setUploadTasks((prev) => [...prev, newTask]);
 
     try {
-      // Read metadata file
-      const metadataJson = await uploadForm.metaFile.text();
-
-      // Simulate upload progress
-      const updateProgress = (uploaded: number) => {
-        setUploadTasks((prev) =>
-          prev.map((t) =>
-            t.id === taskId
-              ? { ...t, uploadedBytes: uploaded }
-              : t
-          )
-        );
-      };
-
-      // Simulate chunked upload
-      for (let i = 0; i <= 100; i += 10) {
-        await new Promise((resolve) => setTimeout(resolve, 200));
-        updateProgress((totalSize * i) / 100);
-      }
-
-      // Mark as processing
-      setUploadTasks((prev) =>
-        prev.map((t) =>
-          t.id === taskId
-            ? { ...t, status: 'processing' }
-            : t
-        )
+      // Use real uploadClient with progress tracking
+      await uploadSigMF(
+        uploadForm.name,
+        uploadForm.metaFile,
+        uploadForm.dataFile,
+        uploadForm.description,
+        (progress) => {
+          // Update progress in real-time
+          setUploadTasks((prev) =>
+            prev.map((t) =>
+              t.id === taskId
+                ? { ...t, uploadedBytes: Math.round((totalSize * progress) / 100) }
+                : t
+            )
+          );
+        }
       );
-
-      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // Mark as complete
       setUploadTasks((prev) =>
@@ -222,15 +244,15 @@ export default function FileManager() {
         metaFile: null,
         dataFile: null,
       });
-    } catch (error) {
+    } catch (error: any) {
       setUploadTasks((prev) =>
         prev.map((t) =>
           t.id === taskId
-            ? { ...t, status: 'error', error: String(error) }
+            ? { ...t, status: 'error', error: error.message || String(error) }
             : t
         )
       );
-      toast.error(`Upload failed: ${error}`);
+      toast.error(`Upload failed: ${error.message || error}`);
     } finally {
       setIsUploading(false);
     }
