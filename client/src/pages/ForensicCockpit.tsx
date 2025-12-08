@@ -86,6 +86,46 @@ export default function ForensicCockpit() {
   const [selectedAnnotationId, setSelectedAnnotationId] = useState<number | null>(null);
   const [pendingAnnotation, setPendingAnnotation] = useState<SignalSelection | null>(null);
   
+  // Dock resize state
+  const [dockHeight, setDockHeight] = useState<number>(() => {
+    const saved = localStorage.getItem('cockpit-dock-height');
+    return saved ? parseInt(saved, 10) : 512; // Default 32rem = 512px
+  });
+  const [isResizing, setIsResizing] = useState(false);
+  const [resizeStartY, setResizeStartY] = useState(0);
+  const [resizeStartHeight, setResizeStartHeight] = useState(0);
+  
+  // Dock resize handlers
+  const handleResizeStart = (e: React.MouseEvent) => {
+    setIsResizing(true);
+    setResizeStartY(e.clientY);
+    setResizeStartHeight(dockHeight);
+    e.preventDefault();
+  };
+  
+  useEffect(() => {
+    if (!isResizing) return;
+    
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaY = resizeStartY - e.clientY; // Inverted: dragging up increases height
+      const newHeight = Math.max(200, Math.min(800, resizeStartHeight + deltaY)); // Min 200px, max 800px
+      setDockHeight(newHeight);
+    };
+    
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      localStorage.setItem('cockpit-dock-height', dockHeight.toString());
+    };
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing, resizeStartY, resizeStartHeight, dockHeight]);
+  
   const demodMutation = trpc.captures.demodulate.useMutation({
     onSuccess: (data) => {
       setDemodResult(data);
@@ -775,7 +815,21 @@ export default function ForensicCockpit() {
           </div>
 
           {/* Zone C: Analysis Dock (Bottom, Collapsible) */}
-          <div className={`border-t border-border bg-card/50 flex flex-col transition-all ${isDockCollapsed ? 'h-12' : 'h-[32rem]'}`}>
+          {!isDockCollapsed && (
+            <div
+              className="h-1.5 bg-card/50 hover:bg-cyan-500/20 cursor-ns-resize transition-colors relative group flex items-center justify-center border-y border-border"
+              onMouseDown={handleResizeStart}
+              style={{ userSelect: 'none' }}
+            >
+              {/* Grip dots indicator */}
+              <div className="flex gap-1">
+                <div className="w-1 h-1 rounded-full bg-border group-hover:bg-cyan-500 transition-colors" />
+                <div className="w-1 h-1 rounded-full bg-border group-hover:bg-cyan-500 transition-colors" />
+                <div className="w-1 h-1 rounded-full bg-border group-hover:bg-cyan-500 transition-colors" />
+              </div>
+            </div>
+          )}
+          <div className={`border-t border-border bg-card/50 flex flex-col ${isDockCollapsed ? 'h-12' : ''}`} style={!isDockCollapsed ? { height: `${dockHeight}px` } : undefined}>
             <div className="flex items-center justify-between px-4 py-2 border-b border-border flex-shrink-0">
               <h3 className="font-black">Analysis Dock</h3>
               <Button
