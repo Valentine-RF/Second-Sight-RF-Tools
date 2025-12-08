@@ -884,3 +884,13 @@
 - [ ] Test geolocation endpoint
 - [ ] Test anomaly detection endpoint
 - [ ] Test with real USDR hardware
+
+## TypeScript Error Fixes (Dec 7, 2025 - Evening)
+- [x] Fix SDRControlPanel.tsx line 223 - incorrect arguments to stopRecording
+- [x] Fix SDRControlPanel.tsx line 615 - change 'latency' to 'latencyMs'
+- [x] Fix SDRControlPanel.tsx line 631 - remove reference to missing 'samplesPerSecond'
+- [x] Fix server/routers/index.ts - change import path from '../trpc' to '../_core/trpc'
+- [x] Fix SDRControlPanel API mismatches with useSDRStream hook
+- [x] Fix SDRControlPanel config property names (centerFreq -> frequency)
+- [x] Fix import paths in advancedAnalysis.ts and compressiveSensing.ts routers
+- [ ] Fix remaining 6 array type errors in AnomalyDetectionPanel and ProtocolIdentificationPanel

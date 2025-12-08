@@ -4,7 +4,7 @@
  * Combines all sub-routers into the main app router
  */
 
-import { router } from '../trpc';
+import { router } from '../_core/trpc';
 import { sdrRouter } from './sdr';
 import { advancedAnalysisRouter } from './advancedAnalysis';
 import { compressiveSensingRouter } from './compressiveSensing';

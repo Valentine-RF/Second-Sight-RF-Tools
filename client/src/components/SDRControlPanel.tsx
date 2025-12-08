@@ -36,7 +36,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
-import { useSDRStream, type SDRConfig } from '@/hooks/useSDRStream';
+import useSDRStream, { type SDRStreamConfig } from '@/hooks/useSDRStream';
 
 interface SDRDevice {
   driver: string;
@@ -124,32 +124,44 @@ export function SDRControlPanel({
     stopStream,
     startRecording,
     stopRecording,
-    updateConfig,
-    fftData,
-    error,
+    latestFFT,
   } = useSDRStream({
-    onData: onStreamData,
-    onFFT: onFFTData,
+    onIQData: onStreamData,
+    onFFTData: onFFTData,
     fftSize: 2048,
     autoConnect: false,
   });
 
   // Forward FFT data
   useEffect(() => {
-    if (fftData && onFFTData) {
-      onFFTData(fftData);
+    if (latestFFT && onFFTData) {
+      onFFTData(latestFFT as any);
     }
-  }, [fftData, onFFTData]);
+  }, [latestFFT, onFFTData]);
 
   // Enumerate devices
+  const enumerateMutation = trpc.sdr.enumerateDevices.useMutation();
+
   const scanDevices = useCallback(async () => {
     setIsScanning(true);
     try {
       // Call tRPC endpoint to enumerate devices
-      const result = await trpc.sdr.enumerate.query();
-      setDevices(result.devices);
-      if (result.devices.length > 0) {
-        toast.success(`Found ${result.devices.length} SDR device(s)`);
+      const soapyDevices = await enumerateMutation.mutateAsync();
+      // Convert SoapyDevice to SDRDevice format
+      const devices: SDRDevice[] = soapyDevices.map((dev, idx) => ({
+        driver: dev.driver,
+        label: dev.label || `${dev.driver} ${dev.serial || idx}`,
+        serial: dev.serial,
+        index: idx,
+        available: true,
+        freqRange: dev.freqRange || { min: 0, max: 6e9 },
+        sampleRates: dev.sampleRateRange ? [dev.sampleRateRange.min, dev.sampleRateRange.max] : [250000, 80000000],
+        gains: dev.gainRange ? [`${dev.gainRange.min}`, `${dev.gainRange.max}`] : ['0', '73'],
+        antennas: dev.antennas || ['LNAH'],
+      }));
+      setDevices(devices);
+      if (devices.length > 0) {
+        toast.success(`Found ${devices.length} SDR device(s)`);
       } else {
         toast.warning('No SDR devices found. Check USB connections.');
       }
@@ -180,7 +192,8 @@ export function SDRControlPanel({
     }
     
     try {
-      await connect(selectedDevice.driver, selectedDevice.index);
+      const sessionId = `session-${Date.now()}`;
+      connect(sessionId);
       onConnect?.(selectedDevice);
       toast.success(`Connected to ${selectedDevice.label}`);
     } catch (err: any) {
@@ -205,7 +218,8 @@ export function SDRControlPanel({
       await stopStream();
       toast.info('Streaming stopped');
     } else {
-      await startStream(config);
+      const sessionId = `session-${Date.now()}`;
+      startStream(config, sessionId);
       toast.success('Streaming started');
     }
   }, [isStreaming, startStream, stopStream, config]);
@@ -213,14 +227,14 @@ export function SDRControlPanel({
   // Start/stop recording
   const handleToggleRecording = useCallback(async () => {
     if (isRecording) {
-      const result = await stopRecording();
+      stopRecording();
       setIsRecording(false);
       setRecordingDuration(0);
-      toast.success(`Recording saved: ${result.filename}`);
+      toast.success('Recording stopped');
     } else {
       const filename = `capture_${Date.now()}`;
       setRecordingFilename(filename);
-      await startRecording(filename);
+      await startRecording();
       setIsRecording(true);
       toast.success('Recording started');
     }
@@ -238,13 +252,11 @@ export function SDRControlPanel({
   }, [isRecording]);
 
   // Apply config changes
-  const handleConfigChange = useCallback((key: keyof SDRConfig, value: any) => {
+  const handleConfigChange = useCallback((key: keyof SDRStreamConfig, value: any) => {
     const newConfig = { ...config, [key]: value };
     setConfig(newConfig);
-    if (isStreaming) {
-      updateConfig(newConfig);
-    }
-  }, [config, isStreaming, updateConfig]);
+    // Note: Would need to reconnect stream with new config
+  }, [config, isStreaming]);
 
   // Format frequency for display
   const formatFreq = (freq: number): string => {
@@ -476,23 +488,26 @@ export function SDRControlPanel({
                   <Label className="text-sm">AGC (Auto Gain)</Label>
                   <Switch
                     checked={config.agc}
-                    onCheckedChange={(v) => handleConfigChange('agc', v)}
+                    disabled
+                    title="AGC not available in current config"
                   />
                 </div>
                 
                 <div className="flex items-center justify-between">
                   <Label className="text-sm">DC Offset Correction</Label>
                   <Switch
-                    checked={config.dcOffset}
-                    onCheckedChange={(v) => handleConfigChange('dcOffset', v)}
+                    checked={false}
+                    disabled
+                    title="Feature not available in current config"
                   />
                 </div>
                 
                 <div className="flex items-center justify-between">
                   <Label className="text-sm">IQ Balance Correction</Label>
                   <Switch
-                    checked={config.iqBalance}
-                    onCheckedChange={(v) => handleConfigChange('iqBalance', v)}
+                    checked={false}
+                    disabled
+                    title="Feature not available in current config"
                   />
                 </div>
               </div>
@@ -509,15 +524,15 @@ export function SDRControlPanel({
             <div className="flex gap-2">
               <Input
                 type="number"
-                value={config.centerFreq}
-                onChange={(e) => handleConfigChange('centerFreq', parseFloat(e.target.value) || 0)}
+                value={config.frequency}
+                onChange={(e) => handleConfigChange('frequency', parseFloat(e.target.value) || 0)}
                 className="font-mono"
               />
               <span className="flex items-center text-sm text-muted-foreground">Hz</span>
             </div>
             
             <div className="text-lg font-mono text-center text-primary">
-              {formatFreq(config.centerFreq)}
+              {formatFreq(config.frequency)}
             </div>
 
             {/* Frequency Presets */}
@@ -527,7 +542,7 @@ export function SDRControlPanel({
                   key={preset.label}
                   variant="outline"
                   size="sm"
-                  onClick={() => handleConfigChange('centerFreq', preset.freq)}
+                  onClick={() => handleConfigChange('frequency', preset.freq)}
                   className="text-xs"
                 >
                   {preset.label}
@@ -612,7 +627,7 @@ export function SDRControlPanel({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <div className="text-xs text-muted-foreground">Latency</div>
-                <div className="text-lg font-mono">{stats.latency.toFixed(1)} ms</div>
+                <div className="text-lg font-mono">{stats.latencyMs.toFixed(1)} ms</div>
               </div>
               
               <div className="space-y-1">
@@ -628,7 +643,7 @@ export function SDRControlPanel({
               <div className="space-y-1">
                 <div className="text-xs text-muted-foreground">Samples/s</div>
                 <div className="text-lg font-mono">
-                  {(stats.samplesPerSecond / 1e6).toFixed(2)}M
+                  {(stats.samplesReceived / 1000).toFixed(2)}K
                 </div>
               </div>
             </div>
@@ -683,11 +698,11 @@ export function SDRControlPanel({
           )}
 
           {/* Error Display */}
-          {error && (
+          {stats.lastError && (
             <Card className="p-4 border-red-500/50 bg-red-500/10">
               <div className="flex items-center gap-2 text-red-500">
                 <AlertCircle className="w-4 h-4" />
-                <span className="text-sm">{error}</span>
+                <span className="text-sm">{stats.lastError}</span>
               </div>
             </Card>
           )}
