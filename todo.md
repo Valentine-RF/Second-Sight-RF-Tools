@@ -1018,3 +1018,15 @@
 - [x] Update Cockpit to show empty state when no file selected (displays "No Signal Loaded" message with full UI)
 - [x] Add optional chaining to prevent TypeScript errors when currentCapture is null
 - [x] Update header to show helpful message: "Upload a SigMF capture from the File Manager to begin analysis"
+
+
+## Cockpit Layout Fix (Dec 8, 2024)
+- [x] Investigate layout scaling issues in Cockpit (Analysis Dock content was cut off)
+- [x] Fix broken layout and component sizing (restructured to use flexbox)
+- [x] Ensure proper responsive behavior (flex-1 for content areas, overflow-auto for scrolling)
+- [x] Test with and without loaded captures (verified working)
+- [x] Verify all zones (A, B, C, D) are properly sized (Zone C increased to h-[32rem])
+- [x] Changed Analysis Dock from fixed h-80 (320px) to h-[32rem] (512px)
+- [x] Restructured Tabs component to use flexbox (flex flex-col)
+- [x] Updated all TabsContent from h-full to flex-1 overflow-auto
+- [x] Added flex-shrink-0 to header and TabsList to prevent compression

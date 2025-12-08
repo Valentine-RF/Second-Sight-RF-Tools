@@ -775,8 +775,8 @@ export default function ForensicCockpit() {
           </div>
 
           {/* Zone C: Analysis Dock (Bottom, Collapsible) */}
-          <div className={`border-t border-border bg-card/50 transition-all ${isDockCollapsed ? 'h-12' : 'h-80'}`}>
-            <div className="flex items-center justify-between px-4 py-2 border-b border-border">
+          <div className={`border-t border-border bg-card/50 flex flex-col transition-all ${isDockCollapsed ? 'h-12' : 'h-[32rem]'}`}>
+            <div className="flex items-center justify-between px-4 py-2 border-b border-border flex-shrink-0">
               <h3 className="font-black">Analysis Dock</h3>
               <Button
                 variant="ghost"
@@ -788,8 +788,8 @@ export default function ForensicCockpit() {
             </div>
 
             {!isDockCollapsed && (
-              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="h-full">
-                <TabsList className="w-full justify-start border-b rounded-none">
+              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="flex-1 flex flex-col overflow-hidden">
+                <TabsList className="w-full justify-start border-b rounded-none flex-shrink-0">
                   <TabsTrigger value="spectrum" className="gap-2">
                     <Activity className="w-4 h-4" />
                     Spectrum/FFT
@@ -828,7 +828,7 @@ export default function ForensicCockpit() {
                   </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="spectrum" className="p-4 h-full">
+                <TabsContent value="spectrum" className="p-4 flex-1 overflow-auto">
                   <FFTPSDPlot
                     frequencies={fftData?.frequencies || []}
                     magnitudes={fftData?.magnitudes || []}
@@ -838,13 +838,13 @@ export default function ForensicCockpit() {
                   />
                 </TabsContent>
 
-                <TabsContent value="constellation" className="p-4 h-full">
+                <TabsContent value="constellation" className="p-4 flex-1 overflow-auto">
                   <WebGLErrorBoundary fallbackMessage="Failed to render constellation plot.">
                     <ConstellationPlot ref={constellationPlotRef} width={600} height={250} />
                   </WebGLErrorBoundary>
                 </TabsContent>
 
-                <TabsContent value="cyclostationary" className="p-0 h-full">
+                <TabsContent value="cyclostationary" className="p-0 flex-1 overflow-auto">
                   <WebGLErrorBoundary fallbackMessage="Failed to render 3D SCF surface.">
                     <SCFSurface3D
                       scfMagnitude={scfData?.scfMagnitude || []}
@@ -856,7 +856,7 @@ export default function ForensicCockpit() {
                   </WebGLErrorBoundary>
                 </TabsContent>
 
-                <TabsContent value="hex" className="p-0 h-full relative">
+                <TabsContent value="hex" className="p-0 flex-1 overflow-auto relative">
                   {demodData && (
                     <div className="absolute top-2 right-2 z-10 flex gap-1">
                       <Button
@@ -907,7 +907,7 @@ export default function ForensicCockpit() {
                   />
                 </TabsContent>
 
-                <TabsContent value="geolocation" className="p-4 h-full overflow-auto">
+                <TabsContent value="geolocation" className="p-4 flex-1 overflow-auto">
                   <GeolocationPanel
                     captureId={currentCapture?.id || 0}
                     onResult={(result) => {
@@ -916,7 +916,7 @@ export default function ForensicCockpit() {
                   />
                 </TabsContent>
 
-                <TabsContent value="anomaly" className="p-4 h-full overflow-auto">
+                <TabsContent value="anomaly" className="p-4 flex-1 overflow-auto">
                   <AnomalyDetectionPanel
                     captureId={currentCapture?.id || 0}
                     onAnomaly={(anomaly) => {
@@ -928,7 +928,7 @@ export default function ForensicCockpit() {
                   />
                 </TabsContent>
 
-                <TabsContent value="compressive" className="p-4 h-full overflow-auto">
+                <TabsContent value="compressive" className="p-4 flex-1 overflow-auto">
                   <CompressiveSensingPanel
                     captureId={currentCapture?.id || 0}
                     sampleStart={selection?.sampleStart || 0}
@@ -939,7 +939,7 @@ export default function ForensicCockpit() {
                   />
                 </TabsContent>
 
-                <TabsContent value="protocol" className="p-4 h-full overflow-auto">
+                <TabsContent value="protocol" className="p-4 flex-1 overflow-auto">
                   <ProtocolIdentificationPanel
                     captureId={currentCapture?.id || 0}
                     sampleStart={selection?.sampleStart || 0}
@@ -950,7 +950,7 @@ export default function ForensicCockpit() {
                   />
                 </TabsContent>
 
-                <TabsContent value="sdr" className="p-4 h-full overflow-auto">
+                <TabsContent value="sdr" className="p-4 flex-1 overflow-auto">
                   <SDRControlPanel
                     onStreamData={(data) => {
                       // Handle IQ data stream
