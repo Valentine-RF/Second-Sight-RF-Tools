@@ -913,3 +913,9 @@
 - [x] Import and wire SDRControlPanel component
 - [x] Fix Selection type property (sampleCount → sampleEnd - sampleStart)
 - [x] Test panel switching and verify all panels render correctly
+
+## GitHub Backup (Dec 7, 2025 - Evening)
+- [ ] Stage all project changes
+- [ ] Create commit with comprehensive message
+- [ ] Push to Valentine-RF/Second-Sight-RF-Tools repository
+- [ ] Verify push success
