@@ -1,0 +1,67 @@
+# Docker Compose override for development environment
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+version: '3.8'
+
+services:
+  app:
+    build:
+      target: development
+    image: second-sight-rf:dev
+    container_name: forensic-signal-processor-dev
+    environment:
+      - NODE_ENV=development
+      - LOG_LEVEL=debug
+      - DEBUG=*
+    volumes:
+      # Mount source code for hot reload
+      - ./server:/app/server
+      - ./client:/app/client
+      - ./drizzle:/app/drizzle
+      - ./shared:/app/shared
+      - ./storage:/app/storage
+      # Exclude node_modules
+      - /app/node_modules
+      - /app/client/node_modules
+    ports:
+      - "3000:3000"
+      - "5173:5173"  # Vite HMR port
+    command: ["pnpm", "run", "dev"]
+
+  postgres:
+    environment:
+      - POSTGRES_PASSWORD=dev_password
+    ports:
+      - "5432:5432"
+
+  redis:
+    command: redis-server --appendonly no
+    ports:
+      - "6379:6379"
+
+  # Development-only services
+  adminer:
+    image: adminer:latest
+    container_name: forensic-adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - ADMINER_DEFAULT_SERVER=postgres
+    networks:
+      - forensic-network
+    depends_on:
+      - postgres
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: forensic-redis-commander
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    networks:
+      - forensic-network
+    depends_on:
+      - redis

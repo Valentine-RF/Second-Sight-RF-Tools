@@ -957,3 +957,24 @@
 - [x] Add TorchSig and SoapySDR installation instructions
 - [x] Create verification scripts for testing environment
 - [x] Document three deployment modes (dev, CPU, GPU)
+
+
+## Docker Deployment Configuration (Dec 8, 2024)
+- [x] Create multi-stage Dockerfile with NVIDIA CUDA base image
+- [x] Add Node.js 22 installation in Dockerfile
+- [x] Add Python 3.11 with all dependencies in Dockerfile
+- [x] Configure CUDA and CuPy in Dockerfile
+- [x] Create docker-compose.yml with GPU support
+- [x] Add PostgreSQL service to docker-compose
+- [x] Add Redis service to docker-compose
+- [x] Configure volume mounts for persistent data
+- [x] Create .dockerignore file
+- [x] Create docker-compose.dev.yml for development
+- [x] Create docker-compose.cpu.yml for CPU-only production
+- [x] Create .env.docker template
+- [x] Create deployment scripts (build.sh, deploy.sh)
+- [x] Create PostgreSQL configuration (postgresql.conf, init.sql)
+- [x] Create Nginx reverse proxy configuration
+- [x] Create Python requirements files (requirements.txt, requirements-gpu.txt)
+- [x] Document Docker deployment in DOCKER.md
+- [ ] Test Docker build and deployment

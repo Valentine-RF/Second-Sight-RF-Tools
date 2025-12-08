@@ -1,0 +1,68 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Node.js
+node_modules
+npm-debug.log
+yarn-error.log
+pnpm-debug.log
+.pnpm-store
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+
+# Build outputs
+dist
+build
+*.egg-info
+.next
+out
+
+# Development
+.env
+.env.local
+.env.*.local
+*.log
+logs
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+coverage
+.nyc_output
+*.test.ts.snap
+
+# Documentation
+docs/*.pdf
+*.md
+!README.md
+!DEPLOYMENT.md
+!DOCKER.md
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Misc
+tmp
+temp
+.cache
+.parcel-cache
+screenshots

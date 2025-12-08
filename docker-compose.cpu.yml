@@ -1,0 +1,26 @@
+# Docker Compose override for CPU-only deployment (no GPU required)
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.cpu.yml up
+
+version: '3.8'
+
+services:
+  app:
+    build:
+      target: production-cpu
+    image: second-sight-rf:cpu
+    container_name: forensic-signal-processor-cpu
+    deploy:
+      resources:
+        limits:
+          cpus: '8'
+          memory: 16G
+        reservations:
+          cpus: '4'
+          memory: 8G
+        # Remove GPU reservation
+        # devices: []
+
+  # Disable GPU service for CPU-only deployment
+  gpu-service:
+    profiles:
+      - with-gpu

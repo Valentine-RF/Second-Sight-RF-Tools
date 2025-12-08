@@ -1,0 +1,24 @@
+# Core scientific computing
+numpy==1.26.4
+scipy==1.11.4
+matplotlib==3.8.2
+
+# PyTorch (CPU version - override with requirements-gpu.txt for GPU)
+--index-url https://download.pytorch.org/whl/cpu
+torch==2.1.2
+torchvision==0.16.2
+torchaudio==2.1.2
+
+# Signal processing and ML
+git+https://github.com/TorchDSP/torchsig.git
+
+# Hardware integration
+SoapySDR
+
+# Data serialization and communication
+pyarrow==14.0.2
+pyzmq==25.1.2
+h5py==3.10.0
+
+# Utilities
+tqdm==4.66.1

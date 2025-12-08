@@ -1,0 +1,11 @@
+# GPU-specific requirements
+# Use this file for GPU-accelerated deployments
+
+# PyTorch with CUDA 12.1 support
+--index-url https://download.pytorch.org/whl/cu121
+torch==2.1.2
+torchvision==0.16.2
+torchaudio==2.1.2
+
+# CuPy for GPU-accelerated NumPy operations
+cupy-cuda12x==13.0.0

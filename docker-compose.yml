@@ -1,0 +1,215 @@
+# Docker Compose configuration for Second Sight RF Tools
+# Production deployment with GPU support
+
+version: '3.8'
+
+services:
+  # =============================================================================
+  # Main Application Service (GPU-accelerated)
+  # =============================================================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+      args:
+        - BUILDKIT_INLINE_CACHE=1
+    image: second-sight-rf:latest
+    container_name: forensic-signal-processor
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOST=0.0.0.0
+      - DATABASE_URL=postgresql://forensic:forensic_password@postgres:5432/forensic_signal_processor
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET}
+      - LOG_LEVEL=info
+      - PYTHON_PATH=/app/venv/bin/python3
+      # GPU configuration
+      - CUDA_VISIBLE_DEVICES=0
+      - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
+    volumes:
+      # Persistent data
+      - app-data:/app/data
+      # Logs
+      - app-logs:/app/logs
+      # Model cache
+      - model-cache:/app/models
+      # Mount source code for hot reload (development only)
+      # - ./server:/app/server:ro
+      # - ./client:/app/client:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - forensic-network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # =============================================================================
+  # PostgreSQL Database Service
+  # =============================================================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: forensic-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=forensic_signal_processor
+      - POSTGRES_USER=forensic
+      - POSTGRES_PASSWORD=forensic_password
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      # Custom PostgreSQL configuration
+      - ./docker/postgres/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+      # Initialization scripts
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
+    networks:
+      - forensic-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U forensic -d forensic_signal_processor"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '1'
+          memory: 2G
+
+  # =============================================================================
+  # Redis Service (Job Queue)
+  # =============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: forensic-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 2gb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - forensic-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+
+  # =============================================================================
+  # GPU Service (Long-running Python process for GPU tasks)
+  # =============================================================================
+  gpu-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    image: second-sight-rf:latest
+    container_name: forensic-gpu-service
+    restart: unless-stopped
+    command: ["/app/venv/bin/python3", "server/python/gpu_service.py"]
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+      - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
+      - ZMQ_ENDPOINT=tcp://*:5555
+    volumes:
+      - model-cache:/app/models
+      - app-logs:/app/logs
+    ports:
+      - "5555:5555"
+    networks:
+      - forensic-network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    depends_on:
+      - redis
+
+  # =============================================================================
+  # Nginx Reverse Proxy (Optional - for production with SSL)
+  # =============================================================================
+  nginx:
+    image: nginx:alpine
+    container_name: forensic-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/ssl:/etc/nginx/ssl:ro
+      - nginx-cache:/var/cache/nginx
+    depends_on:
+      - app
+    networks:
+      - forensic-network
+    profiles:
+      - with-nginx
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  forensic-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  # Application data
+  app-data:
+    driver: local
+  app-logs:
+    driver: local
+  model-cache:
+    driver: local
+  
+  # Database data
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
+  
+  # Nginx cache
+  nginx-cache:
+    driver: local
