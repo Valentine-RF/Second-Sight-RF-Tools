@@ -44,6 +44,7 @@ import { timeFrequencyRouter } from './routers/timeFrequency';
 import { compressiveSensingRouter } from './routers/compressiveSensing';
 import { rfFingerprintRouter } from './routers/rfFingerprint';
 import { advancedAnalysisRouter } from './routers/advancedAnalysis';
+import { demodulationRouter } from './routers/demodulation';
 import { gpuAnalysisRouter } from './routers/gpuAnalysis';
 import { batchRouter } from './routers/batch';
 import { detectFrequencyHopping } from './freqHopping';
@@ -67,6 +68,7 @@ export const appRouter = router({
   compressiveSensing: compressiveSensingRouter,
   rfFingerprint: rfFingerprintRouter,
   advancedAnalysis: advancedAnalysisRouter,
+  demodulation: demodulationRouter,
   
   // GPU-Accelerated Analysis
   gpuAnalysis: gpuAnalysisRouter,

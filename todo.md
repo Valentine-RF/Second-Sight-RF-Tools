@@ -852,3 +852,17 @@
 - [ ] Add "GPU Analysis" button to annotation context menu
 - [ ] Create GPU analysis result modal with visualization
 - [ ] Test end-to-end workflow: annotate → GPU analyze → view results
+
+
+## 🎯 Advanced Demodulation Pipeline Integration (Current Sprint)
+- [x] Integrate demodulation_pipeline.py with CFO/Costas/SNR/Timing
+- [x] Create TypeScript bridge for demodulation pipeline
+- [x] Add tRPC router for demodulation endpoints (CFO, SNR, Costas, timing recovery)
+- [ ] Create DemodulationPanel UI component
+- [ ] Add CFO estimation display
+- [ ] Add SNR meter visualization
+- [ ] Add constellation diagram with Costas loop correction
+- [ ] Add timing recovery visualization
+- [ ] Add symbol output hex view
+- [ ] Test with real modulated signals
+- [ ] Integrate with GPU service for CUDA acceleration
