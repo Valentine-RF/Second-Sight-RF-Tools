@@ -1063,3 +1063,14 @@
 - [x] Fix Vite WebSocket HMR configuration for hot module reload (added hmr config with wss protocol and clientPort 443)
 - [x] Test Header component without nested anchor warnings (verified clean console)
 - [x] Verify HMR works correctly after Vite config fix (dev server restarted, no WebSocket errors)
+
+
+## Breadcrumb Navigation in Cockpit (Dec 8, 2024)
+- [x] Create reusable Breadcrumb component with shadcn/ui styling
+- [x] Add breadcrumb items: Home, Files, [Capture Name]
+- [x] Make breadcrumb items clickable with navigation (Home and Files clickable, current page not clickable)
+- [x] Add chevron separators between items (ChevronRight icon)
+- [x] Integrate breadcrumbs into Cockpit page header (above title section)
+- [x] Show capture name in breadcrumb when loaded (dynamic from currentCapture?.name)
+- [x] Show placeholder when no capture loaded (displays "No Signal Loaded")
+- [x] Test breadcrumb navigation functionality (verified Home and Files links work)

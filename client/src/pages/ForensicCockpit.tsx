@@ -3,6 +3,7 @@ import { WebGLErrorBoundary } from '@/components/WebGLErrorBoundary';
 import { CockpitSkeleton } from '@/components/CockpitSkeleton';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { Header } from '@/components/Header';
+import { Breadcrumb, type BreadcrumbItem } from '@/components/Breadcrumb';
 import { useSignalStore } from '@/store/signalStore';
 import { Spectrogram } from '@/components/Spectrogram';
 import { ConstellationPlot } from '@/components/ConstellationPlot';
@@ -535,6 +536,17 @@ export default function ForensicCockpit() {
         <div className="h-full flex flex-col">
           <div className="flex items-center justify-between px-4 py-2 border-b border-border">
             <div>
+              {/* Breadcrumb Navigation */}
+              <div className="mb-2">
+                <Breadcrumb
+                  items={[
+                    { label: 'Home', href: '/' },
+                    { label: 'Files', href: '/files' },
+                    { label: emptyState ? 'No Signal Loaded' : currentCapture?.name || 'Unknown', href: undefined },
+                  ]}
+                />
+              </div>
+              
               {emptyState ? (
                 <>
                   <h3 className="font-black text-lg">No Signal Loaded</h3>
