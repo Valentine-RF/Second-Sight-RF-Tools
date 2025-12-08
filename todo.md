@@ -978,3 +978,10 @@
 - [x] Create Python requirements files (requirements.txt, requirements-gpu.txt)
 - [x] Document Docker deployment in DOCKER.md
 - [ ] Test Docker build and deployment
+
+
+## GitHub Repository Updates (Dec 8, 2024)
+- [ ] Stage Docker configuration files
+- [ ] Commit Docker deployment setup
+- [ ] Push to GitHub repository
+- [ ] Verify files on GitHub
