@@ -38,6 +38,11 @@ interface SpectrogramProps {
   onBoxSelect?: (selection: { sampleStart: number; sampleEnd: number; freqLowerHz: number; freqUpperHz: number }) => void;
 }
 
+export type SpectrogramHandle = {
+  captureCanvas: () => string;
+  updateFFT: (fft: Float32Array, chunkIndex?: number) => void;
+};
+
 /**
  * High-performance WebGL spectrogram renderer
  * 
@@ -51,7 +56,7 @@ interface SpectrogramProps {
  * IMPORTANT: FFT data is stored in useRef, NOT React state, to avoid re-renders
  * during high-frequency updates. Use requestAnimationFrame for smooth animation.
  */
-export const Spectrogram = React.forwardRef<{ captureCanvas: () => string }, SpectrogramProps>(
+export const Spectrogram = React.forwardRef<SpectrogramHandle, SpectrogramProps>(
   ({ width, height, onBoxSelect }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const glRef = useRef<WebGLRenderingContext | null>(null);
@@ -214,12 +219,14 @@ export const Spectrogram = React.forwardRef<{ captureCanvas: () => string }, Spe
 
       // Update texture with FFT data
       gl.bindTexture(gl.TEXTURE_2D, texture);
+      const textureWidth = waterfallWidthRef.current;
+      const textureHeight = waterfallHeightRef.current;
       gl.texImage2D(
         gl.TEXTURE_2D,
         0,
         gl.LUMINANCE,
-        1024, // width (frequency bins)
-        512,  // height (time steps)
+        textureWidth, // width (frequency bins)
+        textureHeight,  // height (time steps)
         0,
         gl.LUMINANCE,
         gl.FLOAT,

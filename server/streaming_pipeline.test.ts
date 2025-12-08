@@ -54,6 +54,12 @@ describe("SigMF Data Reader", () => {
     const buffer = new ArrayBuffer(8);
     expect(() => parseSigMFSamples(buffer, "invalid" as any)).toThrow("Unsupported datatype");
   });
+
+  it("should reject buffers that are not aligned to the datatype size", () => {
+    const misalignedBuffer = new ArrayBuffer(3); // Not a multiple of ci16_le sample size (4 bytes)
+    expect(() => parseSigMFSamples(misalignedBuffer, "ci16_le"))
+      .toThrow(/aligned to ci16_le sample size/);
+  });
   
   it("should return correct bytes per sample for each datatype", () => {
     expect(getBytesPerSample("cf32_le")).toBe(8);

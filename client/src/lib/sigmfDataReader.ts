@@ -21,6 +21,18 @@ export type SigMFDatatype =
  * @returns Float32Array of normalized I/Q samples [-1.0, 1.0]
  */
 export function parseSigMFSamples(buffer: ArrayBuffer, datatype: SigMFDatatype): Float32Array {
+  let bytesPerSample: number;
+  try {
+    bytesPerSample = getBytesPerSample(datatype);
+  } catch {
+    throw new Error(`Unsupported datatype: ${datatype}`);
+  }
+  if (buffer.byteLength % bytesPerSample !== 0) {
+    throw new Error(
+      `Buffer length ${buffer.byteLength} is not aligned to ${datatype} sample size (${bytesPerSample} bytes)`
+    );
+  }
+
   switch (datatype) {
     case 'cf32_le': {
       // Already float32, just create view

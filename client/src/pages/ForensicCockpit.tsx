@@ -5,7 +5,7 @@ import { useAuth } from '@/_core/hooks/useAuth';
 import { Header } from '@/components/Header';
 import { Breadcrumb, type BreadcrumbItem } from '@/components/Breadcrumb';
 import { useSignalStore } from '@/store/signalStore';
-import { Spectrogram } from '@/components/Spectrogram';
+import { Spectrogram, type SpectrogramHandle } from '@/components/Spectrogram';
 import { ConstellationPlot } from '@/components/ConstellationPlot';
 import SCFSurface3D from '@/components/SCFSurface3D';
 import { FFTPSDPlot } from '@/components/FFTPSDPlot';
@@ -272,7 +272,7 @@ export default function ForensicCockpit() {
   }, [selection, currentCapture, modulationType]);
   
   // Refs for capturing visualizations
-  const mainSpectrogramRef = useRef<{ captureCanvas: () => string }>(null);
+  const mainSpectrogramRef = useRef<SpectrogramHandle>(null);
   const constellationPlotRef = useRef<{
     captureCanvas: () => string;
     updateSamples: (samples: Float32Array, chunkIndex?: number) => void;
@@ -289,22 +289,12 @@ export default function ForensicCockpit() {
     maxQueueSize: 10
   });
   
-  // Refs for WebGL components (high-frequency data - no React state)
-  const spectrogramRef = useRef<{
-    captureCanvas: () => string;
-    updateFFT: (fft: Float32Array, chunkIndex?: number) => void;
-  } | null>(null);
-  const waterfallRef = useRef<any>(null);
-  
   // Connect pipeline to visualizations
   useEffect(() => {
-    // FFT results -> Spectrogram & Waterfall
+    // FFT results -> Spectrogram
     pipeline.onFFT((fft, chunkIndex) => {
-      if (spectrogramRef.current?.updateFFT) {
-        spectrogramRef.current.updateFFT(fft, chunkIndex);
-      }
-      if (waterfallRef.current?.updateFFT) {
-        waterfallRef.current.updateFFT(fft, chunkIndex);
+      if (mainSpectrogramRef.current?.updateFFT) {
+        mainSpectrogramRef.current.updateFFT(fft, chunkIndex);
       }
     });
     
