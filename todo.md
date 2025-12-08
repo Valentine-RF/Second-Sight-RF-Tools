@@ -1056,3 +1056,10 @@
 - [x] Verify responsive behavior (header sticky at top, links highlight correctly)
 - [x] Add user name display on right side
 - [x] Import getLoginUrl from correct path (@/const)
+
+
+## Bug Fixes - Nested Anchor and Vite HMR (Dec 8, 2024)
+- [x] Fix nested `<a>` tag error in Header component (changed <a> to <span> inside Link)
+- [x] Fix Vite WebSocket HMR configuration for hot module reload (added hmr config with wss protocol and clientPort 443)
+- [x] Test Header component without nested anchor warnings (verified clean console)
+- [x] Verify HMR works correctly after Vite config fix (dev server restarted, no WebSocket errors)

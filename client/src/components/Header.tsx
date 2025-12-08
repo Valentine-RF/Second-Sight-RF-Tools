@@ -19,28 +19,28 @@ export function Header() {
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         {/* Brand */}
         <Link href="/">
-          <a className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+          <span className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer">
             <Radio className="w-6 h-6 text-cyan-500" />
             <div className="flex flex-col">
               <span className="font-black text-lg leading-none">Second Sight</span>
               <span className="text-xs text-muted-foreground leading-none">by Valentine RF</span>
             </div>
-          </a>
+          </span>
         </Link>
 
         {/* Navigation */}
         <nav className="flex items-center gap-6">
           {navLinks.map((link) => (
             <Link key={link.href} href={link.href}>
-              <a
-                className={`text-sm font-medium transition-colors hover:text-cyan-500 ${
+              <span
+                className={`text-sm font-medium transition-colors hover:text-cyan-500 cursor-pointer ${
                   location === link.href
                     ? 'text-cyan-500'
                     : 'text-muted-foreground'
                 }`}
               >
                 {link.label}
-              </a>
+              </span>
             </Link>
           ))}
 
