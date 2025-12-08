@@ -11,6 +11,11 @@ import { HexView } from '@/components/HexView';
 import { AnnotationStatistics } from '@/components/AnnotationStatistics';
 import { HopPatternVisualization } from '@/components/HopPatternVisualization';
 import { SDRStreamingPanel } from '@/components/SDRStreamingPanel';
+import { GeolocationPanel } from '@/components/GeolocationPanel';
+import { AnomalyDetectionPanel } from '@/components/AnomalyDetectionPanel';
+import { CompressiveSensingPanel } from '@/components/CompressiveSensingPanel';
+import { ProtocolIdentificationPanel } from '@/components/ProtocolIdentificationPanel';
+import { SDRControlPanel } from '@/components/SDRControlPanel';
 import { AnnotationEditDialog } from '@/components/AnnotationEditDialog';
 import SignalContextMenu, { type SignalSelection } from '@/components/SignalContextMenu';
 import CyclicProfilePanel from '@/components/CyclicProfilePanel';
@@ -19,7 +24,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
-import { ChevronDown, ChevronUp, Activity, Radio, Waves, Binary, FileDown, Loader2, Plus, Minus, Move } from 'lucide-react';
+import { ChevronDown, ChevronUp, Activity, Radio, Waves, Binary, FileDown, Loader2, Plus, Minus, Move, MapPin, Shield, Zap, Wifi, Settings } from 'lucide-react';
 import { generateForensicReport } from '@/lib/pdfExport';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
@@ -800,6 +805,26 @@ export default function ForensicCockpit() {
                     <Binary className="w-4 h-4" />
                     Hex View
                   </TabsTrigger>
+                  <TabsTrigger value="geolocation" className="gap-2">
+                    <MapPin className="w-4 h-4" />
+                    Geolocation
+                  </TabsTrigger>
+                  <TabsTrigger value="anomaly" className="gap-2">
+                    <Shield className="w-4 h-4" />
+                    Anomaly Detection
+                  </TabsTrigger>
+                  <TabsTrigger value="compressive" className="gap-2">
+                    <Zap className="w-4 h-4" />
+                    Compressive Sensing
+                  </TabsTrigger>
+                  <TabsTrigger value="protocol" className="gap-2">
+                    <Wifi className="w-4 h-4" />
+                    Protocol ID
+                  </TabsTrigger>
+                  <TabsTrigger value="sdr" className="gap-2">
+                    <Settings className="w-4 h-4" />
+                    SDR Control
+                  </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="spectrum" className="p-4 h-full">
@@ -878,6 +903,72 @@ export default function ForensicCockpit() {
                     decoded={demodData?.decoded || ''}
                     mode={demodData?.mode || 'CW'}
                     confidence={demodData?.confidence || 0}
+                  />
+                </TabsContent>
+
+                <TabsContent value="geolocation" className="p-4 h-full overflow-auto">
+                  <GeolocationPanel
+                    captureId={currentCapture?.id || 0}
+                    onResult={(result) => {
+                      toast.success(`Emitter located at ${result.latitude.toFixed(6)}, ${result.longitude.toFixed(6)}`);
+                    }}
+                  />
+                </TabsContent>
+
+                <TabsContent value="anomaly" className="p-4 h-full overflow-auto">
+                  <AnomalyDetectionPanel
+                    captureId={currentCapture?.id || 0}
+                    onAnomaly={(anomaly) => {
+                      toast.warning(`Anomaly detected: ${anomaly.type}`);
+                    }}
+                    onThreat={(threat) => {
+                      toast.error(`Threat detected: ${threat.type} (${threat.severity})`);
+                    }}
+                  />
+                </TabsContent>
+
+                <TabsContent value="compressive" className="p-4 h-full overflow-auto">
+                  <CompressiveSensingPanel
+                    captureId={currentCapture?.id || 0}
+                    sampleStart={selection?.sampleStart || 0}
+                    sampleCount={selection ? (selection.sampleEnd - selection.sampleStart) : 65536}
+                    onResult={(result) => {
+                      toast.success(`Sparse recovery complete: ${result.support.length} components`);
+                    }}
+                  />
+                </TabsContent>
+
+                <TabsContent value="protocol" className="p-4 h-full overflow-auto">
+                  <ProtocolIdentificationPanel
+                    captureId={currentCapture?.id || 0}
+                    sampleStart={selection?.sampleStart || 0}
+                    sampleCount={selection ? (selection.sampleEnd - selection.sampleStart) : 65536}
+                    onResult={(result) => {
+                      toast.success(`Protocol identified: ${result.protocol} (${(result.confidence * 100).toFixed(1)}% confidence)`);
+                    }}
+                  />
+                </TabsContent>
+
+                <TabsContent value="sdr" className="p-4 h-full overflow-auto">
+                  <SDRControlPanel
+                    onStreamData={(data) => {
+                      // Handle IQ data stream
+                      console.log('IQ data received:', data.numSamples);
+                    }}
+                    onFFTData={(fft) => {
+                      // Update FFT display
+                      setFftData({
+                        frequencies: Array.from(fft.frequencies),
+                        magnitudes: Array.from(fft.magnitudes),
+                        centerFreq: fft.centerFreq,
+                      });
+                    }}
+                    onConnect={(device) => {
+                      toast.success(`Connected to ${device.label}`);
+                    }}
+                    onDisconnect={() => {
+                      toast.info('SDR disconnected');
+                    }}
                   />
                 </TabsContent>
               </Tabs>
